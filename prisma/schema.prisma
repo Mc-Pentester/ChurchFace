@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  password          String
+  role              String         @default("USER")
+  createdAt         DateTime       @default(now())
+  image             String?
+  name              String?
+  bio               String?
+  accounts          Account[]
+  chats             ChatMember[]
+  comments          Comment[]
+  likes             Like[]
+  shares            Share[]
+  messages          Message[]
+  messagesSeen      MessageSeen[]
+  sentNotifications Notification[] @relation("Sender")
+  notifications     Notification[] @relation("Receiver")
+  posts             Post[]
+  sessions          Session[]
+  stories           Story[]
+  storyViews        StoryView[]
+  streams           Stream[]
+  radios            Radio[]
+}
+
+model Chat {
+  id        String       @id @default(cuid())
+  isGroup   Boolean      @default(false)
+  name      String?
+  createdAt DateTime     @default(now())
+  members   ChatMember[]
+  messages  Message[]
+}
+
+model ChatMember {
+  id       String    @id @default(cuid())
+  userId   String
+  chatId   String
+  isTyping Boolean   @default(false)
+  lastSeen DateTime?
+  chat     Chat      @relation(fields: [chatId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, chatId])
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  content   String
+  createdAt DateTime      @default(now())
+  chatId    String
+  senderId  String
+  chat      Chat          @relation(fields: [chatId], references: [id])
+  sender    User          @relation(fields: [senderId], references: [id])
+  seenBy    MessageSeen[]
+}
+
+model MessageSeen {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  seenAt    DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  content   String?
+  createdAt DateTime  @default(now())
+  authorId  String
+  hashtags  String[]  @default([])
+  imageUrl  String?
+  videoUrl  String?
+  comments  Comment[]
+  likes     Like[]
+  shares    Share[]
+  author    User      @relation(fields: [authorId], references: [id])
+
+  @@index([createdAt])
+  @@index([authorId, createdAt])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+model Share {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  postId    String
+  parentId  String?
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([userId, createdAt])
+  @@index([parentId])
+}
+
+model Story {
+  id        String      @id @default(cuid())
+  imageUrl  String?
+  videoUrl  String?
+  content   String?
+  createdAt DateTime    @default(now())
+  expiresAt DateTime
+  authorId  String
+  author    User        @relation(fields: [authorId], references: [id])
+  views     StoryView[]
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  createdAt DateTime @default(now())
+  story     Story    @relation(fields: [storyId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([storyId, userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  senderId  String?
+  sender    User?    @relation("Sender", fields: [senderId], references: [id])
+  user      User     @relation("Receiver", fields: [userId], references: [id])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+}
+
+model Stream {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  isLive      Boolean   @default(true)
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  viewerCount Int       @default(0)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([isLive, startedAt])
+  @@index([userId])
+}
+
+model Radio {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  isLive      Boolean   @default(true)
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  listenerCount Int     @default(0)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([isLive, startedAt])
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
