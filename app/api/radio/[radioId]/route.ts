@@ -78,3 +78,50 @@ export async function PATCH(
     );
   }
 }
+
+/**
+ * PUT /api/radio/:id — Mettre à jour une radio (studio)
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ radioId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    const { radioId } = await params;
+    const body = await req.json();
+
+    const updated = await prisma.radio.update({
+      where: { id: radioId },
+      data: {
+        ...(body.title !== undefined && { title: body.title }),
+        ...(body.description !== undefined && { description: body.description }),
+        ...(body.isLive !== undefined && { isLive: body.isLive }),
+        ...(body.isAutoDJ !== undefined && { isAutoDJ: body.isAutoDJ }),
+        ...(body.endedAt !== undefined && { endedAt: body.endedAt ? new Date(body.endedAt) : null }),
+        ...(body.startedAt !== undefined && { startedAt: body.startedAt ? new Date(body.startedAt) : undefined }),
+        ...(body.streamUrl !== undefined && { streamUrl: body.streamUrl }),
+        ...(body.currentTrackId !== undefined && { currentTrackId: body.currentTrackId }),
+        ...(body.listenerCount !== undefined && { listenerCount: body.listenerCount }),
+        ...(body.peakListeners !== undefined && { peakListeners: body.peakListeners }),
+      },
+      include: {
+        user: { select: { id: true, name: true, image: true } },
+        playlist: { include: { items: { orderBy: { order: "asc" } } } },
+      },
+    });
+
+    return NextResponse.json({ radio: updated });
+  } catch (error) {
+    console.error("UPDATE RADIO ERROR:", error);
+    return NextResponse.json(
+      { error: "Erreur mise à jour radio" },
+      { status: 500 }
+    );
+  }
+}

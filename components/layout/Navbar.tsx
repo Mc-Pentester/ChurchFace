@@ -101,6 +101,28 @@ export default function Navbar({ onLoginClick }: any) {
       {/* RIGHT */}
       <div className="flex items-center gap-3">
 
+        {/* LINKS */}
+        <div className="hidden md:flex items-center gap-1">
+          <a
+            href="/prayer-space"
+            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+          >
+            🙏 Prière
+          </a>
+          <a
+            href="/live"
+            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+          >
+            📺 Live
+          </a>
+          <a
+            href="/radio"
+            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+          >
+            🎙️ Radio
+          </a>
+        </div>
+
         {/* ONLINE */}
         <div className="hidden md:flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-full">
           <div className="w-2 h-2 rounded-full bg-green-500" />

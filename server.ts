@@ -226,6 +226,39 @@ app.prepare().then(async () => {
       socket.to(`radio:${radioId}`).emit("radio:listener-left", socket.id);
     });
 
+    // --- Studio Radio Real-time ---
+    socket.on("studio:join", (radioId: string) => {
+      socket.join(`studio:${radioId}`);
+      console.log(`Socket ${socket.id} joined studio ${radioId}`);
+    });
+
+    socket.on("studio:leave", (radioId: string) => {
+      socket.leave(`studio:${radioId}`);
+      console.log(`Socket ${socket.id} left studio ${radioId}`);
+    });
+
+    socket.on("studio:broadcast", ({ radioId, data }: { radioId: string; data: any }) => {
+      socket.to(`studio:${radioId}`).emit("studio:update", data);
+      socket.to(`radio:${radioId}`).emit("radio:update", data);
+    });
+
+    socket.on("studio:chat", async ({ radioId, msg }: { radioId: string; msg: any }) => {
+      try {
+        const saved = await prisma.radioChatMessage.create({
+          data: {
+            radioId,
+            userId: msg.userId || null,
+            name: msg.name || "Anonyme",
+            content: msg.content,
+          },
+        });
+        io.to(`radio:${radioId}`).emit("radio:chat", saved);
+        io.to(`studio:${radioId}`).emit("studio:chat", saved);
+      } catch (err) {
+        console.error("Studio chat save error:", err);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("Socket disconnected:", socket.id);
     });

@@ -27,28 +27,29 @@ export default function HomePage() {
 
       {/* BODY */}
       <section className="w-full">
-        <div className="max-w-[1700px] mx-auto flex gap-6 px-4 py-6">
 
-          {/* LEFT */}
-          <div className="hidden lg:block w-64 shrink-0">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-4 px-3 py-6">
+
+          {/* LEFT SIDEBAR */}
+          <aside className="hidden lg:block sticky top-20 h-fit">
             <LeftSidebar />
-          </div>
+          </aside>
 
-          {/* CENTER */}
-          <div className="flex-1 min-w-0 max-w-3xl mx-auto">
+          {/* FEED CENTER */}
+          <section className="min-w-0 max-w-[680px] mx-auto w-full space-y-6">
 
             <StoriesBar />
 
-            <div className="mt-5">
+            <div className="min-w-0 overflow-hidden">
               <Feed />
             </div>
 
-          </div>
+          </section>
 
-          {/* RIGHT */}
-          <div className="hidden xl:block w-72 shrink-0">
+          {/* RIGHT SIDEBAR */}
+          <aside className="hidden lg:block sticky top-20 h-fit">
             <RightSidebar />
-          </div>
+          </aside>
 
         </div>
       </section>

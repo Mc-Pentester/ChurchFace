@@ -532,7 +532,7 @@ export default function Feed() {
               controls
               preload="metadata"
               playsInline
-              className="rounded-xl w-full max-h-[400px] object-cover"
+              className="rounded-xl w-full max-h-[600px] object-cover"
             />
           ) : p.imageUrl ? (
             <img src={p.imageUrl} alt="" className="rounded-xl w-full" />

@@ -3,6 +3,12 @@ const nextConfig = {
   reactStrictMode: true,
 
   serverExternalPackages: ["@prisma/client", "prisma"],
+
+  /* Réduire la consommation mémoire pendant le build */
+  experimental: {
+    workerThreads: false,
+  },
+  staticPageGenerationTimeout: 120,
 };
 
-export default nextConfig;
+module.exports = nextConfig;

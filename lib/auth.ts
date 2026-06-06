@@ -60,6 +60,17 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as any).role;
       }
 
+      // 🔄 Recharge le rôle depuis la base pour éviter JWT obsolète
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      }
+
       return token;
     },
 
