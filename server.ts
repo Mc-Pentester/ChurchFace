@@ -23,10 +23,16 @@ async function getGlobalChat() {
   return chat;
 }
 
-app.prepare().then(async () => {
-  const globalChat = await getGlobalChat();
-  const chatId = globalChat.id;
+let globalChatId: string | null = null;
 
+async function ensureGlobalChatId(): Promise<string> {
+  if (globalChatId) return globalChatId;
+  const chat = await getGlobalChat();
+  globalChatId = chat.id;
+  return globalChatId;
+}
+
+app.prepare().then(async () => {
   const httpServer = createServer(handle);
 
   const io = new Server(httpServer, {
@@ -65,6 +71,7 @@ app.prepare().then(async () => {
     // --- Chat Global (app/chat/page.tsx) ---
     socket.on("chat:new", async (msg: { user: string; content: string; userId?: string }) => {
       try {
+        const chatId = await ensureGlobalChatId();
         const saved = await prisma.message.create({
           data: {
             content: msg.content,
@@ -318,7 +325,14 @@ app.prepare().then(async () => {
     });
   });
 
-  httpServer.listen(port, () => {
+  httpServer.listen(port, hostname, () => {
     console.log(`Server ready on http://${hostname}:${port}`);
   });
+
+  ensureGlobalChatId().catch((err) => {
+    console.error("Global chat init failed (will retry on demand):", err);
+  });
+}).catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });
