@@ -15,7 +15,6 @@ type Tab =
   | "posts"
   | "comments"
   | "streams"
-  | "radios"
   | "playlists";
 
 export default function AdminPage() {
@@ -32,7 +31,6 @@ export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
   const [streams, setStreams] = useState<any[]>([]);
-  const [radios, setRadios] = useState<any[]>([]);
   const [playlists, setPlaylists] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -101,18 +99,16 @@ export default function AdminPage() {
           fetch("/api/admin/users", { signal: controller.signal }).then(r => r.json()),
           fetch("/api/admin/comments", { signal: controller.signal }).then(r => r.json()),
           fetch("/api/admin/streams", { signal: controller.signal }).then(r => r.json()),
-          fetch("/api/admin/radios", { signal: controller.signal }).then(r => r.json()),
           fetch("/api/admin/playlists", { signal: controller.signal }).then(r => r.json()),
         ];
 
-        const [s, p, u, c, st, r, pl] = await Promise.all(requests);
+        const [s, p, u, c, st, pl] = await Promise.all(requests);
 
         setStats(s);
         setPosts(p);
         setUsers(u.users ?? u);
         setComments(c.comments ?? c);
         setStreams(st.streams ?? st);
-        setRadios(r.radios ?? r);
         setPlaylists(pl.playlists ?? pl);
       } catch (err) {
         if (err instanceof DOMException) return;
@@ -236,42 +232,6 @@ export default function AdminPage() {
     });
   };
 
-  const deleteRadio = async (id: string) => {
-    if (!confirm("Supprimer cette radio ?")) return;
-
-    await runAction(`radio-${id}`, async () => {
-      await fetch("/api/admin/radios", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-    }, () => {
-      setRadios((prev) => prev.filter((r) => r.id !== id));
-    });
-  };
-
-  const assignPlaylistToRadio = async (radioId: string, playlistId: string | null) => {
-    await runAction(`radio-pl-${radioId}`, async () => {
-      await fetch("/api/admin/radios", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: radioId, playlistId }),
-      });
-    }, () => {
-      setRadios((prev) =>
-        prev.map((r) =>
-          r.id === radioId
-            ? {
-                ...r,
-                playlistId,
-                playlist: playlists?.find((p) => p.id === playlistId) || null,
-              }
-            : r
-        )
-      );
-    });
-  };
-
   /* ─── PLAYLIST ACTIONS ─── */
   const openPlaylistForm = (pl?: any) => {
     if (pl) {
@@ -339,13 +299,13 @@ export default function AdminPage() {
   /* (tu peux garder ton JSX actuel tel quel) */
   /* ─────────────────────────────── */
 
-  const tabs: { key: Tab; label: string; icon: any }[] = [
+  const tabs: { key: Tab | "studio"; label: string; icon: any; href?: string }[] = [
     { key: "overview", label: "Vue d'ensemble", icon: Activity },
     { key: "users", label: "Utilisateurs", icon: Users },
     { key: "posts", label: "Posts", icon: FileText },
     { key: "comments", label: "Commentaires", icon: MessageSquare },
     { key: "streams", label: "Lives", icon: Radio },
-    { key: "radios", label: "Radios", icon: Headphones },
+    { key: "studio", label: "Radio Studio", icon: Headphones, href: "/admin/studio" },
     { key: "playlists", label: "Playlists", icon: ListMusic },
   ];
 
@@ -386,14 +346,18 @@ export default function AdminPage() {
           <nav className="space-y-1 sticky top-24">
             {tabs.map((t) => {
               const Icon = t.icon;
-              const active = tab === t.key;
+              const active = !t.href && tab === t.key;
               return (
                 <button
                   key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${active ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:bg-gray-100"}`}
+                  onClick={() => {
+                    if (t.href) router.push(t.href);
+                    else setTab(t.key as Tab);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${active ? "bg-emerald-50 text-emerald-700" : t.href ? "text-violet-700 hover:bg-violet-50" : "text-gray-600 hover:bg-gray-100"}`}
                 >
                   <Icon size={18} /> {t.label}
+                  {t.href && <span className="ml-auto text-[10px] text-violet-400">→</span>}
                 </button>
               );
             })}
@@ -405,12 +369,15 @@ export default function AdminPage() {
           <div className="flex gap-2">
             {tabs.map((t) => {
               const Icon = t.icon;
-              const active = tab === t.key;
+              const active = !t.href && tab === t.key;
               return (
                 <button
                   key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition ${active ? "bg-emerald-50 text-emerald-700" : "bg-white text-gray-600 border"}`}
+                  onClick={() => {
+                    if (t.href) router.push(t.href);
+                    else setTab(t.key as Tab);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition ${active ? "bg-emerald-50 text-emerald-700" : t.href ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-white text-gray-600 border"}`}
                 >
                   <Icon size={14} /> {t.label}
                 </button>
@@ -623,66 +590,6 @@ export default function AdminPage() {
                       <button
                         onClick={() => deleteStream(s.id)}
                         disabled={actionLoading === `stream-${s.id}`}
-                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition shrink-0"
-                        title="Supprimer"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ─── RADIOS ─── */}
-          {tab === "radios" && (
-            <div className="bg-white rounded-2xl border overflow-hidden">
-              <div className="px-5 py-4 border-b flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">Radios ({radios.length})</h3>
-                <button
-                  onClick={() => window.open("/admin/studio", "_blank")}
-                  className="flex items-center gap-2 bg-gray-900 text-white hover:bg-gray-800 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-                >
-                  🎙️ Ouvrir le Studio
-                </button>
-              </div>
-              <div className="divide-y max-h-[70vh] overflow-y-auto">
-                {radios.map((r) => (
-                  <div key={r.id} className="p-5 hover:bg-gray-50">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`w-2 h-2 rounded-full ${r.isLive ? "bg-emerald-500 animate-pulse" : "bg-gray-300"}`} />
-                          <span className="font-medium text-gray-800">{r.title}</span>
-                          {r.isLive && <span className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase">LIVE</span>}
-                        </div>
-                        <div className="text-sm text-gray-500">{r.user?.name || "Anonyme"} — {r.listenerCount ?? 0} auditeurs</div>
-                        <div className="text-xs text-gray-400 mt-1">{new Date(r.startedAt).toLocaleDateString()} {r.endedAt ? `→ ${new Date(r.endedAt).toLocaleDateString()}` : ""}</div>
-                        {/* Playlist selector */}
-                        <div className="mt-2 flex items-center gap-2">
-                          <ListMusic size={14} className="text-gray-400" />
-                          <select
-                            value={r.playlistId || ""}
-                            onChange={(e) => assignPlaylistToRadio(r.id, e.target.value || null)}
-                            disabled={actionLoading === `radio-pl-${r.id}`}
-                            className="text-xs border rounded-lg px-2 py-1 bg-gray-50 text-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                          >
-                            <option value="">Aucune playlist</option>
-                            {playlists.map((pl) => (
-                              <option key={pl.id} value={pl.id}>{pl.title} ({pl._count?.items ?? pl.items?.length ?? 0} pistes)</option>
-                            ))}
-                          </select>
-                          {r.playlist && (
-                            <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-full">
-                              {r.playlist.title}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => deleteRadio(r.id)}
-                        disabled={actionLoading === `radio-${r.id}`}
                         className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition shrink-0"
                         title="Supprimer"
                       >

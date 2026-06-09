@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import ChatPopupWrapper from "@/components/layout/ChatPopupWrapper";
+import RadioPlayerWrapper from "@/components/radio/RadioPlayerWrapper";
 import HomeButton from "@/components/layout/HomeButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
           {/* Espace pour la nav mobile fixed */}
           <div className="h-20 lg:hidden" />
           <ChatPopupWrapper />
+          <RadioPlayerWrapper />
           <MobileBottomNav />
         </Providers>
       </body>

@@ -4,18 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Bell, Settings, ChevronDown, Wifi } from "lucide-react";
 
 export default function StudioHeader({ radio, isLive, elapsed }: { radio: any; isLive: boolean; elapsed: number }) {
-  const [listeners, setListeners] = useState(542);
+  const listeners = radio?.listenerCount ?? 0;
   const waveformRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setListeners((prev) => {
-        const delta = Math.floor(Math.random() * 7) - 3;
-        return Math.max(100, prev + delta);
-      });
-    }, 3000);
-    return () => clearInterval(iv);
-  }, []);
 
   const fmt = (n: number) => n.toString().padStart(2, "0");
   const h = Math.floor(elapsed / 3600);
@@ -52,7 +42,7 @@ export default function StudioHeader({ radio, isLive, elapsed }: { radio: any; i
         {/* Emission / Animateur */}
         <div className="hidden md:flex flex-col items-start">
           <span className="text-xs text-gray-300 font-medium">{radio?.title || "Émission en cours"}</span>
-          <span className="text-[10px] text-gray-500">{radio?.hostName || "Animateur : Pasteur Daniel"}</span>
+          <span className="text-[10px] text-gray-500">{radio?.user?.name ? `Animateur : ${radio.user.name}` : "Studio ChurchFace"}</span>
         </div>
       </div>
 
@@ -64,7 +54,7 @@ export default function StudioHeader({ radio, isLive, elapsed }: { radio: any; i
             <span className="text-[10px] text-gray-500 uppercase tracking-wider">Auditeurs en direct</span>
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-white leading-none">{listeners}</span>
-              <span className="text-[10px] text-emerald-400 font-medium">+12%</span>
+              {isLive && <span className="text-[10px] text-emerald-400 font-medium">live</span>}
             </div>
           </div>
           <WaveformBars active={isLive} />

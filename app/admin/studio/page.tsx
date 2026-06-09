@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import StudioHeader from "@/components/radio/studio/StudioHeader";
@@ -8,9 +8,10 @@ import StudioSidebar from "@/components/radio/studio/StudioSidebar";
 import StudioMain from "@/components/radio/studio/StudioMain";
 import StudioRightPanel from "@/components/radio/studio/StudioRightPanel";
 import StudioSchedulePanel from "@/components/radio/studio/StudioSchedulePanel";
+import StudioPlaylistsPanel from "@/components/radio/studio/StudioPlaylistsPanel";
 
 export default function StudioPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [radio, setRadio] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -19,45 +20,68 @@ export default function StudioPage() {
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!session || !["ADMIN", "SUPER_ADMIN", "RADIO_HOST"].includes(session.user?.role || "")) {
-      router.push("/");
-      return;
+  const refreshRadio = useCallback(async () => {
+    if (!radio?.id) return;
+    try {
+      const res = await fetch(`/api/radio/${radio.id}`, { cache: "no-store" });
+      const data = await res.json();
+      if (data.radio) {
+        setRadio(data.radio);
+        setIsLive(Boolean(data.radio.isLive));
+      }
+    } catch (e) {
+      console.error(e);
     }
-    fetchRadio();
-  }, [session, status, router]);
+  }, [radio?.id]);
 
   useEffect(() => {
-    if (isLive && !timerRef.current) {
-      timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
-    } else if (!isLive && timerRef.current) {
-      clearInterval(timerRef.current);
+    if (status === "loading") return;
+
+    async function init() {
+      try {
+        const accessRes = await fetch("/api/studio/me", { cache: "no-store" });
+        if (!accessRes.ok) {
+          router.replace("/");
+          return;
+        }
+
+        const res = await fetch("/api/studio/radio", { cache: "no-store" });
+        const data = await res.json();
+        if (data.radio) {
+          setRadio(data.radio);
+          setIsLive(Boolean(data.radio.isLive));
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    init();
+  }, [status, router]);
+
+  useEffect(() => {
+    if (!radio?.id) return;
+    const iv = setInterval(refreshRadio, 8000);
+    return () => clearInterval(iv);
+  }, [radio?.id, refreshRadio]);
+
+  useEffect(() => {
+    if (isLive && radio?.startedAt) {
+      const start = new Date(radio.startedAt).getTime();
+      const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+      tick();
+      timerRef.current = setInterval(tick, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = null;
       setElapsed(0);
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isLive]);
-
-  async function fetchRadio() {
-    try {
-      const res = await fetch("/api/radio");
-      const data = await res.json();
-      if (data.radios?.length > 0) {
-        setRadio(data.radios[0]);
-        setIsLive(data.radios[0].isLive || false);
-      } else {
-        const createRes = await fetch("/api/radio", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: "ChurchFace Radio", description: "Radio en direct de l'église" }),
-        });
-        const created = await createRes.json();
-        setRadio(created.radio);
-      }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isLive, radio?.startedAt]);
 
   if (loading) {
     return (
@@ -79,10 +103,19 @@ export default function StudioPage() {
               <StudioSchedulePanel radioId={radio?.id} />
             </div>
           </div>
+        ) : activeView === "playlists" ? (
+          <div className="flex-1 min-w-0 bg-[#0a0a0f] overflow-y-auto p-4">
+            <StudioPlaylistsPanel radio={radio} onRadioUpdate={setRadio} />
+          </div>
         ) : (
-          <StudioMain radio={radio} isLive={isLive} setIsLive={setIsLive} elapsed={elapsed} />
+          <StudioMain
+            radio={radio}
+            isLive={isLive}
+            setIsLive={setIsLive}
+            onRadioUpdate={setRadio}
+          />
         )}
-        <StudioRightPanel radioId={radio?.id} radio={radio} />
+        <StudioRightPanel radioId={radio?.id} radio={radio} onStatsUpdate={setRadio} />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSocketServer } from "@/lib/io";
 
 export const runtime = "nodejs";
 
@@ -50,10 +51,16 @@ export async function POST(
       data: {
         radioId,
         userId: userId || null,
-        name: (session?.user as any)?.name || "Anonyme",
+        name: (session?.user as { name?: string })?.name || "Anonyme",
         content,
       },
     });
+
+    const io = getSocketServer();
+    if (io) {
+      io.to(`radio:${radioId}`).emit("radio:chat", message);
+      io.to(`studio:${radioId}`).emit("radio:chat", message);
+    }
 
     return NextResponse.json({ message });
   } catch (error) {

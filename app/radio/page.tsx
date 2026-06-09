@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Headphones, Radio as RadioIcon, User, Clock } from "lucide-react";
+import { useRadioPlayer } from "@/contexts/RadioPlayerContext";
 
 interface Radio {
   id: string;
@@ -21,6 +21,7 @@ interface Radio {
 export default function RadioPage() {
   const [radios, setRadios] = useState<Radio[]>([]);
   const [loading, setLoading] = useState(true);
+  const { openRadio } = useRadioPlayer();
 
   useEffect(() => {
     fetch("/api/radio")
@@ -42,13 +43,11 @@ export default function RadioPage() {
           <Headphones className="text-emerald-600" />
           Radio Live
         </h1>
-        <Link
-          href="/radio/start"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition"
-        >
-          🎙️ Démarrer une radio
-        </Link>
       </div>
+
+      <p className="text-sm text-gray-500">
+        Cliquez sur une émission en direct pour l&apos;écouter dans le lecteur flottant.
+      </p>
 
       {/* LIVE NOW */}
       <section>
@@ -63,10 +62,11 @@ export default function RadioPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {liveRadios.map((radio) => (
-              <Link
+              <button
                 key={radio.id}
-                href={`/radio/${radio.id}`}
-                className="block bg-white rounded-2xl p-5 shadow-sm border hover:shadow-md transition group"
+                type="button"
+                onClick={() => openRadio(radio.id)}
+                className="text-left bg-white rounded-2xl p-5 shadow-sm border hover:shadow-md hover:border-emerald-300 transition group w-full"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -97,7 +97,7 @@ export default function RadioPage() {
                     {formatDuration(radio.startedAt)}
                   </span>
                 </div>
-              </Link>
+              </button>
             ))}
           </div>
         )}

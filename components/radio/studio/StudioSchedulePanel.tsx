@@ -8,12 +8,24 @@ interface StudioSchedulePanelProps {
 
 export default function StudioSchedulePanel({ radioId }: StudioSchedulePanelProps) {
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", hostName: "", startTime: "", duration: 60 });
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    hostName: "",
+    startTime: "",
+    duration: 60,
+    playlistId: "",
+  });
 
   useEffect(() => {
     if (!radioId) return;
     fetchSchedules();
+    fetch("/api/studio/playlists")
+      .then((r) => r.json())
+      .then((d) => setPlaylists(d.playlists || []))
+      .catch(console.error);
   }, [radioId]);
 
   async function fetchSchedules() {
@@ -38,7 +50,7 @@ export default function StudioSchedulePanel({ radioId }: StudioSchedulePanelProp
     if (data.schedule) {
       setSchedules((prev) => [...prev, data.schedule]);
       setShowForm(false);
-      setForm({ title: "", description: "", hostName: "", startTime: "", duration: 60 });
+      setForm({ title: "", description: "", hostName: "", startTime: "", duration: 60, playlistId: "" });
     }
   }
 
@@ -84,6 +96,16 @@ export default function StudioSchedulePanel({ radioId }: StudioSchedulePanelProp
             placeholder="Animateur"
             className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
           />
+          <select
+            value={form.playlistId}
+            onChange={(e) => setForm({ ...form, playlistId: e.target.value })}
+            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+          >
+            <option value="">— Playlist (optionnel) —</option>
+            {playlists.map((pl) => (
+              <option key={pl.id} value={pl.id}>{pl.title}</option>
+            ))}
+          </select>
           <div className="flex gap-2">
             <input
               type="datetime-local"
@@ -122,6 +144,7 @@ export default function StudioSchedulePanel({ radioId }: StudioSchedulePanelProp
                 {s.hostName && <span className="text-gray-400">{s.hostName} · </span>}
                 {new Date(s.startTime).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                 {s.duration && <span> · {s.duration}min</span>}
+                {s.playlist?.title && <span> · 🎵 {s.playlist.title}</span>}
               </div>
             </div>
             <button onClick={() => deleteSchedule(s.id)} className="text-gray-500 hover:text-red-400 text-xs">🗑</button>

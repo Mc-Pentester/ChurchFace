@@ -13,12 +13,23 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const all = searchParams.get("all") === "true";
 
+    const mine = searchParams.get("mine") === "true";
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
     const radios = await prisma.radio.findMany({
-      where: all ? undefined : { isLive: true },
+      where: mine && userId
+        ? { userId }
+        : all
+        ? undefined
+        : { isLive: true },
       orderBy: { startedAt: "desc" },
       include: {
         user: {
           select: { id: true, name: true, image: true },
+        },
+        playlist: {
+          include: { items: { orderBy: { order: "asc" } } },
         },
       },
     });
@@ -62,7 +73,7 @@ export async function POST(req: NextRequest) {
         title,
         description: description || null,
         userId,
-        isLive: true,
+        isLive: false,
       },
       include: {
         user: {

@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const admin = await requireAdmin();
 
-  if (!session?.user) {
-    return NextResponse.json({ isAdmin: false }, { status: 401 });
-  }
-
-  if (session.user.role !== "ADMIN") {
+  if (!admin) {
     return NextResponse.json({ isAdmin: false }, { status: 403 });
   }
 
-  return NextResponse.json({ isAdmin: true });
+  return NextResponse.json({ isAdmin: true, role: admin.role });
 }

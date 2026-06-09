@@ -1,9 +1,8 @@
 import { createServer } from "http";
 import next from "next";
 import { Server } from "socket.io";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "./lib/prisma";
+import { setSocketServer } from "./lib/io";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -34,6 +33,31 @@ app.prepare().then(async () => {
     cors: { origin: "*" },
     path: "/socket.io",
   });
+  setSocketServer(io);
+
+  async function updateListenerCount(radioId: string, delta: number) {
+    try {
+      const updated = await prisma.radio.update({
+        where: { id: radioId },
+        data: { listenerCount: { increment: delta } },
+      });
+      const peak = Math.max(updated.peakListeners, updated.listenerCount);
+      if (peak > updated.peakListeners) {
+        await prisma.radio.update({
+          where: { id: radioId },
+          data: { peakListeners: peak },
+        });
+      }
+      const stats = {
+        listenerCount: Math.max(0, updated.listenerCount),
+        peakListeners: peak,
+      };
+      io.to(`radio:${radioId}`).emit("radio:stats", stats);
+      io.to(`studio:${radioId}`).emit("radio:stats", stats);
+    } catch (err) {
+      console.error("Listener count update error:", err);
+    }
+  }
 
   io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id);
@@ -176,9 +200,31 @@ app.prepare().then(async () => {
     });
 
     // --- Radio WebRTC Signaling ---
+    socket.on("radio:broadcast-join", (radioId: string) => {
+      socket.join(`radio:${radioId}`);
+      socket.data.radioBroadcastId = radioId;
+      socket.data.isRadioBroadcaster = true;
+      console.log(`Socket ${socket.id} broadcasting radio ${radioId}`);
+    });
+
+    socket.on("radio:broadcast-leave", (radioId: string) => {
+      socket.leave(`radio:${radioId}`);
+      socket.data.radioBroadcastId = undefined;
+      socket.data.isRadioBroadcaster = false;
+      console.log(`Socket ${socket.id} stopped broadcasting radio ${radioId}`);
+    });
+
+    socket.on("radio:request-offer", (radioId: string) => {
+      io.to(`studio:${radioId}`).emit("radio:listener-joined", socket.id);
+    });
+
     socket.on("radio:join", (radioId: string) => {
       socket.join(`radio:${radioId}`);
-      socket.to(`radio:${radioId}`).emit("radio:listener-joined", socket.id);
+      socket.data.radioId = radioId;
+      if (!socket.data.isRadioBroadcaster) {
+        updateListenerCount(radioId, 1);
+      }
+      io.to(`studio:${radioId}`).emit("radio:listener-joined", socket.id);
       console.log(`Socket ${socket.id} joined radio ${radioId}`);
     });
 
@@ -224,6 +270,10 @@ app.prepare().then(async () => {
     socket.on("radio:leave", (radioId: string) => {
       socket.leave(`radio:${radioId}`);
       socket.to(`radio:${radioId}`).emit("radio:listener-left", socket.id);
+      if (!socket.data.isRadioBroadcaster) {
+        updateListenerCount(radioId, -1);
+      }
+      if (socket.data.radioId === radioId) socket.data.radioId = undefined;
     });
 
     // --- Studio Radio Real-time ---
@@ -260,6 +310,10 @@ app.prepare().then(async () => {
     });
 
     socket.on("disconnect", () => {
+      const radioId = socket.data.radioId as string | undefined;
+      if (radioId && !socket.data.isRadioBroadcaster) {
+        updateListenerCount(radioId, -1);
+      }
       console.log("Socket disconnected:", socket.id);
     });
   });

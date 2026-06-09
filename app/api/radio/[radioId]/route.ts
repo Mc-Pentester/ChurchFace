@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canManageRadio } from "@/lib/auth";
+import { getSocketServer } from "@/lib/io";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,9 @@ export async function GET(
       include: {
         user: {
           select: { id: true, name: true, image: true },
+        },
+        playlist: {
+          include: { items: { orderBy: { order: "asc" } } },
         },
       },
     });
@@ -69,6 +73,10 @@ export async function PATCH(
       );
     }
 
+    const io = getSocketServer();
+    io?.to(`radio:${radioId}`).emit("radio:status", { isLive: false });
+    io?.to(`studio:${radioId}`).emit("radio:status", { isLive: false });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("END RADIO ERROR:", error);
@@ -94,27 +102,51 @@ export async function PUT(
     }
 
     const { radioId } = await params;
+
+    const allowed = await canManageRadio(radioId, userId);
+    if (!allowed) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
+
     const body = await req.json();
+
+    const data: Record<string, unknown> = {};
+    if (body.title !== undefined) data.title = body.title;
+    if (body.description !== undefined) data.description = body.description;
+    if (body.isLive !== undefined) data.isLive = body.isLive;
+    if (body.isAutoDJ !== undefined) data.isAutoDJ = body.isAutoDJ;
+    if (body.streamUrl !== undefined) data.streamUrl = body.streamUrl;
+    if (body.currentTrackId !== undefined) data.currentTrackId = body.currentTrackId;
+    if (body.playlistId !== undefined) data.playlistId = body.playlistId;
+
+    if (body.isLive === true && !body.startedAt) {
+      data.startedAt = new Date();
+      data.endedAt = null;
+    }
+    if (body.isLive === false) {
+      data.endedAt = body.endedAt ? new Date(body.endedAt) : new Date();
+    }
+    if (body.startedAt !== undefined) {
+      data.startedAt = body.startedAt ? new Date(body.startedAt) : undefined;
+    }
+    if (body.endedAt !== undefined) {
+      data.endedAt = body.endedAt ? new Date(body.endedAt) : null;
+    }
 
     const updated = await prisma.radio.update({
       where: { id: radioId },
-      data: {
-        ...(body.title !== undefined && { title: body.title }),
-        ...(body.description !== undefined && { description: body.description }),
-        ...(body.isLive !== undefined && { isLive: body.isLive }),
-        ...(body.isAutoDJ !== undefined && { isAutoDJ: body.isAutoDJ }),
-        ...(body.endedAt !== undefined && { endedAt: body.endedAt ? new Date(body.endedAt) : null }),
-        ...(body.startedAt !== undefined && { startedAt: body.startedAt ? new Date(body.startedAt) : undefined }),
-        ...(body.streamUrl !== undefined && { streamUrl: body.streamUrl }),
-        ...(body.currentTrackId !== undefined && { currentTrackId: body.currentTrackId }),
-        ...(body.listenerCount !== undefined && { listenerCount: body.listenerCount }),
-        ...(body.peakListeners !== undefined && { peakListeners: body.peakListeners }),
-      },
+      data,
       include: {
         user: { select: { id: true, name: true, image: true } },
         playlist: { include: { items: { orderBy: { order: "asc" } } } },
       },
     });
+
+    if (body.isLive !== undefined) {
+      const io = getSocketServer();
+      io?.to(`radio:${radioId}`).emit("radio:status", { isLive: updated.isLive });
+      io?.to(`studio:${radioId}`).emit("radio:status", { isLive: updated.isLive });
+    }
 
     return NextResponse.json({ radio: updated });
   } catch (error) {

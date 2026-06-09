@@ -1,11 +1,23 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRadioBroadcast } from "@/hooks/useRadioBroadcast";
+import { UploadButton } from "@/lib/uploadthing";
 import {
-  Play, Pause, Square, SkipForward, SkipBack, Plus, Search, Mic, Music, Bell, Volume2, VolumeX, MonitorUp, Signal, Radio, StopCircle
+  Play, Pause, Square, Plus, Search, Mic, Music, Bell, Volume2, MonitorUp, Signal, Radio, StopCircle, Link2, Upload
 } from "lucide-react";
 
 /* ─── Helpers ─── */
+function probeDuration(url: string): Promise<number> {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => resolve(Math.floor(audio.duration) || 0);
+    audio.onerror = () => resolve(0);
+    audio.src = url;
+  });
+}
+
 function fmtDuration(seconds?: number) {
   if (!seconds) return "--:--";
   const m = Math.floor(seconds / 60).toString().padStart(2, "0");
@@ -111,19 +123,30 @@ function playBell() {
 }
 
 /* ─── Main Component ─── */
-export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radio: any; isLive: boolean; setIsLive: (v: boolean) => void; elapsed: number }) {
+export default function StudioMain({
+  radio,
+  isLive,
+  setIsLive,
+  onRadioUpdate,
+}: {
+  radio: any;
+  isLive: boolean;
+  setIsLive: (v: boolean) => void;
+  onRadioUpdate?: (radio: any) => void;
+}) {
   /* ── Audio / Playback State ── */
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [trackElapsed, setTrackElapsed] = useState(0);
-  const [autoDj, setAutoDj] = useState(false);
+  const [autoDj, setAutoDj] = useState(Boolean(radio?.isAutoDJ));
   const [isRecording, setIsRecording] = useState(false);
   const [recElapsed, setRecElapsed] = useState(0);
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [activePlaylist, setActivePlaylist] = useState<any>(null);
   const [plLoading, setPlLoading] = useState(true);
-  const trackTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [tracks, setTracks] = useState<any[]>([]);
 
   /* ── Mixer State ── */
   const [channels, setChannels] = useState<ChannelData[]>([
@@ -138,23 +161,92 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
   /* ── Library State ── */
   const [libTab, setLibTab] = useState("music");
   const [search, setSearch] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addTitle, setAddTitle] = useState("");
+  const [addUrl, setAddUrl] = useState("");
+  const [addingTrack, setAddingTrack] = useState(false);
+  const [playlistMsg, setPlaylistMsg] = useState<string | null>(null);
 
-  /* ── Fetch playlists ── */
+  const refreshTracks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/studio/tracks");
+      const data = await res.json();
+      setTracks(data.tracks || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
-    async function fetchPlaylists() {
+    if (radio) setAutoDj(Boolean(radio.isAutoDJ));
+  }, [radio?.isAutoDJ]);
+
+  /* ── Fetch playlists + bibliothèque ── */
+  useEffect(() => {
+    async function fetchData() {
       try {
-        const res = await fetch("/api/admin/playlists");
-        const data = await res.json();
-        const pls = data.playlists || [];
+        const [plRes, trRes] = await Promise.all([
+          fetch("/api/studio/playlists"),
+          fetch("/api/studio/tracks"),
+        ]);
+        const plData = await plRes.json();
+        const trData = await trRes.json();
+        const pls = plData.playlists || [];
         setPlaylists(pls);
-        if (pls.length > 0 && !activePlaylist) {
+        setTracks(trData.tracks || []);
+
+        const assigned = radio?.playlistId
+          ? pls.find((p: any) => p.id === radio.playlistId)
+          : radio?.playlist;
+        if (assigned) {
+          setActivePlaylist(assigned);
+        } else if (radio?.playlist) {
+          setActivePlaylist(radio.playlist);
+        } else if (pls.length > 0) {
           setActivePlaylist(pls[0]);
         }
-      } catch (e) { console.error("Playlist fetch error:", e); }
-      finally { setPlLoading(false); }
+      } catch (e) {
+        console.error("Studio data fetch error:", e);
+      } finally {
+        setPlLoading(false);
+      }
     }
-    fetchPlaylists();
-  }, []);
+    fetchData();
+  }, [radio?.id, radio?.playlistId]);
+
+  const activePlaylistItems = activePlaylist?.items || [];
+
+  const micChannel = channels.find((c) => c.id === "mic1");
+  const musicChannel = channels.find((c) => c.id === "music");
+  const { status: broadcastStatus, peerCount, error: broadcastError } = useRadioBroadcast({
+    radioId: radio?.id,
+    isLive,
+    audioRef,
+    micVolume: micChannel?.volume ?? 75,
+    micMuted: micChannel?.muted ?? false,
+    musicVolume: musicChannel?.volume ?? 70,
+    musicMuted: musicChannel?.muted ?? false,
+  });
+
+  /* ── Lecture audio réelle ── */
+  useEffect(() => {
+    const audio = audioRef.current;
+    const items = activePlaylist?.items || [];
+    const track = items[currentTrackIndex];
+    if (!audio || !track?.url) return;
+
+    audio.src = track.url;
+    if (isPlaying) {
+      audio.play().catch(console.error);
+    }
+  }, [currentTrackIndex, activePlaylist?.id, isPlaying]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) audio.play().catch(console.error);
+    else audio.pause();
+  }, [isPlaying]);
 
   /* ── Animate VU meters ── */
   useEffect(() => {
@@ -167,50 +259,42 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
     return () => clearInterval(iv);
   }, []);
 
-  const activePlaylistItems = activePlaylist?.items || [];
   const currentTrack = activePlaylistItems[currentTrackIndex] || null;
   const currentDuration = currentTrack?.duration || 0;
 
-  // Build library from all playlist items
-  const allItems = playlists.flatMap((pl) =>
+  const categoryMap: Record<string, string> = {
+    GENERAL: "music",
+    MUSIC: "music",
+    PREACHING: "preaching",
+    JINGLE: "jingles",
+    PODCAST: "podcasts",
+  };
+
+  const trackItems = tracks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    artist: t.artist || "Bibliothèque",
+    duration: t.duration,
+    url: t.url,
+    category: categoryMap[t.category] || categoryMap[t.type] || "music",
+  }));
+
+  const playlistLibItems = playlists.flatMap((pl) =>
     (pl.items || []).map((it: any) => ({
       id: it.id,
       title: it.title,
       artist: pl.title,
       duration: it.duration,
-      category: it.type?.toLowerCase() === "audio" ? "music" : it.type?.toLowerCase() === "video" ? "preaching" : "music",
+      url: it.url,
+      category: it.type === "VIDEO" ? "preaching" : "music",
     }))
   );
+
+  const allItems = [...trackItems, ...playlistLibItems];
   const activeLibItems = allItems.filter((i) =>
     (libTab === "music" ? ["music", "jingles", "podcasts"] : [libTab]).includes(i.category) &&
     (search === "" || i.title.toLowerCase().includes(search.toLowerCase()))
   );
-
-  /* ── Track progression timer ── */
-  useEffect(() => {
-    if (isPlaying) {
-      trackTimerRef.current = setInterval(() => {
-        setTrackElapsed((prev) => {
-          const items = activePlaylist?.items || [];
-          const current = items[currentTrackIndex];
-          const dur = current?.duration || 300;
-          if (prev + 1 >= dur) {
-            if (autoDj) {
-              setCurrentTrackIndex((idx) => (idx + 1) % Math.max(1, items.length));
-              return 0;
-            } else {
-              setIsPlaying(false);
-              return 0;
-            }
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } else {
-      if (trackTimerRef.current) clearInterval(trackTimerRef.current);
-    }
-    return () => { if (trackTimerRef.current) clearInterval(trackTimerRef.current); };
-  }, [isPlaying, currentTrackIndex, autoDj, activePlaylist]);
 
   /* ── Recording timer ── */
   useEffect(() => {
@@ -239,19 +323,133 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
     setChannels((prev) => prev.map((ch) => (ch.id === id ? { ...ch, ...updates } : ch)));
   }
 
+  async function persistPlaylist(items: any[]): Promise<boolean> {
+    if (!activePlaylist?.id) {
+      setPlaylistMsg("Aucune playlist active — créez-en une dans l'onglet Playlists.");
+      return false;
+    }
+
+    const payload = items.map((it: any) => ({
+      title: it.title || "Sans titre",
+      url: it.url,
+      type: it.type === "VIDEO" ? "VIDEO" : "AUDIO",
+      duration: it.duration ?? null,
+    }));
+
+    if (payload.some((it) => !it.url)) {
+      setPlaylistMsg("Chaque piste doit avoir une URL valide.");
+      return false;
+    }
+
+    try {
+      const res = await fetch("/api/studio/playlists", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: activePlaylist.id, items: payload }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPlaylistMsg(data.error || "Erreur lors de la sauvegarde.");
+        return false;
+      }
+      if (data.playlist) {
+        setActivePlaylist(data.playlist);
+        setPlaylists((prev) =>
+          prev.map((p) => (p.id === data.playlist.id ? data.playlist : p))
+        );
+        setPlaylistMsg(null);
+      }
+      return true;
+    } catch (e) {
+      console.error("Persist playlist error:", e);
+      setPlaylistMsg("Erreur réseau lors de la sauvegarde.");
+      return false;
+    }
+  }
+
+  async function saveToLibrary(item: {
+    title: string;
+    url: string;
+    duration?: number;
+    category?: string;
+  }) {
+    const res = await fetch("/api/studio/tracks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: item.title,
+        url: item.url,
+        duration: item.duration ?? 0,
+        category: item.category || "GENERAL",
+        type: "MUSIC",
+      }),
+    });
+    if (res.ok) await refreshTracks();
+  }
+
   /* ── Live toggle ── */
   async function toggleLive() {
     if (!radio?.id) return;
     try {
       const next = !isLive;
-      await fetch(`/api/radio/${radio.id}`, {
+      const res = await fetch(`/api/radio/${radio.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isLive: next, title: radio.title, description: radio.description }),
+        body: JSON.stringify({
+          isLive: next,
+          isAutoDJ: autoDj,
+          title: radio.title,
+          description: radio.description,
+          currentTrackId: currentTrack?.id || null,
+          ...(next ? { startedAt: new Date().toISOString(), endedAt: null } : { endedAt: new Date().toISOString() }),
+        }),
       });
-      setIsLive(next);
-      if (next && !isPlaying) { setIsPlaying(true); setTrackElapsed(0); }
-    } catch (e) { console.error("Toggle live error:", e); }
+      const data = await res.json();
+      if (data.radio) {
+        onRadioUpdate?.(data.radio);
+        setIsLive(next);
+      }
+      if (next && !isPlaying && activePlaylistItems.length > 0) {
+        setIsPlaying(true);
+        setTrackElapsed(0);
+      }
+    } catch (e) {
+      console.error("Toggle live error:", e);
+    }
+  }
+
+  async function syncCurrentTrack(trackId: string | null) {
+    if (!radio?.id) return;
+    try {
+      const res = await fetch(`/api/radio/${radio.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentTrackId: trackId }),
+      });
+      const data = await res.json();
+      if (data.radio) onRadioUpdate?.(data.radio);
+    } catch (e) {
+      console.error("Sync track error:", e);
+    }
+  }
+
+  async function switchPlaylist(pl: any) {
+    setActivePlaylist(pl);
+    setCurrentTrackIndex(0);
+    setTrackElapsed(0);
+    if (radio?.id) {
+      try {
+        const res = await fetch("/api/studio/radio", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: radio.id, playlistId: pl.id }),
+        });
+        const data = await res.json();
+        if (data.radio) onRadioUpdate?.(data.radio);
+      } catch (e) {
+        console.error("Assign playlist error:", e);
+      }
+    }
   }
 
   /* ── Playlist controls ── */
@@ -259,6 +457,8 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
     setCurrentTrackIndex(index);
     setTrackElapsed(0);
     setIsPlaying(true);
+    const track = activePlaylistItems[index];
+    if (track?.id) syncCurrentTrack(track.id);
   }
 
   function moveTrack(index: number, dir: -1 | 1) {
@@ -267,29 +467,141 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
     const newIdx = index + dir;
     if (newIdx < 0 || newIdx >= items.length) return;
     [items[index], items[newIdx]] = [items[newIdx], items[index]];
-    setActivePlaylist({ ...activePlaylist, items });
+    const updated = { ...activePlaylist, items };
+    setActivePlaylist(updated);
+    persistPlaylist(items);
   }
 
   function removeTrack(index: number) {
     if (!activePlaylist) return;
     const items = activePlaylistItems.filter((_: any, i: number) => i !== index);
     setActivePlaylist({ ...activePlaylist, items });
-    if (index === currentTrackIndex) { setTrackElapsed(0); setIsPlaying(false); }
-    else if (index < currentTrackIndex) setCurrentTrackIndex((i) => Math.max(0, i - 1));
+    persistPlaylist(items);
+    if (index === currentTrackIndex) {
+      setTrackElapsed(0);
+      setIsPlaying(false);
+    } else if (index < currentTrackIndex) {
+      setCurrentTrackIndex((i) => Math.max(0, i - 1));
+    }
   }
 
-  function addToPlaylist(item: any) {
-    if (!activePlaylist) return;
-    const newItem = { ...item, id: `${item.id}_${Date.now()}` };
-    setActivePlaylist({ ...activePlaylist, items: [...activePlaylistItems, newItem] });
+  async function addToPlaylist(item: {
+    title: string;
+    url: string;
+    type?: string;
+    duration?: number;
+    saveToLib?: boolean;
+  }) {
+    if (!item.url?.trim()) {
+      setPlaylistMsg("URL de la piste manquante.");
+      return false;
+    }
+    if (!activePlaylist?.id) {
+      setPlaylistMsg("Aucune playlist active.");
+      return false;
+    }
+
+    const newItem = {
+      title: item.title?.trim() || "Sans titre",
+      url: item.url.trim(),
+      type: item.type || "AUDIO",
+      duration: item.duration,
+    };
+
+    try {
+      const res = await fetch(`/api/studio/playlists/${activePlaylist.id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPlaylistMsg(data.error || "Impossible d'ajouter la piste.");
+        return false;
+      }
+
+      if (data.playlist) {
+        setActivePlaylist(data.playlist);
+        setPlaylists((prev) =>
+          prev.map((p) => (p.id === data.playlist.id ? data.playlist : p))
+        );
+      }
+
+      if (item.saveToLib !== false) {
+        await saveToLibrary(newItem);
+      }
+
+      setPlaylistMsg(`« ${newItem.title} » ajouté à la playlist.`);
+      setTimeout(() => setPlaylistMsg(null), 3000);
+      return true;
+    } catch (e) {
+      console.error("Add to playlist error:", e);
+      setPlaylistMsg("Erreur réseau.");
+      return false;
+    }
   }
 
-  function addToQueue(item: any) {
-    addToPlaylist(item);
+  async function handleAddByUrl(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addTitle.trim() || !addUrl.trim()) {
+      setPlaylistMsg("Titre et URL requis.");
+      return;
+    }
+    setAddingTrack(true);
+    try {
+      const duration = await probeDuration(addUrl.trim());
+      const ok = await addToPlaylist({
+        title: addTitle.trim(),
+        url: addUrl.trim(),
+        duration,
+      });
+      if (ok) {
+        setAddTitle("");
+        setAddUrl("");
+        setShowAddForm(false);
+      }
+    } finally {
+      setAddingTrack(false);
+    }
+  }
+
+  async function handleAudioUpload(res: { url?: string; ufsUrl?: string; name?: string }[]) {
+    const file = res?.[0];
+    const url = file?.url || (file as any)?.ufsUrl;
+    if (!url) {
+      setPlaylistMsg("Upload échoué — URL introuvable.");
+      return;
+    }
+    setAddingTrack(true);
+    try {
+      const title = file?.name?.replace(/\.[^.]+$/, "") || "Piste audio";
+      const duration = await probeDuration(url);
+      await addToPlaylist({ title, url, duration });
+    } finally {
+      setAddingTrack(false);
+    }
   }
 
   return (
     <main className="flex-1 min-w-0 bg-[#0a0a0f] overflow-y-auto">
+      <audio
+        ref={audioRef}
+        preload="metadata"
+        onTimeUpdate={() => setTrackElapsed(Math.floor(audioRef.current?.currentTime || 0))}
+        onEnded={() => {
+          if (autoDj && activePlaylistItems.length > 0) {
+            const next = (currentTrackIndex + 1) % activePlaylistItems.length;
+            setCurrentTrackIndex(next);
+            setTrackElapsed(0);
+            const track = activePlaylistItems[next];
+            if (track?.id) syncCurrentTrack(track.id);
+          } else {
+            setIsPlaying(false);
+          }
+        }}
+        className="hidden"
+      />
       <div className="p-4 space-y-4">
         {/* ── Top Row: Diffusion + Statut ── */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -342,7 +654,19 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
                   <Radio size={10} /> {isLive ? "OFF AIR" : "ON AIR"}
                 </button>
                 <button
-                  onClick={() => setAutoDj(!autoDj)}
+                  onClick={async () => {
+                    const next = !autoDj;
+                    setAutoDj(next);
+                    if (radio?.id) {
+                      const res = await fetch(`/api/radio/${radio.id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ isAutoDJ: next }),
+                      });
+                      const data = await res.json();
+                      if (data.radio) onRadioUpdate?.(data.radio);
+                    }
+                  }}
                   className={`flex items-center justify-center gap-1 text-[10px] px-2 py-1 rounded transition ${autoDj ? "bg-violet-600/30 text-violet-300 border border-violet-600/30" : "text-gray-400 bg-[#1e1e2d] hover:bg-[#252535]"}`}
                 >
                   <MonitorUp size={10} /> AutoDJ {autoDj ? "ON" : "OFF"}
@@ -368,9 +692,43 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
                 <span className="text-xs text-gray-300">Live Studio</span>
               </div>
               <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">WebRTC</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                  broadcastStatus === "live"
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : broadcastStatus === "connecting"
+                      ? "bg-yellow-500/20 text-yellow-400"
+                      : broadcastStatus === "error"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-gray-700 text-gray-400"
+                }`}>
+                  {broadcastStatus === "live"
+                    ? `ACTIF · ${peerCount} flux`
+                    : broadcastStatus === "connecting"
+                      ? "CONNEXION..."
+                      : broadcastStatus === "error"
+                        ? "ERREUR"
+                        : "INACTIF"}
+                </span>
+              </div>
+              {broadcastError && (
+                <p className="text-[10px] text-red-400">{broadcastError}</p>
+              )}
+              <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Audio</span>
                 <span className="text-xs text-gray-300">128 kbps <Signal size={10} className="inline text-emerald-400" /></span>
               </div>
+              {isLive && radio?.id && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">Page d&apos;écoute</span>
+                  <a
+                    href={`/radio/${radio.id}`}
+                    className="text-[10px] text-violet-400 hover:text-violet-300 underline"
+                  >
+                    Ouvrir le lecteur flottant
+                  </a>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Diffusion sur</span>
                 <div className="flex gap-1.5">
@@ -399,24 +757,100 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* Playlist en cours */}
           <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div className="min-w-0 flex-1">
                 <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Playlist en cours</h3>
+                <select
+                  value={activePlaylist?.id || ""}
+                  onChange={(e) => {
+                    const pl = playlists.find((p) => p.id === e.target.value);
+                    if (pl) switchPlaylist(pl);
+                  }}
+                  className="mt-1 w-full bg-[#1e1e2d] border border-[#252535] rounded-lg px-2 py-1 text-xs text-white"
+                >
+                  {playlists.map((pl) => (
+                    <option key={pl.id} value={pl.id}>{pl.title}</option>
+                  ))}
+                </select>
                 <p className="text-[10px] text-gray-600 mt-0.5">{activePlaylistItems.length} titres · {fmtDuration(activePlaylistItems.reduce((a: number, b: any) => a + (b.duration || 0), 0))}</p>
               </div>
-              <button className="flex items-center gap-1 text-[10px] text-white bg-violet-600 hover:bg-violet-500 px-2.5 py-1.5 rounded-lg transition">
+              <button
+                type="button"
+                onClick={() => setShowAddForm((v) => !v)}
+                className="flex items-center gap-1 text-[10px] text-white bg-violet-600 hover:bg-violet-500 px-2.5 py-1.5 rounded-lg transition shrink-0"
+              >
                 <Plus size={12} /> Ajouter
               </button>
             </div>
+
+            {playlistMsg && (
+              <p className={`text-[10px] mb-2 ${playlistMsg.includes("ajouté") ? "text-emerald-400" : "text-red-400"}`}>
+                {playlistMsg}
+              </p>
+            )}
+
+            {showAddForm && (
+              <form onSubmit={handleAddByUrl} className="mb-3 p-2 rounded-lg bg-[#1e1e2d] border border-[#252535] space-y-2">
+                <input
+                  value={addTitle}
+                  onChange={(e) => setAddTitle(e.target.value)}
+                  placeholder="Titre de la piste"
+                  className="w-full bg-[#16161f] border border-[#252535] rounded px-2 py-1.5 text-xs text-white"
+                />
+                <input
+                  value={addUrl}
+                  onChange={(e) => setAddUrl(e.target.value)}
+                  placeholder="URL audio (mp3, wav, lien UploadThing...)"
+                  className="w-full bg-[#16161f] border border-[#252535] rounded px-2 py-1.5 text-xs text-white"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={addingTrack}
+                    className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded disabled:opacity-50"
+                  >
+                    <Link2 size={10} /> {addingTrack ? "Ajout..." : "Ajouter à la playlist"}
+                  </button>
+                  <div className="ut-studio-upload">
+                    <UploadButton
+                      endpoint="audioUploader"
+                      onClientUploadComplete={handleAudioUpload}
+                      onUploadError={(err) => setPlaylistMsg(err.message)}
+                      appearance={{
+                        button: "text-[10px] bg-violet-600 hover:bg-violet-500 px-2 py-1.5 rounded ut-ready:bg-violet-600",
+                        allowedContent: "hidden",
+                      }}
+                      content={{
+                        button: ({ ready }) => (
+                          <span className="flex items-center gap-1">
+                            <Upload size={10} /> {ready ? "Importer" : "..."}
+                          </span>
+                        ),
+                      }}
+                    />
+                  </div>
+                </div>
+              </form>
+            )}
+
             {plLoading ? (
               <div className="text-center text-gray-600 text-xs py-4">Chargement...</div>
             ) : (
               <>
                 <div className="space-y-1">
+                  {activePlaylistItems.length === 0 && (
+                    <div className="text-center text-gray-500 text-xs py-6 border border-dashed border-[#252535] rounded-lg">
+                      Playlist vide — cliquez « Ajouter » pour importer ou coller une URL audio.
+                    </div>
+                  )}
                   {activePlaylistItems.map((track: any, idx: number) =>(
-                    <div key={track.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs ${idx === 0 ? "bg-violet-600/10 border border-violet-600/30" : "hover:bg-[#1e1e2d]"}`}>
+                    <div
+                      key={track.id || idx}
+                      onClick={() => playTrack(idx)}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer ${idx === currentTrackIndex ? "bg-violet-600/10 border border-violet-600/30" : "hover:bg-[#1e1e2d]"}`}
+                    >
                       <span className="text-[10px] text-gray-500 w-4 text-center">{idx + 1}</span>
-                      {idx === 0 ? (
+                      {idx === currentTrackIndex ? (
                         <div className="flex gap-[2px] h-3 items-end">
                           {[40, 60, 30, 70, 50].map((h, i) => (
                             <div key={i} className="w-[2px] bg-emerald-400 rounded-full animate-pulse" style={{ height: `${h}%`, animationDelay: `${i * 100}ms` }} />
@@ -426,17 +860,17 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
                         <span className="text-gray-500">♪</span>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className={`truncate ${idx === 0 ? "text-white font-medium" : "text-gray-300"}`}>{track.title}</div>
+                        <div className={`truncate ${idx === currentTrackIndex ? "text-white font-medium" : "text-gray-300"}`}>{track.title}</div>
                         <div className="text-[10px] text-gray-500 truncate">{activePlaylist?.title || "-"}</div>
                       </div>
                       <span className="text-[10px] text-gray-500 shrink-0">{fmtDuration(track.duration)}</span>
-                      {idx === 0 && <span className="text-[9px] bg-emerald-600/20 text-emerald-400 px-1.5 py-0.5 rounded font-medium shrink-0">EN COURS</span>}
+                      {idx === currentTrackIndex && <span className="text-[9px] bg-emerald-600/20 text-emerald-400 px-1.5 py-0.5 rounded font-medium shrink-0">EN COURS</span>}
                       <button className="text-gray-500 hover:text-white shrink-0">⋮</button>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <button onClick={() => playTrack(0)} className="flex-1 text-[10px] bg-[#1e1e2d] hover:bg-[#252535] text-emerald-400 py-1.5 rounded transition flex items-center justify-center gap-1">
+                  <button onClick={() => playTrack(currentTrackIndex)} className="flex-1 text-[10px] bg-[#1e1e2d] hover:bg-[#252535] text-emerald-400 py-1.5 rounded transition flex items-center justify-center gap-1">
                     <Play size={10} /> Lire maintenant
                   </button>
                   <button className="flex-1 text-[10px] bg-[#1e1e2d] hover:bg-[#252535] text-gray-400 py-1.5 rounded transition">+ Ajouter à la suite</button>
@@ -450,8 +884,24 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
 
           {/* Bibliothèque */}
           <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2">
               <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bibliothèque</h3>
+              <UploadButton
+                endpoint="audioUploader"
+                onClientUploadComplete={handleAudioUpload}
+                onUploadError={(err) => setPlaylistMsg(err.message)}
+                appearance={{
+                  button: "text-[10px] bg-violet-600/80 hover:bg-violet-500 px-2 py-1 rounded",
+                  allowedContent: "hidden",
+                }}
+                content={{
+                  button: ({ ready }) => (
+                    <span className="flex items-center gap-1 text-white">
+                      <Upload size={10} /> {ready ? "Importer audio" : "..."}
+                    </span>
+                  ),
+                }}
+              />
             </div>
             <div className="flex gap-1 mb-3">
               {["music", "preaching", "jingles", "podcasts", "shows"].map((tab) => (
@@ -474,7 +924,12 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
               />
             </div>
             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-              {activeLibItems.length === 0 && <div className="text-center text-gray-600 text-xs py-4">Aucun résultat</div>}
+              {activeLibItems.length === 0 && (
+                <div className="text-center text-gray-500 text-xs py-4 space-y-1">
+                  <p>Aucune piste dans la bibliothèque.</p>
+                  <p className="text-gray-600">Importez un fichier audio ou ajoutez une URL dans la playlist.</p>
+                </div>
+              )}
               {activeLibItems.slice(0, 20).map((item) => (
                 <div key={item.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#1e1e2d] transition text-xs">
                   <div className="w-6 h-6 rounded bg-gray-800 flex items-center justify-center text-gray-500">
@@ -485,7 +940,14 @@ export default function StudioMain({ radio, isLive, setIsLive, elapsed }: { radi
                     <div className="text-[10px] text-gray-500">{item.artist}</div>
                   </div>
                   <span className="text-[10px] text-gray-500">{fmtDuration(item.duration)}</span>
-                  <button onClick={() => addToPlaylist(item)} className="text-gray-500 hover:text-emerald-400 transition">+</button>
+                  <button
+                    type="button"
+                    onClick={() => addToPlaylist({ title: item.title, url: item.url, duration: item.duration, saveToLib: false })}
+                    className="text-gray-500 hover:text-emerald-400 transition px-1"
+                    title="Ajouter à la playlist"
+                  >
+                    +
+                  </button>
                 </div>
               ))}
             </div>

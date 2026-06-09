@@ -55,13 +55,20 @@ export const authOptions: NextAuthOptions = {
      * 🔥 JWT (FAST + SAFE)
      */
     async jwt({ token, user }) {
+      const ROLE_REFRESH_MS = 5 * 60 * 1000;
+
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.roleCheckedAt = Date.now();
+        return token;
       }
 
-      // 🔄 Recharge le rôle depuis la base pour éviter JWT obsolète
-      if (token.id) {
+      const lastCheck = (token.roleCheckedAt as number) || 0;
+      const shouldRefresh =
+        token.id && Date.now() - lastCheck > ROLE_REFRESH_MS;
+
+      if (shouldRefresh) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { role: true },
@@ -69,6 +76,7 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.role = dbUser.role;
         }
+        token.roleCheckedAt = Date.now();
       }
 
       return token;
@@ -94,17 +102,71 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
+const STUDIO_ROLES = ["ADMIN", "SUPER_ADMIN", "RADIO_HOST"];
+
 /**
- * 🔐 ADMIN GUARD PROPRE
+ * Accès studio radio (ADMIN, SUPER_ADMIN, RADIO_HOST) — lu depuis Prisma.
+ */
+export async function requireStudioAccess() {
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as { id?: string })?.id;
+  if (!userId) return null;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, image: true, role: true },
+  });
+
+  if (!dbUser || !STUDIO_ROLES.includes(dbUser.role)) return null;
+
+  return {
+    ...session!.user,
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    image: dbUser.image,
+    role: dbUser.role,
+  };
+}
+
+export async function canManageRadio(radioId: string, userId: string) {
+  const radio = await prisma.radio.findUnique({
+    where: { id: radioId },
+    select: { userId: true },
+  });
+  if (!radio) return false;
+  if (radio.userId === userId) return true;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  return user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+}
+
+/**
+ * Vérifie le rôle admin directement en base (source de vérité Prisma Studio).
  */
 export async function requireAdmin() {
   const session = await getServerSession(authOptions);
+  const userId = (session?.user as { id?: string })?.id;
 
-  if (!session?.user) return null;
+  if (!userId) return null;
 
-  const role = (session.user as any).role;
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, image: true, role: true },
+  });
 
-  if (role !== "ADMIN") return null;
+  if (!dbUser || dbUser.role !== "ADMIN") return null;
 
-  return session.user;
+  return {
+    ...session!.user,
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    image: dbUser.image,
+    role: dbUser.role,
+  };
 }

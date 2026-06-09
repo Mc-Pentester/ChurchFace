@@ -28,8 +28,27 @@ export const ourFileRouter = {
 
       return {
         url: file.url,
-        type: file.type,       // ex: "image/png" ou "video/mp4"
+        type: file.type,
       };
+    }),
+
+  audioUploader: f({
+    audio: {
+      maxFileSize: "32MB",
+      maxFileCount: 1,
+    },
+  })
+    .middleware(async () => {
+      const session = await getServerSession(authOptions);
+      const userId = (session?.user as any)?.id;
+      if (!userId) {
+        throw new Error("Non autorisé");
+      }
+      return { userId };
+    })
+    .onUploadComplete(async ({ file }) => {
+      console.log("AUDIO UPLOAD:", file.url, file.type);
+      return { url: file.url, type: file.type, name: file.name };
     }),
 } satisfies FileRouter;
 

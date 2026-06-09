@@ -6,24 +6,15 @@ import { socket } from "@/lib/socket";
 
 interface ChatMsg { id: string; name: string; content: string; createdAt: string; isPinned?: boolean; }
 
-const DEMO_MSGS: ChatMsg[] = [
-  { id: "1", name: "Marie", content: "Amen 🙏", createdAt: new Date(Date.now() - 300000).toISOString() },
-  { id: "2", name: "Jean-Baptiste", content: "Très belle émission ! Que Dieu vous bénisse.", createdAt: new Date(Date.now() - 240000).toISOString() },
-  { id: "3", name: "Pauline", content: "Prière pour moi s'il vous plaît", createdAt: new Date(Date.now() - 180000).toISOString() },
-  { id: "4", name: "Samuel", content: "Gloire à Dieu ! Alléluia 🙌", createdAt: new Date(Date.now() - 120000).toISOString() },
-  { id: "5", name: "Sophie", content: "Je vous écoute depuis la Martinique 🇲🇶", createdAt: new Date(Date.now() - 60000).toISOString() },
-  { id: "6", name: "David", content: "Soyez bénis pasteur", createdAt: new Date(Date.now() - 30000).toISOString() },
-];
-
-const COUNTRIES = [
-  { name: "Côte d'Ivoire", pct: 38, color: "bg-violet-500" },
-  { name: "France", pct: 22, color: "bg-blue-500" },
-  { name: "Cameroun", pct: 12, color: "bg-emerald-500" },
-  { name: "USA", pct: 8, color: "bg-orange-500" },
-  { name: "Autres", pct: 20, color: "bg-gray-600" },
-];
-
-export default function StudioRightPanel({ radioId, radio }: { radioId?: string; radio?: any }) {
+export default function StudioRightPanel({
+  radioId,
+  radio,
+  onStatsUpdate,
+}: {
+  radioId?: string;
+  radio?: any;
+  onStatsUpdate?: React.Dispatch<React.SetStateAction<any>>;
+}) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -42,9 +33,21 @@ export default function StudioRightPanel({ radioId, radio }: { radioId?: string;
   useEffect(() => {
     if (!radioId) return;
     fetchMessages();
-    socket.emit("radio:join", radioId);
-    socket.on("radio:chat", (msg: ChatMsg) => setMessages((prev) => [...prev, msg]));
-    return () => { socket.off("radio:chat"); socket.emit("radio:leave", radioId); };
+    socket.emit("studio:join", radioId);
+    socket.on("radio:chat", (msg: ChatMsg) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+    });
+    socket.on("radio:stats", (stats: { listenerCount: number; peakListeners: number }) => {
+      onStatsUpdate?.((prev: any) => (prev ? { ...prev, ...stats } : prev));
+    });
+    return () => {
+      socket.off("radio:chat");
+      socket.off("radio:stats");
+      socket.emit("studio:leave", radioId);
+    };
   }, [radioId]);
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages]);
@@ -59,7 +62,9 @@ export default function StudioRightPanel({ radioId, radio }: { radioId?: string;
       });
       const data = await res.json();
       if (data.message) {
-        setMessages((prev) => [...prev, data.message]);
+        setMessages((prev) =>
+          prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
+        );
         setInput("");
       }
     } catch (e) { console.error("Chat send error:", e); }
@@ -167,7 +172,6 @@ export default function StudioRightPanel({ radioId, radio }: { radioId?: string;
             </div>
             <div className="flex items-end gap-1">
               <span className="text-lg font-bold text-white">{radio?.listenerCount || 0}</span>
-              <span className="text-[10px] text-emerald-400 mb-0.5">+12%</span>
             </div>
           </div>
           <div className="bg-[#1a1a25] rounded-lg p-2.5 border border-[#252535]">
@@ -193,40 +197,9 @@ export default function StudioRightPanel({ radioId, radio }: { radioId?: string;
           </div>
         </div>
 
-        {/* Top pays */}
-        <div>
-          <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Top pays</h4>
-          <div className="space-y-1.5">
-            {COUNTRIES.map((c) => (
-              <div key={c.name} className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${c.color}`} />
-                <span className="text-[10px] text-gray-400 w-24 truncate">{c.name}</span>
-                <div className="flex-1 h-1.5 bg-[#1a1a25] rounded-full overflow-hidden">
-                  <div className={`h-full ${c.color} rounded-full`} style={{ width: `${c.pct}%` }} />
-                </div>
-                <span className="text-[10px] text-gray-300 font-medium w-6 text-right">{c.pct}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Mini donut chart */}
-        <div className="flex items-center justify-center gap-4 pt-1">
-          <div className="relative w-16 h-16">
-            <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#252535" strokeWidth="3" />
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#8b5cf6" strokeWidth="3" strokeDasharray="38, 100" />
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#3b82f6" strokeWidth="3" strokeDasharray="22, 100" strokeDashoffset="-38" />
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" strokeWidth="3" strokeDasharray="12, 100" strokeDashoffset="-60" />
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f97316" strokeWidth="3" strokeDasharray="8, 100" strokeDashoffset="-72" />
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#4b5563" strokeWidth="3" strokeDasharray="20, 100" strokeDashoffset="-80" />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-bold text-white">12</span>
-              <span className="text-[7px] text-gray-500">Pays</span>
-            </div>
-          </div>
-        </div>
+        <p className="text-[10px] text-gray-600 text-center">
+          Les statistiques géographiques seront disponibles prochainement.
+        </p>
       </div>
     </aside>
   );
