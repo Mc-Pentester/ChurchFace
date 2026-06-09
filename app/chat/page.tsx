@@ -81,7 +81,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-[calc(100dvh-5rem)] lg:h-[100dvh] flex flex-col bg-gray-50">
       {/* HEADER */}
       <div className="p-4 bg-white shadow flex items-center justify-between">
         <h1 className="text-emerald-700 font-bold text-lg">💬 Chat en direct</h1>

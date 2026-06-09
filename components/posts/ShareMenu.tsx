@@ -110,7 +110,7 @@ export default function ShareMenu({
       </button>
 
       {open && (
-        <div className="absolute bottom-8 right-0 z-20 w-64 bg-white rounded-xl shadow-xl border p-3 space-y-2">
+        <div className="absolute bottom-8 right-0 z-20 w-64 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border p-3 space-y-2">
           {/* Header */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-700">Partager</span>

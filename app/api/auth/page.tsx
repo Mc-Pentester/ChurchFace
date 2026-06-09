@@ -27,7 +27,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-6 rounded-xl shadow w-96 space-y-3">
+      <div className="bg-white p-6 rounded-xl shadow w-full max-w-sm space-y-3 mx-4">
 
         <input
           placeholder="Nom"

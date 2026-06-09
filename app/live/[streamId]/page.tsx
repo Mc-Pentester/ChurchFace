@@ -256,7 +256,7 @@ export default function LiveWatchPage() {
       </div>
 
       {/* Video + Chat */}
-      <div className="flex gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Video */}
         <div className="flex-1 bg-black rounded-2xl overflow-hidden relative aspect-video">
           {isBroadcaster ? (
@@ -284,7 +284,7 @@ export default function LiveWatchPage() {
 
         {/* Chat */}
         {chatOpen && (
-          <div className="w-80 bg-white rounded-2xl border flex flex-col h-[500px]">
+          <div className="w-full lg:w-80 bg-white rounded-2xl border flex flex-col h-[400px] lg:h-[500px]">
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <span className="font-semibold text-sm flex items-center gap-2">
                 <MessageSquare size={16} />
@@ -311,7 +311,7 @@ export default function LiveWatchPage() {
                 onChange={(e) => setChatText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendChat()}
                 placeholder="Écrire dans le chat..."
-                className="flex-1 p-2 bg-gray-100 rounded-xl outline-none text-sm focus:ring-2 focus:ring-emerald-500 transition"
+                className="flex-1 p-2 bg-gray-100 rounded-xl outline-none text-base focus:ring-2 focus:ring-emerald-500 transition"
               />
               <button
                 onClick={sendChat}
@@ -328,7 +328,7 @@ export default function LiveWatchPage() {
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-full shadow-lg transition"
+          className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-40 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-full shadow-lg transition"
         >
           <MessageSquare size={20} />
         </button>

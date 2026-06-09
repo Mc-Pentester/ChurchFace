@@ -275,7 +275,7 @@ export default function FloatingRadioPlayer() {
                 value={chatText}
                 onChange={(e) => setChatText(e.target.value)}
                 placeholder="Message..."
-                className="flex-1 bg-white/10 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-gray-500 outline-none focus:border-emerald-500/50"
+                className="flex-1 bg-white/10 border border-white/10 rounded-lg px-2 py-1.5 text-base text-white placeholder-gray-500 outline-none focus:border-emerald-500/50"
               />
               <button
                 type="submit"

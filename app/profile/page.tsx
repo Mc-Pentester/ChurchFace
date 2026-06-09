@@ -21,8 +21,8 @@ export default function ProfilePage() {
   if (!session) return null;
 
   return (
-    <div className="p-6">
-      <div className="bg-white p-6 rounded-xl shadow w-96">
+    <div className="p-4 md:p-6">
+      <div className="bg-white p-4 md:p-6 rounded-xl shadow w-full max-w-md">
 
         <img
           src={session.user?.image || "/avatar.png"}
