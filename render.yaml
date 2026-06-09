@@ -9,8 +9,8 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npx prisma migrate deploy && npm run build
-    startCommand: npm start
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npm run build
+    startCommand: sh scripts/render-start.sh
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -39,5 +39,6 @@ services:
 databases:
   - name: churchface-db
     plan: free
+    region: frankfurt
     databaseName: churchface
     user: churchface
