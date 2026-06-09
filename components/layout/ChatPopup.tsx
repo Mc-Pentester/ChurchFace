@@ -94,7 +94,7 @@ export default function ChatPopup() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-lg transition hover:scale-105"
+        className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-lg transition hover:scale-105"
         title="Ouvrir le chat"
       >
         <MessageCircle size={24} />
@@ -104,7 +104,7 @@ export default function ChatPopup() {
 
   return (
     <div
-      className={`fixed bottom-6 right-6 z-50 w-96 bg-white rounded-2xl shadow-2xl border flex flex-col transition-all duration-300 ${
+      className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-2xl shadow-2xl border flex flex-col transition-all duration-300 ${
         isMinimized ? "h-14" : "h-[500px]"
       }`}
     >
@@ -172,7 +172,7 @@ export default function ChatPopup() {
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Écris un message..."
-              className="flex-1 p-2 bg-gray-100 rounded-xl outline-none text-sm focus:ring-2 focus:ring-emerald-500 transition"
+              className="flex-1 p-2 bg-gray-100 rounded-xl outline-none text-base focus:ring-2 focus:ring-emerald-500 transition"
             />
             <button
               onClick={sendMessage}
