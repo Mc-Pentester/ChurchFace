@@ -12,14 +12,18 @@ const legacyElementSources = new WeakMap<
   MediaElementAudioSourceNode
 >();
 
+type CapturableAudio = HTMLAudioElement & {
+  captureStream?: () => MediaStream;
+  mozCaptureStream?: () => MediaStream;
+};
+
 function captureElementAudio(el: HTMLAudioElement): MediaStream | null {
   try {
-    if (typeof el.captureStream === "function") {
-      return el.captureStream();
+    const media = el as CapturableAudio;
+    if (typeof media.captureStream === "function") {
+      return media.captureStream();
     }
-    const moz = (
-      el as HTMLMediaElement & { mozCaptureStream?: () => MediaStream }
-    ).mozCaptureStream;
+    const moz = media.mozCaptureStream;
     if (typeof moz === "function") {
       return moz.call(el);
     }
