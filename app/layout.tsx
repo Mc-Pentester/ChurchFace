@@ -6,6 +6,7 @@ import ChatPopupWrapper from "@/components/layout/ChatPopupWrapper";
 import RadioPlayerWrapper from "@/components/radio/RadioPlayerWrapper";
 import HomeButton from "@/components/layout/HomeButton";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import NotificationToast from "@/components/notifications/NotificationToast";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
@@ -51,6 +52,7 @@ export default function RootLayout({
           <ChatPopupWrapper />
           <RadioPlayerWrapper />
           <MobileBottomNav />
+          <NotificationToast />
         </Providers>
       </body>
     </html>
