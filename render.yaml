@@ -9,7 +9,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npm run build
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npx prisma generate && npm run build
     startCommand: sh scripts/render-start.sh
     healthCheckPath: /api/health
     envVars:

@@ -4,15 +4,24 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { socket } from "@/lib/socket";
 
+type Message = {
+  id?: string;
+  content: string;
+  senderId?: string;
+  chatId?: string;
+  createdAt?: string;
+};
+
 export default function ChatPage() {
   const { chatId } = useParams();
-  const [messages, setMessages] = useState([]);
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
 
   useEffect(() => {
     socket.emit("chat:join", chatId);
 
-    socket.on("message:new", (msg) => {
+    socket.on("message:new", (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
     });
 
@@ -25,7 +34,7 @@ export default function ChatPage() {
     socket.emit("message:send", {
       chatId,
       content: input,
-      senderId: session?.user?.id, // remplacer auth
+      senderId: "temp-user",
     });
 
     setInput("");
@@ -47,7 +56,10 @@ export default function ChatPage() {
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 border p-2"
         />
-        <button onClick={sendMessage} className="bg-emerald-600 text-white px-4">
+        <button
+          onClick={sendMessage}
+          className="bg-emerald-600 text-white px-4"
+        >
           Send
         </button>
       </div>
