@@ -1,58 +1,82 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { socket } from "@/lib/socket";
 
-type Toast = {
+type NotificationToastData = {
   id: string;
   message: string;
-  visible: boolean;
 };
 
 export default function NotificationToast() {
-  const [toast, setToast] = useState<Toast | null>(null);
+  const [notifications, setNotifications] = useState<
+    NotificationToastData[]
+  >([]);
 
   useEffect(() => {
-    let socket: Socket | null = null;
+    const handleNotification = (data: {
+      message: string;
+    }) => {
+      const notification = {
+        id: crypto.randomUUID(),
+        message: data.message,
+      };
 
-    fetch("/api/socket")
-      .then(() => {
-        socket = io();
+      setNotifications((prev) => [
+        ...prev,
+        notification,
+      ]);
 
-        socket.on("notification", (data: { message: string }) => {
-          setToast({
-            id: Date.now().toString(),
-            message: data.message,
-            visible: true,
-          });
+      setTimeout(() => {
+        setNotifications((prev) =>
+          prev.filter(
+            (item) => item.id !== notification.id
+          )
+        );
+      }, 5000);
+    };
 
-          setTimeout(() => {
-            setToast(null);
-          }, 4000);
-        });
-      })
-      .catch(console.error);
+    socket.on(
+      "notification:new",
+      handleNotification
+    );
 
     return () => {
-      if (socket) socket.disconnect();
+      socket.off(
+        "notification:new",
+        handleNotification
+      );
     };
   }, []);
 
-  if (!toast) return null;
+  if (notifications.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="fixed top-5 right-5 z-[9999] animate-slide-in">
-      <div className="bg-white shadow-lg border-l-4 border-emerald-500 rounded-xl px-4 py-3 w-80 max-w-[calc(100vw-2.5rem)]">
-        
-        <p className="text-gray-800 font-medium">
-          {toast.message}
-        </p>
+    <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3">
+      {notifications.map((notification) => (
+        <div
+          key={notification.id}
+          className="w-80 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 shadow-xl rounded-2xl p-4 animate-in slide-in-from-right duration-300"
+        >
+          <div className="flex items-start gap-3">
+            <div className="text-xl">
+              🔔
+            </div>
 
-        <span className="text-xs text-gray-400">
-          Maintenant
-        </span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">
+                {notification.message}
+              </p>
 
-      </div>
+              <span className="text-xs text-gray-500">
+                Maintenant
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
