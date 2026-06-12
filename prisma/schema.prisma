@@ -8,36 +8,39 @@ datasource db {
 }
 
 model User {
-  id                String         @id @default(cuid())
-  email             String         @unique
-  password          String
-  createdAt         DateTime       @default(now())
-  image             String?
-  name              String?
-  bio               String?
-  role              String         @default("USER")
-  accounts          Account[]
-  chats             ChatMember[]
-  comments          Comment[]
-  likes             Like[]
-  messages          Message[]
-  messagesSeen      MessageSeen[]
-  sentNotifications Notification[] @relation("Sender")
-  notifications     Notification[] @relation("Receiver")
-  posts             Post[]
-  prayerRequests    PrayerRequest[]
-  prayerResponses   PrayerResponse[]
-  prayerReactions   PrayerReaction[]
-  prayerVerses      PrayerVerse[]
-  prayerTestimonies PrayerTestimony[]
-  prayerChainLinks  PrayerChainLink[]
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  image     String?
+  name      String?
+  bio       String?
+  role      String   @default("USER")
+
+  pushSubscriptions PushSubscription[]
+
+  accounts               Account[]
+  chats                  ChatMember[]
+  comments               Comment[]
+  likes                  Like[]
+  messages               Message[]
+  messagesSeen           MessageSeen[]
+  sentNotifications      Notification[]          @relation("Sender")
+  notifications          Notification[]          @relation("Receiver")
+  posts                  Post[]
+  prayerRequests         PrayerRequest[]
+  prayerResponses        PrayerResponse[]
+  prayerReactions        PrayerReaction[]
+  prayerVerses           PrayerVerse[]
+  prayerTestimonies      PrayerTestimony[]
+  prayerChainLinks       PrayerChainLink[]
   prayerRoomParticipants PrayerRoomParticipant[]
-  radios            Radio[]
-  sessions          Session[]
-  shares            Share[]
-  stories           Story[]
-  storyViews        StoryView[]
-  streams           Stream[]
+  radios                 Radio[]
+  sessions               Session[]
+  shares                 Share[]
+  stories                Story[]
+  storyViews             StoryView[]
+  streams                Stream[]
 }
 
 model Chat {
@@ -173,13 +176,26 @@ model Notification {
   sender    User?    @relation("Sender", fields: [senderId], references: [id])
   user      User     @relation("Receiver", fields: [userId], references: [id])
 
+  entityId   String? // postId, commentId, etc.
+  entityType String? // "post", "comment", "follow"
+  data       Json? // flexible payload
+
   @@index([userId, isRead])
   @@index([createdAt])
   @@index([userId, createdAt])
+}
 
-  entityId    String?   // postId, commentId, etc.
-  entityType  String?   // "post", "comment", "follow"
-  data        Json?     // flexible payload
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Event {
@@ -205,41 +221,41 @@ model Stream {
 }
 
 model Radio {
-  id              String          @id @default(cuid())
-  title           String
-  description     String?
-  isLive          Boolean         @default(false)
-  isAutoDJ        Boolean         @default(false)
-  startedAt       DateTime        @default(now())
-  endedAt         DateTime?
-  listenerCount   Int             @default(0)
-  peakListeners   Int             @default(0)
-  totalDuration   Int             @default(0)
-  streamUrl       String?
-  rtmpUrl         String?
-  currentTrackId  String?
-  userId          String
-  playlistId      String?
-  playlist        Playlist?       @relation(fields: [playlistId], references: [id])
-  user            User            @relation(fields: [userId], references: [id])
-  chatMessages    RadioChatMessage[]
-  schedules     RadioSchedule[]
+  id             String             @id @default(cuid())
+  title          String
+  description    String?
+  isLive         Boolean            @default(false)
+  isAutoDJ       Boolean            @default(false)
+  startedAt      DateTime           @default(now())
+  endedAt        DateTime?
+  listenerCount  Int                @default(0)
+  peakListeners  Int                @default(0)
+  totalDuration  Int                @default(0)
+  streamUrl      String?
+  rtmpUrl        String?
+  currentTrackId String?
+  userId         String
+  playlistId     String?
+  playlist       Playlist?          @relation(fields: [playlistId], references: [id])
+  user           User               @relation(fields: [userId], references: [id])
+  chatMessages   RadioChatMessage[]
+  schedules      RadioSchedule[]
 
   @@index([isLive, startedAt])
   @@index([userId])
 }
 
 model Playlist {
-  id          String         @id @default(cuid())
+  id          String          @id @default(cuid())
   title       String
   description String?
-  isAutoDJ    Boolean        @default(false)
-  category    String         @default("GENERAL")
-  isActive    Boolean        @default(true)
-  shuffle     Boolean        @default(false)
-  loop        Boolean        @default(false)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  isAutoDJ    Boolean         @default(false)
+  category    String          @default("GENERAL")
+  isActive    Boolean         @default(true)
+  shuffle     Boolean         @default(false)
+  loop        Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   items       PlaylistItem[]
   radios      Radio[]
   schedules   RadioSchedule[]
@@ -299,21 +315,21 @@ model VerificationToken {
 // ─── ESPACE DE PRIÈRE ───
 
 model PrayerRequest {
-  id            String             @id @default(cuid())
-  userId        String
-  title         String
-  content       String
-  category      String
-  isUrgent      Boolean            @default(false)
-  isAnswered    Boolean            @default(false)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  user          User               @relation(fields: [userId], references: [id])
-  responses     PrayerResponse[]
-  reactions     PrayerReaction[]
-  verses        PrayerVerse[]
-  testimony     PrayerTestimony?
-  prayerChain   PrayerChain?
+  id          String           @id @default(cuid())
+  userId      String
+  title       String
+  content     String
+  category    String
+  isUrgent    Boolean          @default(false)
+  isAnswered  Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id])
+  responses   PrayerResponse[]
+  reactions   PrayerReaction[]
+  verses      PrayerVerse[]
+  testimony   PrayerTestimony?
+  prayerChain PrayerChain?
 
   @@index([userId, createdAt])
   @@index([category, createdAt])
@@ -377,15 +393,15 @@ model PrayerTestimony {
 }
 
 model PrayerChain {
-  id              String             @id @default(cuid())
-  prayerRequestId String?            @unique
+  id              String            @id @default(cuid())
+  prayerRequestId String?           @unique
   title           String
   description     String?
-  isActive        Boolean            @default(true)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   links           PrayerChainLink[]
-  prayerRequest   PrayerRequest?     @relation(fields: [prayerRequestId], references: [id])
+  prayerRequest   PrayerRequest?    @relation(fields: [prayerRequestId], references: [id])
 
   @@index([isActive, createdAt])
 }
@@ -436,20 +452,20 @@ model PrayerRoomParticipant {
 // ─── STUDIO RADIO ───
 
 model AudioTrack {
-  id          String    @id @default(cuid())
-  title       String
-  artist      String?
-  album       String?
-  url         String
-  coverUrl    String?
-  duration    Int       @default(0)
-  type        String    @default("MUSIC")
-  category    String    @default("GENERAL")
-  playCount   Int       @default(0)
-  isActive    Boolean   @default(true)
-  uploadedBy  String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  artist     String?
+  album      String?
+  url        String
+  coverUrl   String?
+  duration   Int      @default(0)
+  type       String   @default("MUSIC")
+  category   String   @default("GENERAL")
+  playCount  Int      @default(0)
+  isActive   Boolean  @default(true)
+  uploadedBy String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([type, category])
   @@index([isActive, createdAt])
@@ -457,7 +473,7 @@ model AudioTrack {
 }
 
 model RadioSchedule {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   radioId     String
   playlistId  String?
   title       String
@@ -465,15 +481,15 @@ model RadioSchedule {
   hostName    String?
   startTime   DateTime
   endTime     DateTime?
-  duration    Int        @default(60)
-  isRecurring Boolean    @default(false)
+  duration    Int       @default(60)
+  isRecurring Boolean   @default(false)
   recurrence  String?
-  isLive      Boolean    @default(false)
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  radio       Radio      @relation(fields: [radioId], references: [id], onDelete: Cascade)
-  playlist    Playlist?  @relation(fields: [playlistId], references: [id])
+  isLive      Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  radio       Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
+  playlist    Playlist? @relation(fields: [playlistId], references: [id])
 
   @@index([radioId, startTime])
   @@index([isActive, startTime])
