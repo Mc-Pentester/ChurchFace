@@ -172,6 +172,14 @@ model Notification {
   senderId  String?
   sender    User?    @relation("Sender", fields: [senderId], references: [id])
   user      User     @relation("Receiver", fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+
+  entityId    String?   // postId, commentId, etc.
+  entityType  String?   // "post", "comment", "follow"
+  data        Json?     // flexible payload
 }
 
 model Event {

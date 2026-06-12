@@ -106,7 +106,7 @@ export default function LoginModal({
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-black text-2xl"
         >
-          X
+          x
         </button>
 
         {/* LOGO */}
