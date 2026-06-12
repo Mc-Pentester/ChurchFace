@@ -5,10 +5,10 @@ export default function StoriesBar() {
     { name: "Samuel", img: "https://i.pravatar.cc/100?img=1" },
     { name: "Jeunesse", img: "https://i.pravatar.cc/100?img=2" },
     { name: "Louange", img: "https://i.pravatar.cc/100?img=3" },
-    { name: "Prire", img: "https://i.pravatar.cc/100?img=4" },
+    { name: "Prière", img: "https://i.pravatar.cc/100?img=4" },
   ];
 
-  const userProfile = "https://i.pravatar.cc/100?img=12"; // ðŸ‘‰ ta photo
+  const userProfile = "https://i.pravatar.cc/100?img=12"; // ta photo
 
   return (
     <div className="bg-white rounded-xl p-3">

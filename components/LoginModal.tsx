@@ -80,7 +80,7 @@ export default function LoginModal({
         return;
       }
 
-      // âœ… AUTO LOGIN
+      // AUTO LOGIN
       await signIn("credentials", {
         email,
         password,
