@@ -625,7 +625,7 @@ function CommentItem({
                 setShowReply(false);
               }
             }}
-            className="flex-1 bg-gray-100 p-2 rounded-xl text-sm"
+            className="flex-1 bg-gray-100 p-2 rounded-xl text-base"
             placeholder="Répondre..."
           />
           <button

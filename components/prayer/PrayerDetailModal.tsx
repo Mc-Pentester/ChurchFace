@@ -117,7 +117,7 @@ export default function PrayerDetailModal({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Votre message d'encouragement..."
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && input.trim()) {
                       onRespond(prayer.id, input, "COMMENT");
@@ -165,14 +165,14 @@ export default function PrayerDetailModal({
                   value={verseRef}
                   onChange={(e) => setVerseRef(e.target.value)}
                   placeholder="Référence : Jean 3:16"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
                 <textarea
                   value={verseText}
                   onChange={(e) => setVerseText(e.target.value)}
                   placeholder="Texte du verset (optionnel)"
                   rows={2}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
                 <button
                   onClick={() => {
@@ -231,7 +231,7 @@ export default function PrayerDetailModal({
                   onChange={(e) => setTestimonyText(e.target.value)}
                   placeholder="Partagez votre témoignage..."
                   rows={2}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
                 <button
                   onClick={() => {

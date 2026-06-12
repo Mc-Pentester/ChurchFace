@@ -1,5 +1,13 @@
 ﻿"use client";
 
+import {
+  Bell,
+  MessageCircle,
+  Radio,
+  Tv,
+  HeartHandshake
+} from "lucide-react";
+
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { socket } from "@/lib/socket";
@@ -16,7 +24,7 @@ export default function Navbar({ onLoginClick }: any) {
   const [results, setResults] = useState<string[]>([]);
 
   /**
-   * ðŸ”¥ SOCKET
+   * SOCKET
    */
   useEffect(() => {
     socket.on("presence:update", setOnlineUsers);
@@ -39,7 +47,7 @@ export default function Navbar({ onLoginClick }: any) {
   }, []);
 
   /**
-   * ðŸ”Ž SEARCH (demo frontend)
+   * 🔎 SEARCH (demo frontend)
    */
   useEffect(() => {
     if (!search.trim()) {
@@ -50,7 +58,7 @@ export default function Navbar({ onLoginClick }: any) {
     const fakeData = [
       "Pasteur Samuel",
       "Jeunesse Victoire",
-      "Ã‰glise Nouvelle Alliance",
+      "Église Nouvelle Alliance",
       "Louange Worship",
       "Bible Study Group",
     ];
@@ -131,7 +139,7 @@ export default function Navbar({ onLoginClick }: any) {
 
         {/* NOTIF */}
         <button className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-          ðŸ””
+          <Bell size={18} />
           {unreadNotifications > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
               {unreadNotifications}
@@ -141,7 +149,7 @@ export default function Navbar({ onLoginClick }: any) {
 
         {/* MSG */}
         <button className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-          ðŸ’¬
+          <MessageCircle size={18} />
           {messagesUnread > 0 && (
             <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
               {messagesUnread}

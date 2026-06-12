@@ -45,7 +45,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Prière pour ma guérison"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base"
               required
             />
           </div>
@@ -57,7 +57,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Partagez votre besoin en détail..."
               rows={4}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base resize-none"
               required
             />
           </div>
