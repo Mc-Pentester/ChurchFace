@@ -26,7 +26,7 @@ export default function LoginModal({
   if (!isOpen) return null;
 
   /**
-   * ðŸ”¥ LOGIN
+    LOGIN
    */
   const handleLogin = async () => {
     try {
@@ -54,7 +54,7 @@ export default function LoginModal({
   };
 
   /**
-   * ðŸ”¥ REGISTER
+    REGISTER
    */
   const handleRegister = async () => {
     try {
@@ -106,7 +106,7 @@ export default function LoginModal({
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-black text-2xl"
         >
-          Ã—
+          X
         </button>
 
         {/* LOGO */}
@@ -116,7 +116,7 @@ export default function LoginModal({
           </h1>
 
           <p className="text-gray-500 mt-2">
-            RÃ©seau social chrÃ©tien moderne
+            Réseau social chrétien moderne
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export default function LoginModal({
             {loading
               ? "Chargement..."
               : isRegister
-              ? "CrÃ©er un compte"
+              ? "Créer un compte"
               : "Se connecter"}
           </button>
 

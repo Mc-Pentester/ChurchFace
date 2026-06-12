@@ -5,7 +5,7 @@ export default function StoriesBar() {
     { name: "Samuel", img: "https://i.pravatar.cc/100?img=1" },
     { name: "Jeunesse", img: "https://i.pravatar.cc/100?img=2" },
     { name: "Louange", img: "https://i.pravatar.cc/100?img=3" },
-    { name: "PriÃ¨re", img: "https://i.pravatar.cc/100?img=4" },
+    { name: "Prire", img: "https://i.pravatar.cc/100?img=4" },
   ];
 
   const userProfile = "https://i.pravatar.cc/100?img=12"; // ðŸ‘‰ ta photo
@@ -15,7 +15,7 @@ export default function StoriesBar() {
 
       <div className="flex gap-4 overflow-x-auto w-full">
 
-        {/* â­ CREATE STORY BUTTON (PROFILE BACKGROUND) */}
+        {/* CREATE STORY BUTTON (PROFILE BACKGROUND) */}
         <button className="flex flex-col items-center flex-shrink-0 w-20 group">
 
           <div
@@ -42,7 +42,7 @@ export default function StoriesBar() {
           </div>
 
           <span className="text-xs mt-1 text-gray-600">
-            CrÃ©er story
+            Créer story
           </span>
 
         </button>
