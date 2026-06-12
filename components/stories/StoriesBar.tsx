@@ -1,74 +1,99 @@
 ﻿"use client";
 
-export default function StoriesBar() {
-  const stories = [
-    { name: "Samuel", img: "https://i.pravatar.cc/100?img=1" },
-    { name: "Jeunesse", img: "https://i.pravatar.cc/100?img=2" },
-    { name: "Louange", img: "https://i.pravatar.cc/100?img=3" },
-    { name: "Prière", img: "https://i.pravatar.cc/100?img=4" },
-  ];
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
-  const userProfile = "https://i.pravatar.cc/100?img=12"; // ta photo
+type Story = {
+  id: string;
+  imageUrl: string | null;
+  videoUrl: string | null;
+
+  author: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+};
+
+export default function StoriesBar() {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStories();
+  }, []);
+
+  async function fetchStories() {
+    try {
+      const res = await fetch("/api/stories");
+
+      const data = await res.json();
+
+      setStories(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl p-3">
+        <div className="flex gap-3">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="w-16 h-16 rounded-full bg-gray-200 animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl p-3">
+      <div className="flex gap-4 overflow-x-auto">
 
-      <div className="flex gap-4 overflow-x-auto w-full">
-
-        {/* CREATE STORY BUTTON (PROFILE BACKGROUND) */}
-        <button className="flex flex-col items-center flex-shrink-0 w-20 group">
-
-          <div
-            className="w-16 h-16 rounded-full relative overflow-hidden border-2 border-gray-300"
-          >
-
-            {/* background image */}
-            <img
-              src={userProfile}
-              alt="Créer une story"
-              className="w-full h-full object-cover"
-            />
-
-            {/* dark overlay */}
-            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition" />
-
-            {/* plus button */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center font-bold">
-                +
-              </div>
-            </div>
-
+        <Link
+          href="/stories/create"
+          className="flex flex-col items-center flex-shrink-0"
+        >
+          <div className="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center text-2xl">
+            +
           </div>
 
-          <span className="text-xs mt-1 text-gray-600">
-            Créer story
+          <span className="text-xs mt-1">
+            Story
           </span>
+        </Link>
 
-        </button>
-
-        {/* STORIES */}
-        {stories.map((s, i) => (
-          <div
-            key={i}
-            className="flex flex-col items-center flex-shrink-0 w-20"
+        {stories.map((story) => (
+          <Link
+            key={story.id}
+            href={`/stories/${story.id}`}
+            className="flex flex-col items-center flex-shrink-0"
           >
             <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500">
+
               <img
-                src={s.img}
-                alt={s.name}
+                src={
+                  story.author.image ||
+                  story.imageUrl ||
+                  "/default-avatar.png"
+                }
+                alt=""
                 className="w-full h-full rounded-full object-cover border-2 border-white"
               />
             </div>
 
-            <span className="text-xs mt-1 truncate w-full text-center">
-              {s.name}
+            <span className="text-xs truncate w-16 text-center mt-1">
+              {story.author.name}
             </span>
-          </div>
+          </Link>
         ))}
-
       </div>
-
     </div>
   );
 }
