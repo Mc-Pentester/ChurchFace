@@ -15,7 +15,9 @@ export default function PostCard({
         {author}
       </h3>
 
-      <HashtagText text={content} />
+      <p className="mt-2 text-gray-900 whitespace-pre-wrap break-words">
+        {content}
+      </p>
         
       <div className="mt-4 flex gap-4">
         <button>❤️ Amen</button>
