@@ -2,12 +2,14 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  output: "standalone",
+
   serverExternalPackages: ["@prisma/client", "prisma"],
 
-  /* Réduire la consommation mémoire pendant le build */
   experimental: {
     workerThreads: false,
   },
+
   staticPageGenerationTimeout: 120,
 };
 
