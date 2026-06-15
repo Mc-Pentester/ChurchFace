@@ -47,4 +47,8 @@ USER nextjs
 
 EXPOSE 3000
 
+<<<<<<< HEAD
 CMD ["npm", "start"]
+=======
+CMD ["npm", "start"]
+>>>>>>> 486ffaa2b6a40080645ffde4016721099ac423c5
