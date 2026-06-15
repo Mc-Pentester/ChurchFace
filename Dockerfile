@@ -46,6 +46,3 @@ EXPOSE 3000
 
 CMD ["npm", "start"]
 
-RUN rm -rf .next node_modules/.cache
-
-RUN ls -R /app | head -200
