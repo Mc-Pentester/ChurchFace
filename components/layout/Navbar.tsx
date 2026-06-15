@@ -7,7 +7,8 @@ import {
   Tv,
   HeartHandshake,
   X,
-  Check
+  Check,
+  Users
 } from "lucide-react";
 
 import { useEffect, useState, useRef } from "react";
@@ -36,6 +37,7 @@ export default function Navbar({ onLoginClick }: any) {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [messagesUnread, setMessagesUnread] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
@@ -105,8 +107,21 @@ export default function Navbar({ onLoginClick }: any) {
   useEffect(() => {
     if (session?.user?.id) {
       fetchNotifications();
+      fetchPendingRequests();
     }
   }, [session?.user?.id]);
+
+  const fetchPendingRequests = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const res = await fetch("/api/friends?status=PENDING");
+      const data = await res.json();
+      const incomingRequests = (data.users || []).filter((u: any) => !u.isSender);
+      setPendingRequests(incomingRequests.length);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   /**
    * MARK AS READ
@@ -327,6 +342,19 @@ export default function Navbar({ onLoginClick }: any) {
             </span>
           )}
         </button>
+
+        {/* FRIENDS */}
+        <a
+          href="/friends"
+          className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+        >
+          <Users size={18} />
+          {pendingRequests > 0 && (
+            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+              {pendingRequests}
+            </span>
+          )}
+        </a>
 
         {/* AUTH */}
         {!session ? (

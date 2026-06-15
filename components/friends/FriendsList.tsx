@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { UserMinus, MessageCircle, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { socket } from "@/lib/socket";
 
 type Friend = {
   id: string;
@@ -18,10 +19,18 @@ type Friend = {
 
 export default function FriendsList() {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchFriends();
+    
+    // Socket connection for online status
+    socket.on("presence:update", setOnlineUsers);
+    
+    return () => {
+      socket.off("presence:update");
+    };
   }, []);
 
   const fetchFriends = async () => {
@@ -79,42 +88,47 @@ export default function FriendsList() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
           {friends.map((friend) => (
             <div
               key={friend.friendshipId}
-              className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition group"
+              className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition group flex items-center gap-4"
             >
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
                   {friend.image ? (
                     <img src={friend.image} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-blue-700 font-bold text-xl">
+                    <span className="text-blue-700 font-bold text-lg">
                       {(friend.name || friend.email)[0]?.toUpperCase()}
                     </span>
                   )}
                 </div>
+                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                  onlineUsers.includes(friend.id) ? "bg-green-500" : "bg-gray-400"
+                }`} />
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 truncate">{friend.name || "Anonyme"}</p>
-                  <p className="text-sm text-gray-500 truncate mb-3">{friend.email}</p>
-                  
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/chat?userId=${friend.id}`}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition text-center"
-                    >
-                      Message
-                    </Link>
-                    <button
-                      onClick={() => unfriend(friend.friendshipId)}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg transition"
-                    >
-                      <UserMinus size={16} />
-                    </button>
-                  </div>
-                </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 truncate">{friend.name || "Anonyme"}</p>
+                <p className="text-xs text-gray-500">
+                  {onlineUsers.includes(friend.id) ? "🟢 En ligne" : "⚪ Hors ligne"}
+                </p>
+              </div>
+              
+              <div className="flex gap-2">
+                <Link
+                  href={`/chat?userId=${friend.id}`}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition"
+                >
+                  <MessageCircle size={16} />
+                </Link>
+                <button
+                  onClick={() => unfriend(friend.friendshipId)}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg transition"
+                >
+                  <UserMinus size={16} />
+                </button>
               </div>
             </div>
           ))}
