@@ -33,16 +33,17 @@ ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# ❌ IMPORTANT : ne PAS copier node_modules
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.js ./
 
+# ✅ Installer les dépendances de production pour tsx
+RUN npm ci --production
+
 USER nextjs
 
 EXPOSE 3000
 
 CMD ["npm", "start"]
-
