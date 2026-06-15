@@ -39,8 +39,11 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json* ./
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.js ./
+# ✅ Copier les fichiers source nécessaires pour server.ts
+COPY --from=builder /app/server.ts ./
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/components ./components
 
-# ✅ Installer les dépendances de production pour tsx
 RUN npm ci --production
 
 USER nextjs
