@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, X, User } from "lucide-react";
+import { Check, X, UserPlus } from "lucide-react";
 
 type FriendRequest = {
   id: string;
@@ -67,9 +67,9 @@ export default function FriendRequestsList() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-4">
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500" />
+      <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
         </div>
       </div>
     );
@@ -79,51 +79,59 @@ export default function FriendRequestsList() {
   const outgoingRequests = requests.filter((r) => r.isSender);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-4 space-y-4">
-      <h3 className="font-semibold text-gray-800">Demandes d'ami</h3>
+    <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-gray-900">Demandes d'ami</h3>
+        <span className="text-sm text-gray-500">{incomingRequests.length} reçues</span>
+      </div>
 
       {incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
-        <p className="text-center text-gray-500 text-sm py-4">Aucune demande en attente</p>
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserPlus size={32} className="text-gray-400" />
+          </div>
+          <p className="text-gray-500 text-sm">Aucune demande en attente</p>
+        </div>
       ) : (
         <>
           {incomingRequests.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Reçues</p>
+            <div className="space-y-4">
+              <p className="text-sm font-semibold text-gray-700">Reçues</p>
               {incomingRequests.map((request) => (
                 <div
                   key={request.friendshipId}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-gray-50"
+                  className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition"
                 >
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden">
-                    {request.image ? (
-                      <img src={request.image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-emerald-700 font-semibold text-sm">
-                        {(request.name || request.email)[0]?.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {request.image ? (
+                        <img src={request.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-blue-700 font-bold text-xl">
+                          {(request.name || request.email)[0]?.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate">{request.name || "Anonyme"}</p>
-                    <p className="text-xs text-gray-500 truncate">{request.email}</p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleRequest(request.friendshipId, "ACCEPTED")}
-                      className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition"
-                      title="Accepter"
-                    >
-                      <Check size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleRequest(request.friendshipId, "DECLINED")}
-                      className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
-                      title="Refuser"
-                    >
-                      <X size={18} />
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{request.name || "Anonyme"}</p>
+                      <p className="text-sm text-gray-500 truncate mb-3">{request.email}</p>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleRequest(request.friendshipId, "ACCEPTED")}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition"
+                        >
+                          Confirmer
+                        </button>
+                        <button
+                          onClick={() => handleRequest(request.friendshipId, "DECLINED")}
+                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg transition"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -131,35 +139,36 @@ export default function FriendRequestsList() {
           )}
 
           {outgoingRequests.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mt-4">Envoyées</p>
+            <div className="space-y-4">
+              <p className="text-sm font-semibold text-gray-700 mt-6">Envoyées</p>
               {outgoingRequests.map((request) => (
                 <div
                   key={request.friendshipId}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-gray-50"
+                  className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition"
                 >
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {request.image ? (
-                      <img src={request.image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-gray-600 font-semibold text-sm">
-                        {(request.name || request.email)[0]?.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {request.image ? (
+                        <img src={request.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-gray-600 font-bold text-xl">
+                          {(request.name || request.email)[0]?.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate">{request.name || "Anonyme"}</p>
-                    <p className="text-xs text-gray-500 truncate">En attente</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{request.name || "Anonyme"}</p>
+                      <p className="text-sm text-gray-500 truncate mb-3">En attente de réponse</p>
+                      
+                      <button
+                        onClick={() => cancelRequest(request.friendshipId)}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg transition"
+                      >
+                        Annuler la demande
+                      </button>
+                    </div>
                   </div>
-
-                  <button
-                    onClick={() => cancelRequest(request.friendshipId)}
-                    className="p-2 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 transition"
-                    title="Annuler"
-                  >
-                    <X size={18} />
-                  </button>
                 </div>
               ))}
             </div>

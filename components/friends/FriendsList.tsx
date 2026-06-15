@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, UserMinus, MessageCircle } from "lucide-react";
+import { UserMinus, MessageCircle, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 
 type Friend = {
@@ -54,59 +54,67 @@ export default function FriendsList() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-4">
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500" />
+      <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-4 space-y-4">
-      <h3 className="font-semibold text-gray-800">Mes amis ({friends.length})</h3>
+    <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-gray-900">Amis</h3>
+        <span className="text-sm text-gray-500">{friends.length} amis</span>
+      </div>
 
       {friends.length === 0 ? (
-        <p className="text-center text-gray-500 text-sm py-4">
-          Vous n'avez pas encore d'amis. Recherchez des personnes pour commencer !
-        </p>
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserMinus size={32} className="text-gray-400" />
+          </div>
+          <p className="text-gray-500 text-sm">
+            Vous n'avez pas encore d'amis. Recherchez des personnes pour commencer !
+          </p>
+        </div>
       ) : (
-        <div className="space-y-2 max-h-80 overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {friends.map((friend) => (
             <div
               key={friend.friendshipId}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition"
+              className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition group"
             >
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden">
-                {friend.image ? (
-                  <img src={friend.image} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-emerald-700 font-semibold text-sm">
-                    {(friend.name || friend.email)[0]?.toUpperCase()}
-                  </span>
-                )}
-              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {friend.image ? (
+                    <img src={friend.image} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-blue-700 font-bold text-xl">
+                      {(friend.name || friend.email)[0]?.toUpperCase()}
+                    </span>
+                  )}
+                </div>
 
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{friend.name || "Anonyme"}</p>
-                <p className="text-xs text-gray-500 truncate">{friend.email}</p>
-              </div>
-
-              <div className="flex gap-2">
-                <Link
-                  href={`/chat?userId=${friend.id}`}
-                  className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition"
-                  title="Envoyer un message"
-                >
-                  <MessageCircle size={18} />
-                </Link>
-                <button
-                  onClick={() => unfriend(friend.friendshipId)}
-                  className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
-                  title="Supprimer des amis"
-                >
-                  <UserMinus size={18} />
-                </button>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{friend.name || "Anonyme"}</p>
+                  <p className="text-sm text-gray-500 truncate mb-3">{friend.email}</p>
+                  
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/chat?userId=${friend.id}`}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition text-center"
+                    >
+                      Message
+                    </Link>
+                    <button
+                      onClick={() => unfriend(friend.friendshipId)}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg transition"
+                    >
+                      <UserMinus size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
