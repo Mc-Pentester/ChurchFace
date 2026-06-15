@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 // GET /api/friends - List friends and pending requests
 export async function GET(request: Request) {
@@ -118,16 +119,14 @@ export async function POST(request: Request) {
     },
   });
 
-  // Create notification
-  await prisma.notification.create({
-    data: {
-      type: "FRIEND_REQUEST",
-      message: `${session.user.name || "Someone"} wants to be your friend`,
-      userId: receiverId,
-      senderId: session.user.id,
-      entityId: friendship.id,
-      entityType: "friendship",
-    },
+  // Create notification with socket emission
+  await createNotification({
+    toUserId: receiverId,
+    fromUserId: session.user.id,
+    type: "FRIEND_REQUEST",
+    message: `${session.user.name || "Someone"} wants to be your friend`,
+    entityId: friendship.id,
+    entityType: "friendship",
   });
 
   return NextResponse.json(friendship);

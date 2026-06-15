@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 // PATCH /api/friends/[id] - Accept or decline friend request
 export async function PATCH(
@@ -54,15 +55,13 @@ export async function PATCH(
 
   // If accepted, create notification for sender
   if (status === "ACCEPTED") {
-    await prisma.notification.create({
-      data: {
-        type: "FRIEND_ACCEPTED",
-        message: `${session.user.name || "Someone"} accepted your friend request`,
-        userId: friendship.senderId,
-        senderId: session.user.id,
-        entityId: friendship.id,
-        entityType: "friendship",
-      },
+    await createNotification({
+      toUserId: friendship.senderId,
+      fromUserId: session.user.id,
+      type: "FRIEND_ACCEPTED",
+      message: `${session.user.name || "Someone"} accepted your friend request`,
+      entityId: friendship.id,
+      entityType: "friendship",
     });
   }
 
