@@ -107,7 +107,7 @@ export default function FriendRequests() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 truncate">{request.name || "Anonyme"}</p>
                   <p className="text-sm text-gray-500 truncate mb-1">{request.church || request.email}</p>
-                  {request.mutualFriends > 0 && (
+                  {(request.mutualFriends ?? 0) > 0 && (
                     <p className="text-xs text-gray-400 mb-3">{request.mutualFriends} amis communs</p>
                   )}
                   
