@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { Search, UserPlus, Mail, Users, Settings, Church, BookOpen, Radio, Tv, Music } from "lucide-react";
 import UserSearch from "@/components/friends/UserSearch";
-import FriendRequestsList from "@/components/friends/FriendRequestsList";
-import FriendsList from "@/components/friends/FriendsList";
+import FriendRequests from "@/components/friends/FriendRequests";
+import FriendSuggestions from "@/components/friends/FriendSuggestions";
+import FriendsListWithOnline from "@/components/friends/FriendsListWithOnline";
+import SentRequests from "@/components/friends/SentRequests";
 
-type Tab = "requests" | "friends" | "search" | "suggestions" | "church" | "interests";
+type Tab = "requests" | "friends" | "search" | "suggestions" | "sent" | "church" | "interests";
 
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("requests");
 
   const tabs = [
     { id: "requests" as Tab, icon: Mail, label: "Demandes" },
+    { id: "sent" as Tab, icon: UserPlus, label: "Envoyées" },
     { id: "friends" as Tab, icon: Users, label: "Mes amis" },
     { id: "search" as Tab, icon: Search, label: "Recherche" },
     { id: "suggestions" as Tab, icon: UserPlus, label: "Suggestions" },
@@ -83,13 +86,19 @@ export default function FriendsPage() {
           <div className="flex-1">
             {activeTab === "requests" && (
               <div>
-                <FriendRequestsList />
+                <FriendRequests />
+              </div>
+            )}
+
+            {activeTab === "sent" && (
+              <div>
+                <SentRequests />
               </div>
             )}
 
             {activeTab === "friends" && (
               <div>
-                <FriendsList />
+                <FriendsListWithOnline />
               </div>
             )}
 
@@ -100,27 +109,8 @@ export default function FriendsPage() {
             )}
 
             {activeTab === "suggestions" && (
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Suggestions pour vous</h2>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
-                      <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          <span className="text-blue-700 font-bold text-xl">JP</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900">Jean Pierre</p>
-                          <p className="text-sm text-gray-500 mb-1">Église Salem</p>
-                          <p className="text-xs text-gray-400 mb-3">12 amis communs</p>
-                          <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition w-full">
-                            Ajouter ami
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <FriendSuggestions />
               </div>
             )}
 
