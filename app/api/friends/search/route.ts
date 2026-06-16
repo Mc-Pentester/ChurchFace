@@ -20,13 +20,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Search by name, email
+    // Search by name, email, church, city
     const users = await prisma.user.findMany({
       where: {
         id: { not: session.user.id },
         OR: [
           { name: { contains: query, mode: "insensitive" } },
           { email: { contains: query, mode: "insensitive" } },
+          { church: { contains: query, mode: "insensitive" } },
+          { city: { contains: query, mode: "insensitive" } },
         ],
       },
       select: {
@@ -48,6 +50,8 @@ export async function GET(request: Request) {
         OR: [
           { name: { contains: query, mode: "insensitive" } },
           { email: { contains: query, mode: "insensitive" } },
+          { church: { contains: query, mode: "insensitive" } },
+          { city: { contains: query, mode: "insensitive" } },
         ],
       },
     });
