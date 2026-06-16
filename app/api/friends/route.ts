@@ -30,6 +30,8 @@ export async function GET(request: Request) {
           email: true,
           image: true,
           bio: true,
+          church: true,
+          city: true,
         },
       },
       receiver: {
@@ -39,6 +41,8 @@ export async function GET(request: Request) {
           email: true,
           image: true,
           bio: true,
+          church: true,
+          city: true,
         },
       },
     },
