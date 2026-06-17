@@ -15,6 +15,7 @@ import { useEffect, useState, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { socket } from "@/lib/socket";
 import { notificationSound } from "@/lib/sounds";
+import HamburgerMenu from "./HamburgerMenu";
 
 type Notification = {
   id: string;
@@ -224,14 +225,8 @@ export default function Navbar({ onLoginClick }: any) {
       {/* RIGHT */}
       <div className="flex items-center gap-3">
 
-        {/* LINKS */}
+        {/* LINKS - Desktop only */}
         <div className="hidden md:flex items-center gap-1">
-          <a
-            href="/prayer-space"
-            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
-          >
-            🙏 Prière
-          </a>
           <a
             href="/live"
             className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
@@ -244,15 +239,9 @@ export default function Navbar({ onLoginClick }: any) {
           >
             🎙️ Radio
           </a>
-          <a
-            href="/church/create"
-            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
-          >
-            ⛪ Créer une église
-          </a>
         </div>
 
-        {/* ONLINE */}
+        {/* ONLINE - Desktop only */}
         <div className="hidden md:flex items-center gap-2 text-sm text-white bg-white/20 backdrop-blur-sm px-3 py-2 rounded-full">
           <div className="w-2 h-2 rounded-full bg-green-400" />
           {onlineUsers.length} en ligne
@@ -339,52 +328,31 @@ export default function Navbar({ onLoginClick }: any) {
           )}
         </div>
 
-        {/* MSG */}
-        <button className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-          <MessageCircle size={18} />
+        {/* MSG - Desktop only */}
+        <button className="hidden md:relative md:w-10 md:h-10 md:rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition">
+          <MessageCircle size={18} className="text-white" />
           {messagesUnread > 0 && (
-            <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
               {messagesUnread}
             </span>
           )}
         </button>
 
-        {/* FRIENDS */}
+        {/* FRIENDS - Desktop only */}
         <a
           href="/friends"
-          className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+          className="hidden md:relative md:w-10 md:h-10 md:rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition"
         >
-          <Users size={18} />
+          <Users size={18} className="text-white" />
           {pendingRequests > 0 && (
-            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
               {pendingRequests}
             </span>
           )}
         </a>
 
-        {/* AUTH */}
-        {!session ? (
-          <button
-            onClick={onLoginClick}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-full"
-          >
-            Connexion
-          </button>
-        ) : (
-          <div className="flex items-center gap-2">
-            <img
-              src={session?.user?.image || "https://i.pravatar.cc/150"}
-              alt="avatar"
-              className="w-10 h-10 rounded-full object-cover"
-            />
-            <button
-              onClick={() => signOut()}
-              className="text-sm text-gray-600 hover:text-red-500"
-            >
-              logout
-            </button>
-          </div>
-        )}
+        {/* HAMBURGER MENU - Mobile */}
+        <HamburgerMenu />
       </div>
     </nav>
   );

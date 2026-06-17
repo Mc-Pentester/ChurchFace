@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import Navbar from "@/components/layout/Navbar";
 
 export default function CreateChurchPage() {
   const router = useRouter();
@@ -75,37 +76,39 @@ export default function CreateChurchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Créer une page d'église</h1>
-          <p className="mt-2 text-gray-600">
-            Créez une page professionnelle pour votre église sur ChurchFace
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => router.push("/login")} />
+      <div className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">Créer une page d'église</h1>
+            <p className="mt-2 text-gray-600">
+              Créez une page professionnelle pour votre église sur ChurchFace
+            </p>
+          </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-8">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
-            </div>
-          )}
+          <div className="bg-white rounded-xl shadow-sm p-8">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                {error}
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Nom de l'église *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                required
-                value={formData.name}
-                onChange={handleNameChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                placeholder="Ex: Église Salem"
-              />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom de l'église *
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  value={formData.name}
+                  onChange={handleNameChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Ex: Église Salem"
+                />
             </div>
 
             <div>

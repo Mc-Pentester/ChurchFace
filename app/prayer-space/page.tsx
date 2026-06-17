@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Plus, Flame } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
 import PrayerCard from "@/components/prayer/PrayerCard";
 import PrayerForm from "@/components/prayer/PrayerForm";
 import PrayerSidebarLeft from "@/components/prayer/PrayerSidebarLeft";
@@ -158,17 +159,20 @@ export default function PrayerSpacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      {/* Navbar */}
+      <Navbar onLoginClick={() => router.push("/login")} />
+
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-30">
+      <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-800">Espace de Prière</h1>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">Espace de Prière</h1>
             <p className="text-xs text-gray-400">Unis dans la foi, forts dans la prière</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-purple-600 text-white text-sm font-medium hover:shadow-lg transition"
           >
             <Plus size={16} /> Nouvelle demande
           </button>

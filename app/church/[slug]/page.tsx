@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import ChurchHero from "./components/ChurchHero";
 import ChurchSidebar from "./components/ChurchSidebar";
 import ChurchFeed from "./components/ChurchFeed";
+import Navbar from "@/components/layout/Navbar";
 
 export const runtime = "nodejs";
 
@@ -70,7 +71,8 @@ export default async function ChurchPage({ params }: { params: Promise<{ slug: s
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => {}} />
       <ChurchHero church={church} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
