@@ -37,7 +37,7 @@ export default function PrayerDetailModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl w-full max-w-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 shrink-0">
           <h2 className="font-bold text-gray-800 text-sm">{prayer.title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
@@ -68,7 +68,7 @@ export default function PrayerDetailModal({
               onClick={() => onPray(prayer.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
                 hasPrayed
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  ? "bg-emerald-50 text-emerald-700"
                   : "bg-gray-50 text-gray-600 hover:bg-gray-100"
               }`}
             >
@@ -89,7 +89,7 @@ export default function PrayerDetailModal({
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-4 border-b">
+          <div className="flex gap-4">
             {[
               { key: "responses" as const, label: `Réponses (${prayer._count?.responses || 0})` },
               { key: "verses" as const, label: `Versets (${prayer._count?.verses || 0})` },
@@ -98,10 +98,10 @@ export default function PrayerDetailModal({
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`pb-2 text-sm font-medium transition border-b-2 ${
+                className={`pb-2 text-sm font-medium transition ${
                   activeTab === tab.key
-                    ? "border-emerald-500 text-emerald-700"
-                    : "border-transparent text-gray-400 hover:text-gray-600"
+                    ? "text-emerald-700"
+                    : "text-gray-400 hover:text-gray-600"
                 }`}
               >
                 {tab.label}
@@ -117,7 +117,7 @@ export default function PrayerDetailModal({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Votre message d'encouragement..."
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && input.trim()) {
                       onRespond(prayer.id, input, "COMMENT");
@@ -165,14 +165,14 @@ export default function PrayerDetailModal({
                   value={verseRef}
                   onChange={(e) => setVerseRef(e.target.value)}
                   placeholder="Référence : Jean 3:16"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2.5 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
                 <textarea
                   value={verseText}
                   onChange={(e) => setVerseText(e.target.value)}
                   placeholder="Texte du verset (optionnel)"
                   rows={2}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
                 <button
                   onClick={() => {
@@ -191,7 +191,7 @@ export default function PrayerDetailModal({
                 <p className="text-sm text-gray-400 text-center py-4">Aucun verset partagé.</p>
               ) : (
                 (prayer.verses || []).map((v) => (
-                  <div key={v.id} className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                  <div key={v.id} className="p-4 rounded-xl bg-amber-50">
                     <p className="font-bold text-sm text-amber-800">{v.reference}</p>
                     {v.text && <p className="text-sm text-gray-700 mt-1 italic">"{v.text}"</p>}
                     <p className="text-xs text-amber-600 mt-2">Partagé par {v.user.name || "Anonyme"}</p>
@@ -202,7 +202,7 @@ export default function PrayerDetailModal({
           )}
 
           {activeTab === "testimony" && prayer.testimony && (
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+            <div className="p-4 rounded-xl bg-emerald-50">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle2 size={18} className="text-emerald-600" />
                 <h4 className="font-bold text-sm text-emerald-800">Témoignage d'exaucement</h4>
@@ -223,7 +223,7 @@ export default function PrayerDetailModal({
           )}
 
           {!prayer.isAnswered && (
-            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div className="p-4 rounded-xl bg-gray-50">
               <p className="text-sm text-gray-600 mb-2">Cette prière a-t-elle été exaucée ?</p>
               <div className="flex gap-2">
                 <textarea
@@ -231,7 +231,7 @@ export default function PrayerDetailModal({
                   onChange={(e) => setTestimonyText(e.target.value)}
                   placeholder="Partagez votre témoignage..."
                   rows={2}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
                 <button
                   onClick={() => {

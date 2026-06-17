@@ -36,11 +36,11 @@ export default function StudioStatsPanel({ radio }: StudioStatsPanelProps) {
     <div className="space-y-3">
       {/* BIG NUMBERS */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-gray-800/50 rounded-lg p-3 text-center border border-gray-700/50">
+        <div className="bg-gray-800/50 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-emerald-400">{stats.listeners}</div>
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">Auditeurs</div>
         </div>
-        <div className="bg-gray-800/50 rounded-lg p-3 text-center border border-gray-700/50">
+        <div className="bg-gray-800/50 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-yellow-400">{stats.peak}</div>
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">Pic</div>
         </div>
@@ -63,7 +63,7 @@ export default function StudioStatsPanel({ radio }: StudioStatsPanelProps) {
       </div>
 
       {/* MINI CHART */}
-      <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
+      <div className="bg-gray-800/30 rounded-lg p-3">
         <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Audience (5 min)</div>
         <div className="flex items-end gap-0.5 h-16">
           {[40, 55, 45, 70, 60, 80, 75, 90, 65, 85, 95, 70].map((h, i) => (

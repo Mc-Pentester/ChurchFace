@@ -67,9 +67,9 @@ export default function FriendRequestsList() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 bg-blue-500/10" />
         </div>
       </div>
     );
@@ -79,7 +79,7 @@ export default function FriendRequestsList() {
   const outgoingRequests = requests.filter((r) => r.isSender);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+    <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-gray-900">Demandes d'ami</h3>
         <span className="text-sm text-gray-500">{incomingRequests.length} reçues</span>

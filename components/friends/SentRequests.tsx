@@ -56,16 +56,16 @@ export default function SentRequests() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 bg-blue-500/10" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="bg-white rounded-xl shadow-sm p-6">
       <h2 className="text-xl font-bold text-gray-900 mb-6">Demandes envoyées</h2>
       
       {requests.length === 0 ? (
@@ -78,11 +78,11 @@ export default function SentRequests() {
               className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition"
             >
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {request.image ? (
                     <img src={request.image} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-blue-700 font-bold text-xl">
+                    <span className="text-emerald-700 font-bold text-xl">
                       {(request.name || request.email)[0]?.toUpperCase()}
                     </span>
                   )}

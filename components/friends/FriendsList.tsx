@@ -63,16 +63,16 @@ export default function FriendsList() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 bg-blue-500/10" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+    <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-gray-900">Amis</h3>
         <span className="text-sm text-gray-500">{friends.length} amis</span>
@@ -104,7 +104,7 @@ export default function FriendsList() {
                     </span>
                   )}
                 </div>
-                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${
                   onlineUsers.includes(friend.id) ? "bg-green-500" : "bg-gray-400"
                 }`} />
               </div>

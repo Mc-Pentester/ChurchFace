@@ -36,7 +36,7 @@ export default function OnlineFriends() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Users size={18} className="text-green-500" />
           Amis en ligne
@@ -47,7 +47,7 @@ export default function OnlineFriends() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="bg-white rounded-xl shadow-sm p-6">
       <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Users size={18} className="text-green-500" />
         Amis en ligne
@@ -79,7 +79,7 @@ export default function OnlineFriends() {
                     </span>
                   </div>
                 )}
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 truncate">{friend.name || "Anonyme"}</p>

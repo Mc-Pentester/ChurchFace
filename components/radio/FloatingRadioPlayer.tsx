@@ -139,7 +139,7 @@ export default function FloatingRadioPlayer() {
       <div className="fixed bottom-24 lg:bottom-6 right-4 z-50">
         <button
           onClick={toggleMinimize}
-          className="flex items-center gap-2 bg-gray-900 text-white pl-3 pr-2 py-2 rounded-full shadow-2xl border border-emerald-500/40 hover:border-emerald-400 transition max-w-[260px]"
+          className="flex items-center gap-2 bg-gray-900 text-white pl-3 pr-2 py-2 rounded-full shadow-2xl transition max-w-[260px]"
         >
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${isLive ? "bg-red-500 animate-pulse" : "bg-gray-500"}`}
@@ -151,9 +151,9 @@ export default function FloatingRadioPlayer() {
       </div>
     ) : (
     <div className="fixed bottom-24 lg:bottom-6 right-4 z-50 w-[min(100vw-2rem,380px)]">
-      <div className="bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950 rounded-2xl shadow-2xl border border-emerald-500/30 overflow-hidden">
+      <div className="bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+        <div className="flex items-center gap-2 px-4 py-3">
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isLive ? "bg-red-500/20" : "bg-white/10"}`}
           >
@@ -237,10 +237,10 @@ export default function FloatingRadioPlayer() {
             </button>
             <button
               onClick={() => setChatOpen((v) => !v)}
-              className={`p-2.5 rounded-xl border transition ${
+              className={`p-2.5 rounded-xl transition ${
                 chatOpen
-                  ? "bg-emerald-600/20 border-emerald-500/50 text-emerald-300"
-                  : "bg-white/5 border-white/10 text-gray-400 hover:text-white"
+                  ? "bg-emerald-600/20 text-emerald-300"
+                  : "bg-white/5 text-gray-400 hover:text-white"
               }`}
               title="Chat"
             >
@@ -251,7 +251,7 @@ export default function FloatingRadioPlayer() {
 
         {/* Chat */}
         {chatOpen && (
-          <div className="border-t border-white/10 bg-black/30">
+          <div className="bg-black/30">
             <div className="max-h-36 overflow-y-auto px-3 py-2 space-y-1.5">
               {chatMessages.length === 0 && (
                 <p className="text-[10px] text-gray-500 text-center py-2">
@@ -269,13 +269,13 @@ export default function FloatingRadioPlayer() {
             </div>
             <form
               onSubmit={sendChat}
-              className="flex gap-2 p-2 border-t border-white/10"
+              className="flex gap-2 p-2"
             >
               <input
                 value={chatText}
                 onChange={(e) => setChatText(e.target.value)}
                 placeholder="Message..."
-                className="flex-1 bg-white/10 border border-white/10 rounded-lg px-2 py-1.5 text-base text-white placeholder-gray-500 outline-none focus:border-emerald-500/50"
+                className="flex-1 bg-white/10 rounded-lg px-2 py-1.5 text-base text-white placeholder-gray-500 outline-none"
               />
               <button
                 type="submit"

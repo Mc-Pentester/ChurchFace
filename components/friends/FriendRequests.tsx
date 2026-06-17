@@ -2,18 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
-
-type FriendRequest = {
-  id: string;
-  name: string | null;
-  email: string;
-  image: string | null;
-  bio: string | null;
-  church: string | null;
-  city: string | null;
-  friendshipId: string;
-  mutualFriends?: number;
-};
+import type { FriendRequest } from "@/types/friends";
 
 export default function FriendRequests() {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
@@ -72,16 +61,16 @@ export default function FriendRequests() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 bg-blue-500/10" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="bg-white rounded-xl shadow-sm p-6">
       <h2 className="text-xl font-bold text-gray-900 mb-6">Demandes reçues</h2>
       
       {requests.length === 0 ? (
@@ -94,11 +83,11 @@ export default function FriendRequests() {
               className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition"
             >
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {request.image ? (
                     <img src={request.image} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-blue-700 font-bold text-xl">
+                    <span className="text-emerald-700 font-bold text-xl">
                       {(request.name || request.email)[0]?.toUpperCase()}
                     </span>
                   )}
@@ -114,7 +103,7 @@ export default function FriendRequests() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleRequest(request.friendshipId, "accept")}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
                     >
                       <Check size={16} />
                       Accepter

@@ -58,7 +58,7 @@ export default function NotificationToast() {
       {notifications.map((notification) => (
         <div
           key={notification.id}
-          className="w-80 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 shadow-xl rounded-2xl p-4 animate-in slide-in-from-right duration-300"
+          className="w-80 max-w-[calc(100vw-2rem)] bg-white shadow-xl rounded-2xl p-4 animate-in slide-in-from-right duration-300"
         >
           <div className="flex items-start gap-3">
             <div className="text-xl">

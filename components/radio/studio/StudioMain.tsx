@@ -50,7 +50,7 @@ interface ChannelData { id: string; name: string; volume: number; muted: boolean
 function ChannelStrip({ ch, onUpdate }: { ch: ChannelData; onUpdate: (u: Partial<ChannelData>) => void }) {
   const Icon = ch.icon;
   return (
-    <div className="flex flex-col items-center gap-2 bg-[#16161f] rounded-lg p-2 border border-[#252535] min-w-[90px]">
+    <div className="flex flex-col items-center gap-2 bg-[#16161f] rounded-lg p-2 min-w-[90px]">
       <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase">
         <Icon size={10} className={ch.color} />
         <span className="truncate max-w-[70px]">{ch.name}</span>
@@ -606,7 +606,7 @@ export default function StudioMain({
         {/* ── Top Row: Diffusion + Statut ── */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           {/* Diffusion en direct */}
-          <div className="xl:col-span-2 bg-[#16161f] rounded-xl border border-[#252535] p-4">
+          <div className="xl:col-span-2 bg-[#16161f] rounded-xl p-4">
             <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Diffusion en direct</h3>
             <div className="flex items-center gap-4">
               <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0">
@@ -649,7 +649,7 @@ export default function StudioMain({
                 </div>
                 <button
                   onClick={toggleLive}
-                  className={`flex items-center justify-center gap-1 text-[10px] px-2 py-1 rounded transition font-medium ${isLive ? "bg-red-600/20 text-red-400 border border-red-600/30" : "bg-emerald-600/20 text-emerald-400 border border-emerald-600/30"}`}
+                  className={`flex items-center justify-center gap-1 text-[10px] px-2 py-1 rounded transition font-medium ${isLive ? "bg-red-600/20 text-red-400" : "bg-emerald-600/20 text-emerald-400"}`}
                 >
                   <Radio size={10} /> {isLive ? "OFF AIR" : "ON AIR"}
                 </button>
@@ -667,7 +667,7 @@ export default function StudioMain({
                       if (data.radio) onRadioUpdate?.(data.radio);
                     }
                   }}
-                  className={`flex items-center justify-center gap-1 text-[10px] px-2 py-1 rounded transition ${autoDj ? "bg-violet-600/30 text-violet-300 border border-violet-600/30" : "text-gray-400 bg-[#1e1e2d] hover:bg-[#252535]"}`}
+                  className={`flex items-center justify-center gap-1 text-[10px] px-2 py-1 rounded transition ${autoDj ? "bg-violet-600/30 text-violet-300" : "text-gray-400 bg-[#1e1e2d] hover:bg-[#252535]"}`}
                 >
                   <MonitorUp size={10} /> AutoDJ {autoDj ? "ON" : "OFF"}
                 </button>
@@ -676,7 +676,7 @@ export default function StudioMain({
           </div>
 
           {/* Statut diffusion */}
-          <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+          <div className="bg-[#16161f] rounded-xl p-4">
             <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Statut diffusion</h3>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
@@ -744,7 +744,7 @@ export default function StudioMain({
         </div>
 
         {/* ── Mixeur Audio ── */}
-        <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+        <div className="bg-[#16161f] rounded-xl p-4">
           <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Mixeur Audio</h3>
           <div className="flex flex-wrap justify-center gap-2">
             {channels.map((ch) => (
@@ -756,7 +756,7 @@ export default function StudioMain({
         {/* ── Playlist + Bibliothèque ── */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* Playlist en cours */}
-          <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+          <div className="bg-[#16161f] rounded-xl p-4">
             <div className="flex items-center justify-between mb-3 gap-2">
               <div className="min-w-0 flex-1">
                 <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Playlist en cours</h3>
@@ -766,7 +766,7 @@ export default function StudioMain({
                     const pl = playlists.find((p) => p.id === e.target.value);
                     if (pl) switchPlaylist(pl);
                   }}
-                  className="mt-1 w-full bg-[#1e1e2d] border border-[#252535] rounded-lg px-2 py-1 text-xs text-white"
+                  className="mt-1 w-full bg-[#1e1e2d] rounded-lg px-2 py-1 text-xs text-white"
                 >
                   {playlists.map((pl) => (
                     <option key={pl.id} value={pl.id}>{pl.title}</option>
@@ -790,18 +790,18 @@ export default function StudioMain({
             )}
 
             {showAddForm && (
-              <form onSubmit={handleAddByUrl} className="mb-3 p-2 rounded-lg bg-[#1e1e2d] border border-[#252535] space-y-2">
+              <form onSubmit={handleAddByUrl} className="mb-3 p-2 rounded-lg bg-[#1e1e2d] space-y-2">
                 <input
                   value={addTitle}
                   onChange={(e) => setAddTitle(e.target.value)}
                   placeholder="Titre de la piste"
-                  className="w-full bg-[#16161f] border border-[#252535] rounded px-2 py-1.5 text-xs text-white"
+                  className="w-full bg-[#16161f] rounded px-2 py-1.5 text-xs text-white"
                 />
                 <input
                   value={addUrl}
                   onChange={(e) => setAddUrl(e.target.value)}
                   placeholder="URL audio (mp3, wav, lien UploadThing...)"
-                  className="w-full bg-[#16161f] border border-[#252535] rounded px-2 py-1.5 text-xs text-white"
+                  className="w-full bg-[#16161f] rounded px-2 py-1.5 text-xs text-white"
                 />
                 <div className="flex gap-2">
                   <button
@@ -839,7 +839,7 @@ export default function StudioMain({
               <>
                 <div className="space-y-1">
                   {activePlaylistItems.length === 0 && (
-                    <div className="text-center text-gray-500 text-xs py-6 border border-dashed border-[#252535] rounded-lg">
+                    <div className="text-center text-gray-500 text-xs py-6 rounded-lg">
                       Playlist vide — cliquez « Ajouter » pour importer ou coller une URL audio.
                     </div>
                   )}
@@ -847,7 +847,7 @@ export default function StudioMain({
                     <div
                       key={track.id || idx}
                       onClick={() => playTrack(idx)}
-                      className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer ${idx === currentTrackIndex ? "bg-violet-600/10 border border-violet-600/30" : "hover:bg-[#1e1e2d]"}`}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer ${idx === currentTrackIndex ? "bg-violet-600/10" : "hover:bg-[#1e1e2d]"}`}
                     >
                       <span className="text-[10px] text-gray-500 w-4 text-center">{idx + 1}</span>
                       {idx === currentTrackIndex ? (
@@ -883,7 +883,7 @@ export default function StudioMain({
           </div>
 
           {/* Bibliothèque */}
-          <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+          <div className="bg-[#16161f] rounded-xl p-4">
             <div className="flex items-center justify-between mb-3 gap-2">
               <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bibliothèque</h3>
               <UploadButton
@@ -920,7 +920,7 @@ export default function StudioMain({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher..."
-                className="w-full bg-[#1e1e2d] border border-[#252535] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-violet-600/50"
+                className="w-full bg-[#1e1e2d] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none"
               />
             </div>
             <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
@@ -958,7 +958,7 @@ export default function StudioMain({
         {/* ── Bottom Row: Intervenants + Effets + Rec + Raccourcis ── */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           {/* Intervenants */}
-          <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+          <div className="bg-[#16161f] rounded-xl p-4">
             <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Intervenants en ligne</h3>
             <div className="flex items-center gap-3">
               {[
@@ -968,8 +968,8 @@ export default function StudioMain({
               ].map((guest) => (
                 <div key={guest.name} className="flex flex-col items-center gap-1 relative">
                   <div className="relative">
-                    <img src={guest.img} alt={guest.name} className="w-9 h-9 rounded-full object-cover border-2 border-[#252535]" />
-                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#16161f] ${guest.mic ? "bg-emerald-500" : "bg-red-500"}`}>
+                    <img src={guest.img} alt={guest.name} className="w-9 h-9 rounded-full object-cover" />
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ${guest.mic ? "bg-emerald-500" : "bg-red-500"}`}>
                       <Mic size={6} className="text-white absolute inset-0 m-auto" />
                     </div>
                   </div>
@@ -978,7 +978,7 @@ export default function StudioMain({
                 </div>
               ))}
               <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition">
-                <div className="w-9 h-9 rounded-full border-2 border-dashed border-gray-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center">
                   <Plus size={14} />
                 </div>
                 <span className="text-[10px]">Inviter</span>
@@ -987,7 +987,7 @@ export default function StudioMain({
           </div>
 
           {/* Effets & Outils */}
-          <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+          <div className="bg-[#16161f] rounded-xl p-4">
             <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Effets & Outils</h3>
             <div className="flex gap-2">
               {[
@@ -998,7 +998,7 @@ export default function StudioMain({
                 { label: "Cloche", icon: Bell, action: playBell },
                 { label: "Publicité", icon: MonitorUp, action: () => playTone(440, 0.5, "square") },
               ].map((fx) => (
-                <button key={fx.label} onClick={fx.action} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-[#1e1e2d] hover:bg-[#252535] transition border border-transparent hover:border-[#353545]">
+                <button key={fx.label} onClick={fx.action} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-[#1e1e2d] hover:bg-[#252535] transition">
                   <fx.icon size={14} className="text-gray-400" />
                   <span className="text-[9px] text-gray-500">{fx.label}</span>
                 </button>
@@ -1008,7 +1008,7 @@ export default function StudioMain({
 
           {/* Enregistrement + Raccourcis */}
           <div className="flex flex-col gap-4">
-            <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+            <div className="bg-[#16161f] rounded-xl p-4">
               <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Enregistrement</h3>
               <div className="flex items-center gap-3">
                 <button
@@ -1027,7 +1027,7 @@ export default function StudioMain({
                 )}
               </div>
             </div>
-            <div className="bg-[#16161f] rounded-xl border border-[#252535] p-4">
+            <div className="bg-[#16161f] rounded-xl p-4">
               <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Raccourcis</h3>
               <div className="space-y-1 text-[10px] text-gray-400">
                 <div className="flex justify-between"><span>Démarrer live</span><span className="font-mono text-gray-500 bg-[#1e1e2d] px-1 rounded">CTRL + L</span></div>

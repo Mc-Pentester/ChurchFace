@@ -13,7 +13,7 @@ export default function StudioHeader({ radio, isLive, elapsed }: { radio: any; i
   const s = elapsed % 60;
 
   return (
-    <header className="h-14 bg-[#12121a] border-b border-[#252535] flex items-center justify-between px-4 shrink-0">
+    <header className="h-14 bg-[#12121a] flex items-center justify-between px-4 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-3 min-w-[200px]">
         <div className="flex flex-col">

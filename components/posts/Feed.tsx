@@ -539,7 +539,7 @@ export default function Feed() {
           ) : null}
 
           {/* ACTIONS */}
-          <div className="flex gap-4 text-sm pt-2 border-t">
+          <div className="flex gap-4 text-sm pt-2">
 
             <button
               onClick={() => handleLike(p.id)}
@@ -644,7 +644,7 @@ function CommentItem({
       )}
 
       {comment.replies && comment.replies.length > 0 && (
-        <div className="pl-4 border-l-2 border-gray-200 space-y-1">
+        <div className="pl-4 space-y-1">
           {comment.replies.map((reply, idx) => (
             <div key={idx} className="text-sm">
               <b>{reply.user}</b> {reply.content}

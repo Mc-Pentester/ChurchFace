@@ -39,7 +39,7 @@ export default function PrayerCard({
   const verseCount = prayer._count?.verses ?? 0;
 
   return (
-    <div className="bg-white rounded-2xl border shadow-sm p-5 hover:shadow-md transition">
+    <div className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -119,12 +119,12 @@ export default function PrayerCard({
       </div>
 
       {/* Actions */}
-      <div className="mt-4 flex items-center gap-2 border-t pt-3">
+      <div className="mt-4 flex items-center gap-2 pt-3">
         <button
           onClick={() => onPray(prayer.id)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition flex-1 justify-center ${
             hasPrayed
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              ? "bg-emerald-50 text-emerald-700"
               : "bg-gray-50 text-gray-600 hover:bg-gray-100"
           }`}
         >

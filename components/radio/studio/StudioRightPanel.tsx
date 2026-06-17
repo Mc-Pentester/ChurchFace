@@ -95,10 +95,10 @@ export default function StudioRightPanel({
   const fmtTime = (d: string) => new Date(d).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <aside className="w-80 bg-[#12121a] border-l border-[#252535] flex flex-col h-full shrink-0 overflow-hidden">
+    <aside className="w-80 bg-[#12121a] flex flex-col h-full shrink-0 overflow-hidden">
       {/* ── Chat Auditeurs ── */}
-      <div className="flex-1 flex flex-col min-h-0 border-b border-[#252535]">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#252535]">
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex items-center justify-between px-4 py-2.5">
           <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Chat Auditeurs</h3>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -109,7 +109,7 @@ export default function StudioRightPanel({
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
           {messages.map((msg) => (
-            <div key={msg.id} className={`group relative p-2 rounded-lg text-xs ${msg.isPinned ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-[#1a1a25]"}`}>
+            <div key={msg.id} className={`group relative p-2 rounded-lg text-xs ${msg.isPinned ? "bg-yellow-500/10" : "bg-[#1a1a25]"}`}>
               <div className="flex items-center gap-1.5 mb-0.5">
                 <div className="w-5 h-5 rounded-full bg-violet-600/30 flex items-center justify-center text-[9px] text-violet-300 font-bold">{msg.name[0]}</div>
                 <span className="font-semibold text-gray-300">{msg.name}</span>
@@ -126,12 +126,12 @@ export default function StudioRightPanel({
           ))}
         </div>
 
-        <form onSubmit={send} className="p-3 flex gap-2 border-t border-[#252535]">
+        <form onSubmit={send} className="p-3 flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Envoyer un message..."
-            className="flex-1 bg-[#1a1a25] border border-[#252535] rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-violet-600/50"
+            className="flex-1 bg-[#1a1a25] rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none"
           />
           <button type="submit" className="px-3 py-2 bg-violet-600 rounded-lg text-white hover:bg-violet-500 transition">
             <Send size={14} />
@@ -142,13 +142,13 @@ export default function StudioRightPanel({
         <div className="px-3 pb-2">
           <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Modération Chat</h4>
           <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 py-1 rounded transition hover:bg-emerald-500/20">
+            <button className="flex-1 flex items-center justify-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 py-1 rounded transition hover:bg-emerald-500/20">
               <Pin size={10} /> Mettre en avant
             </button>
-            <button className="flex-1 flex items-center justify-center gap-1 text-[10px] text-red-400 bg-red-500/10 border border-red-500/30 py-1 rounded transition hover:bg-red-500/20">
+            <button className="flex-1 flex items-center justify-center gap-1 text-[10px] text-red-400 bg-red-500/10 py-1 rounded transition hover:bg-red-500/20">
               <Trash2 size={10} /> Supprimer
             </button>
-            <button className="flex-1 flex items-center justify-center gap-1 text-[10px] text-orange-400 bg-orange-500/10 border border-orange-500/30 py-1 rounded transition hover:bg-orange-500/20">
+            <button className="flex-1 flex items-center justify-center gap-1 text-[10px] text-orange-400 bg-orange-500/10 py-1 rounded transition hover:bg-orange-500/20">
               <UserX size={10} /> Bannir
             </button>
           </div>
@@ -165,7 +165,7 @@ export default function StudioRightPanel({
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-[#1a1a25] rounded-lg p-2.5 border border-[#252535]">
+          <div className="bg-[#1a1a25] rounded-lg p-2.5">
             <div className="flex items-center gap-1 mb-1">
               <Headphones size={10} className="text-violet-400" />
               <span className="text-[9px] text-gray-500">Auditeurs</span>
@@ -174,21 +174,21 @@ export default function StudioRightPanel({
               <span className="text-lg font-bold text-white">{radio?.listenerCount || 0}</span>
             </div>
           </div>
-          <div className="bg-[#1a1a25] rounded-lg p-2.5 border border-[#252535]">
+          <div className="bg-[#1a1a25] rounded-lg p-2.5">
             <div className="flex items-center gap-1 mb-1">
               <TrendingUp size={10} className="text-blue-400" />
               <span className="text-[9px] text-gray-500">Pic d'audience</span>
             </div>
             <div className="text-lg font-bold text-white">{radio?.peakListeners || 0}</div>
           </div>
-          <div className="bg-[#1a1a25] rounded-lg p-2.5 border border-[#252535]">
+          <div className="bg-[#1a1a25] rounded-lg p-2.5">
             <div className="flex items-center gap-1 mb-1">
               <Clock size={10} className="text-orange-400" />
               <span className="text-[9px] text-gray-500">Durée du live</span>
             </div>
             <div className="text-lg font-bold text-white">{radio?.startedAt ? new Date(Date.now() - new Date(radio.startedAt).getTime()).toISOString().substr(11,8) : "00:00:00"}</div>
           </div>
-          <div className="bg-[#1a1a25] rounded-lg p-2.5 border border-[#252535]">
+          <div className="bg-[#1a1a25] rounded-lg p-2.5">
             <div className="flex items-center gap-1 mb-1">
               <MessageCircle size={10} className="text-emerald-400" />
               <span className="text-[9px] text-gray-500">Interactions</span>

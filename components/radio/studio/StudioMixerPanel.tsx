@@ -42,7 +42,7 @@ export default function StudioMixerPanel() {
       {/* CHANNELS */}
       <div className="grid grid-cols-4 gap-2">
         {channels.map((ch) => (
-          <div key={ch.id} className="bg-gray-800/50 rounded-lg p-2 border border-gray-700/50 flex flex-col items-center">
+          <div key={ch.id} className="bg-gray-800/50 rounded-lg p-2 flex flex-col items-center">
             {/* VU METER */}
             <div className="w-3 h-20 bg-gray-900 rounded-full relative mb-2 overflow-hidden">
               <div
@@ -98,7 +98,7 @@ export default function StudioMixerPanel() {
       </div>
 
       {/* MASTER */}
-      <div className="bg-gray-900/80 rounded-lg p-3 border border-gray-700/50">
+      <div className="bg-gray-900/80 rounded-lg p-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold text-gray-300">MASTER</span>
           <span className="text-xs font-mono text-emerald-400">{masterVolume}%</span>

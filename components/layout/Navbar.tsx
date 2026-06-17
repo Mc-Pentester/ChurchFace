@@ -186,7 +186,7 @@ export default function Navbar({ onLoginClick }: any) {
   }, [search]);
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
 
       {/* LEFT */}
       <div className="flex items-center gap-4">
@@ -271,8 +271,8 @@ export default function Navbar({ onLoginClick }: any) {
 
           {/* DROPDOWN */}
           {showNotifications && (
-            <div className="absolute right-0 top-12 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border overflow-hidden z-50">
-              <div className="p-4 border-b flex items-center justify-between">
+            <div className="absolute right-0 top-12 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl overflow-hidden z-50">
+              <div className="p-4 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-800">Notifications</h3>
                 <button
                   onClick={() => markAsRead()}
@@ -285,7 +285,7 @@ export default function Navbar({ onLoginClick }: any) {
               <div className="max-h-80 overflow-y-auto">
                 {loadingNotifications ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500" />
+                    <div className="animate-spin rounded-full h-6 w-6 bg-emerald-500/10" />
                   </div>
                 ) : notifications.length === 0 ? (
                   <p className="text-center text-gray-500 text-sm py-8">Aucune notification</p>
@@ -293,7 +293,7 @@ export default function Navbar({ onLoginClick }: any) {
                   notifications.map((notif) => (
                     <div
                       key={notif.id}
-                      className={`p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition ${
+                      className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
                         !notif.isRead ? "bg-emerald-50/50" : ""
                       }`}
                       onClick={() => markAsRead([notif.id])}

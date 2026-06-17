@@ -70,7 +70,7 @@ export default function StudioChatPanel({ radioId }: StudioChatPanelProps) {
           <div className="text-center text-gray-500 text-xs py-8">Aucun message encore</div>
         )}
         {messages.map((msg) => (
-          <div key={msg.id} className={`group relative p-2 rounded-lg text-xs ${msg.isPinned ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-gray-800/40"}`}>
+          <div key={msg.id} className={`group relative p-2 rounded-lg text-xs ${msg.isPinned ? "bg-yellow-500/10" : "bg-gray-800/40"}`}>
             <div className="flex items-center gap-1 mb-0.5">
               <span className="font-semibold text-emerald-400">{msg.user?.name || msg.name || "Anonyme"}</span>
               <span className="text-gray-600 text-[10px]">{new Date(msg.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
@@ -89,7 +89,7 @@ export default function StudioChatPanel({ radioId }: StudioChatPanelProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Modérer le chat..."
-          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+          className="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none"
         />
         <button type="submit" className="px-3 py-2 bg-emerald-600 rounded-lg text-white text-sm hover:bg-emerald-700 transition">
           📤

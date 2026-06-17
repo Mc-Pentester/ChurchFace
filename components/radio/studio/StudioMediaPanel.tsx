@@ -69,7 +69,7 @@ export default function StudioMediaPanel({ radioId }: StudioMediaPanelProps) {
               <button
                 key={pl.id}
                 onClick={() => setActivePlaylist(pl.id === activePlaylist?.id ? null : pl)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition flex items-center justify-between ${activePlaylist?.id === pl.id ? "bg-emerald-600/20 border border-emerald-600/40 text-emerald-300" : "bg-gray-800/40 text-gray-300 hover:bg-gray-800"}`}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition flex items-center justify-between ${activePlaylist?.id === pl.id ? "bg-emerald-600/20 text-emerald-300" : "bg-gray-800/40 text-gray-300 hover:bg-gray-800"}`}
               >
                 <span className="truncate">{pl.title}</span>
                 <span className="text-xs text-gray-500">{pl.items?.length || 0} tracks</span>

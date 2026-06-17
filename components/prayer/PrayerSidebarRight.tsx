@@ -24,7 +24,7 @@ export default function PrayerSidebarRight({ chains, rooms }: Props) {
       </div>
 
       {/* Salles de prière en direct */}
-      <div className="bg-white rounded-2xl border p-4">
+      <div className="bg-white rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           <h3 className="font-bold text-gray-800 text-sm">Salles de prière</h3>
@@ -54,7 +54,7 @@ export default function PrayerSidebarRight({ chains, rooms }: Props) {
       </div>
 
       {/* Chaînes de prière */}
-      <div className="bg-white rounded-2xl border p-4">
+      <div className="bg-white rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Link2 size={18} className="text-emerald-600" />
           <h3 className="font-bold text-gray-800 text-sm">Chaînes actives</h3>
@@ -74,7 +74,7 @@ export default function PrayerSidebarRight({ chains, rooms }: Props) {
                     {chain.links?.slice(0, 3).map((link) => (
                       <div
                         key={link.id}
-                        className="w-5 h-5 rounded-full bg-emerald-200 border border-white flex items-center justify-center text-[8px] text-emerald-700 font-bold"
+                        className="w-5 h-5 rounded-full bg-emerald-200 flex items-center justify-center text-[8px] text-emerald-700 font-bold"
                         title={link.user.name || ""}
                       >
                         {(link.user.name || "?")[0]?.toUpperCase()}

@@ -84,7 +84,7 @@ export default function StoriesBar() {
                   "/default-avatar.png"
                 }
                 alt=""
-                className="w-full h-full rounded-full object-cover border-2 border-white"
+                className="w-full h-full rounded-full object-cover"
               />
             </div>
 

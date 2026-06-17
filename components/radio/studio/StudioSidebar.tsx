@@ -34,7 +34,7 @@ const modItems = [
 
 export default function StudioSidebar({ activeView, setActiveView }: Props) {
   return (
-    <aside className="w-56 bg-[#12121a] border-r border-[#252535] flex flex-col h-full shrink-0 overflow-y-auto">
+    <aside className="w-56 bg-[#12121a] flex flex-col h-full shrink-0 overflow-y-auto">
       {/* Section Studio */}
       <div className="px-4 py-3">
         <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Studio Radio</h3>
@@ -93,7 +93,7 @@ export default function StudioSidebar({ activeView, setActiveView }: Props) {
       </div>
 
       {/* Bottom mini profile */}
-      <div className="mt-auto p-3 border-t border-[#252535]">
+      <div className="mt-auto p-3">
         <div className="flex items-center gap-2 bg-[#1a1a25] rounded-lg p-2">
           <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden">
             <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" alt="Host" className="w-full h-full object-cover" />

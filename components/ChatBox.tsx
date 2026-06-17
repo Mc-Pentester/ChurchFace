@@ -102,12 +102,12 @@ export default function ChatBox({ chatId, userId }: any) {
       </div>
 
       {/* INPUT */}
-      <div className="p-3 flex gap-2 border-t">
+      <div className="p-3 flex gap-2">
         <input
           value={text}
           onChange={(e) => handleTypingInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          className="flex-1 border rounded-full px-4 py-2 outline-none focus:border-emerald-500"
+          className="flex-1 rounded-full px-4 py-2 outline-none"
           placeholder="Écrire un message..."
         />
         <button

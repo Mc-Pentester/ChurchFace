@@ -104,7 +104,7 @@ export default function ChatPopup() {
 
   return (
     <div
-      className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-2xl shadow-2xl border flex flex-col transition-all duration-300 ${
+      className={`fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-2xl shadow-2xl flex flex-col transition-all duration-300 ${
         isMinimized ? "h-14" : "h-[500px]"
       }`}
     >
@@ -166,7 +166,7 @@ export default function ChatPopup() {
           </div>
 
           {/* INPUT */}
-          <div className="p-3 flex gap-2 border-t shrink-0">
+          <div className="p-3 flex gap-2 shrink-0">
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}

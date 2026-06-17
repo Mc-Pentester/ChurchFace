@@ -30,7 +30,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b">
+        <div className="flex items-center justify-between px-5 py-4">
           <h2 className="font-bold text-gray-800">Nouvelle demande de prière</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
@@ -45,7 +45,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Prière pour ma guérison"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base"
+              className="w-full px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base"
               required
             />
           </div>
@@ -57,7 +57,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Partagez votre besoin en détail..."
               rows={4}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base resize-none"
+              className="w-full px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base resize-none"
               required
             />
           </div>
@@ -70,10 +70,10 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
                   key={cat.key}
                   type="button"
                   onClick={() => setCategory(cat.key)}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium transition border ${
+                  className={`px-3 py-2 rounded-xl text-xs font-medium transition ${
                     category === cat.key
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   {cat.emoji} {cat.label}

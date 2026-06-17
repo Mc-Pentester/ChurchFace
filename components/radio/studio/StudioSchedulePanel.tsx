@@ -77,29 +77,29 @@ export default function StudioSchedulePanel({ radioId }: StudioSchedulePanelProp
       </div>
 
       {showForm && (
-        <form onSubmit={createSchedule} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700 space-y-2">
+        <form onSubmit={createSchedule} className="bg-gray-800/50 rounded-lg p-3 space-y-2">
           <input
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder="Nom de l'émission"
-            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-gray-900 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none"
           />
           <input
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="Description"
-            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-gray-900 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none"
           />
           <input
             value={form.hostName}
             onChange={(e) => setForm({ ...form, hostName: e.target.value })}
             placeholder="Animateur"
-            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-gray-900 rounded px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none"
           />
           <select
             value={form.playlistId}
             onChange={(e) => setForm({ ...form, playlistId: e.target.value })}
-            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+            className="w-full bg-gray-900 rounded px-3 py-1.5 text-sm text-white focus:outline-none"
           >
             <option value="">— Playlist (optionnel) —</option>
             {playlists.map((pl) => (
@@ -111,14 +111,14 @@ export default function StudioSchedulePanel({ radioId }: StudioSchedulePanelProp
               type="datetime-local"
               value={form.startTime}
               onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-              className="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+              className="flex-1 bg-gray-900 rounded px-3 py-1.5 text-sm text-white focus:outline-none"
             />
             <input
               type="number"
               value={form.duration}
               onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) || 60 })}
               placeholder="Min"
-              className="w-20 bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+              className="w-20 bg-gray-900 rounded px-3 py-1.5 text-sm text-white focus:outline-none"
             />
           </div>
           <div className="flex gap-2">
@@ -135,7 +135,7 @@ export default function StudioSchedulePanel({ radioId }: StudioSchedulePanelProp
         {schedules.map((s) => (
           <div
             key={s.id}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm border transition ${isUpcoming(s.startTime) ? "bg-gray-800/40 border-gray-700/30" : "bg-gray-800/20 border-gray-800/30 opacity-60"}`}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${isUpcoming(s.startTime) ? "bg-gray-800/40" : "bg-gray-800/20 opacity-60"}`}
           >
             <div className={`w-2 h-2 rounded-full ${isUpcoming(s.startTime) ? "bg-emerald-500" : "bg-gray-600"}`} />
             <div className="flex-1 min-w-0">

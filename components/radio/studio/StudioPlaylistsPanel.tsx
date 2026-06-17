@@ -70,7 +70,7 @@ export default function StudioPlaylistsPanel({
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full" />
+        <div className="animate-spin w-6 h-6 bg-violet-500/10 rounded-full" />
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default function StudioPlaylistsPanel({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Nouvelle playlist..."
-          className="flex-1 bg-[#16161f] border border-[#252535] rounded-lg px-3 py-2 text-sm text-white"
+          className="flex-1 bg-[#16161f] rounded-lg px-3 py-2 text-sm text-white"
         />
         <button
           type="submit"
@@ -101,8 +101,8 @@ export default function StudioPlaylistsPanel({
           return (
             <div
               key={pl.id}
-              className={`flex items-center gap-3 p-3 rounded-xl border ${
-                isActive ? "border-violet-500/50 bg-violet-500/10" : "border-[#252535] bg-[#16161f]"
+              className={`flex items-center gap-3 p-3 rounded-xl ${
+                isActive ? "bg-violet-500/10" : "bg-[#16161f]"
               }`}
             >
               <Music size={16} className="text-violet-400 shrink-0" />

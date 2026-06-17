@@ -42,7 +42,7 @@ export default function NotificationToast() {
 
   return (
     <div className="fixed top-5 right-5 z-[9999] animate-slide-in">
-      <div className="bg-white shadow-lg border-l-4 border-emerald-500 rounded-xl px-4 py-3 w-80 max-w-[calc(100vw-2.5rem)]">
+      <div className="bg-white shadow-lg rounded-xl px-4 py-3 w-80 max-w-[calc(100vw-2.5rem)]">
         
         <p className="text-gray-800 font-medium">
           {toast.message}

@@ -19,7 +19,7 @@ export default function StoriesBar() {
         <button className="flex flex-col items-center flex-shrink-0 w-20 group">
 
           <div
-            className="w-16 h-16 rounded-full relative overflow-hidden border-2 border-gray-300"
+            className="w-16 h-16 rounded-full relative overflow-hidden"
           >
 
             {/* background image */}
@@ -57,7 +57,7 @@ export default function StoriesBar() {
               <img
                 src={s.img}
                 alt={s.name}
-                className="w-full h-full rounded-full object-cover border-2 border-white"
+                className="w-full h-full rounded-full object-cover"
               />
             </div>
 

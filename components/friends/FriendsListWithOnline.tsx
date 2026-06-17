@@ -64,16 +64,16 @@ export default function FriendsListWithOnline() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 bg-blue-500/10" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Mes amis</h2>
         <span className="text-sm text-gray-500">{friends.length} amis</span>
@@ -89,16 +89,16 @@ export default function FriendsListWithOnline() {
               className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition flex items-center gap-4"
             >
               <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden">
                   {friend.image ? (
                     <img src={friend.image} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-blue-700 font-bold text-lg">
+                    <span className="text-emerald-700 font-bold text-lg">
                       {(friend.name || friend.email)[0]?.toUpperCase()}
                     </span>
                   )}
                 </div>
-                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${
                   onlineUsers.includes(friend.id) ? "bg-green-500" : "bg-gray-400"
                 }`} />
               </div>
@@ -113,7 +113,7 @@ export default function FriendsListWithOnline() {
               <div className="flex gap-2">
                 <Link
                   href={`/chat?userId=${friend.id}`}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition"
                 >
                   <MessageCircle size={16} />
                 </Link>

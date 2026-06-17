@@ -136,7 +136,7 @@ export default function ShareMenu({
           )}
 
           {/* Divider */}
-          <div className="border-t" />
+          <div className="" />
 
           {/* Social networks */}
           <div className="space-y-1">
@@ -156,7 +156,7 @@ export default function ShareMenu({
           </div>
 
           {/* Divider */}
-          <div className="border-t" />
+          <div className="" />
 
           {/* Copy link */}
           <button

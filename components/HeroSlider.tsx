@@ -86,7 +86,7 @@ export default function HeroSlider({
         <div className="max-w-5xl text-center text-white">
 
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-md px-4 py-2 rounded-full mb-8">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full mb-8">
 
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
 
@@ -116,7 +116,7 @@ export default function HeroSlider({
               Commencer maintenant
             </button>
 
-            <button className="flex items-center gap-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 px-8 py-4 rounded-2xl text-lg font-medium transition-all duration-300">
+            <button className="flex items-center gap-3 bg-white/10 hover:bg-white/20 backdrop-blur-md px-8 py-4 rounded-2xl text-lg font-medium transition-all duration-300">
 
               <Play className="w-5 h-5" />
 
@@ -133,7 +133,7 @@ export default function HeroSlider({
       {/* LEFT ARROW */}
       <button
         onClick={prevSlide}
-        className="absolute left-6 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 p-3 rounded-full transition"
+        className="absolute left-6 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full transition"
       >
         <ChevronLeft className="text-white w-6 h-6" />
       </button>
@@ -141,7 +141,7 @@ export default function HeroSlider({
       {/* RIGHT ARROW */}
       <button
         onClick={nextSlide}
-        className="absolute right-6 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 p-3 rounded-full transition"
+        className="absolute right-6 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full transition"
       >
         <ChevronRight className="text-white w-6 h-6" />
       </button>

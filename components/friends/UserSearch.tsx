@@ -2,18 +2,11 @@
 
 import { useState } from "react";
 import { Search, UserPlus, Check } from "lucide-react";
-
-type User = {
-  id: string;
-  name: string | null;
-  email: string;
-  image: string | null;
-  bio: string | null;
-};
+import type { UserBasic } from "@/types/friends";
 
 export default function UserSearch() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<User[]>([]);
+  const [results, setResults] = useState<UserBasic[]>([]);
   const [loading, setLoading] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set());
 
@@ -53,7 +46,7 @@ export default function UserSearch() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
+    <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-gray-900">Rechercher des amis</h3>
       </div>
@@ -65,13 +58,13 @@ export default function UserSearch() {
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Rechercher par nom ou email..."
-          className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+          className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base"
         />
       </div>
 
       {loading && (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 bg-blue-500/10" />
         </div>
       )}
 
@@ -97,14 +90,14 @@ export default function UserSearch() {
                 <p className="text-sm text-gray-500 truncate mb-3">{user.email}</p>
                 
                 {pendingRequests.has(user.id) ? (
-                  <div className="flex items-center gap-2 text-blue-600 text-sm font-medium">
+                  <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
                     <Check size={16} />
                     <span>Demande envoyée</span>
                   </div>
                 ) : (
                   <button
                     onClick={() => sendFriendRequest(user.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition w-full"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition w-full"
                   >
                     Ajouter ami
                   </button>
