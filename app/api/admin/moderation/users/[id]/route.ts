@@ -51,8 +51,8 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    const user = a.user.update({
-      where: { id: params.id },
+    const user = await prisma.user.update({
+      where: { id },
       data: updateData,
       select: {
         id: true,
