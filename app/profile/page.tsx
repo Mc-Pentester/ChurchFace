@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Navbar from "@/components/layout/Navbar";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -21,36 +22,39 @@ export default function ProfilePage() {
   if (!session) return null;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="bg-white p-4 md:p-6 rounded-xl shadow w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => {}} />
+      <div className="p-4 md:p-6">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow w-full max-w-md">
 
-        <img
-          src={session.user?.image || "/avatar.png"}
-          alt={session.user?.name || "Avatar utilisateur"}
-          className="w-20 h-20 rounded-full"
-        />
+          <img
+            src={session.user?.image || "/avatar.png"}
+            alt={session.user?.name || "Avatar utilisateur"}
+            className="w-20 h-20 rounded-full"
+          />
 
-        <h2 className="text-xl font-bold mt-3">
-          {session.user?.name}
-        </h2>
+          <h2 className="text-xl font-bold mt-3 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
+            {session.user?.name}
+          </h2>
 
-        <p className="text-gray-500">
-          {session.user?.email}
-        </p>
-
-        {bio && (
-          <p className="mt-3 text-gray-700 text-sm">
-            {bio}
+          <p className="text-gray-500">
+            {session.user?.email}
           </p>
-        )}
 
-        <Link
-          href="/profile/edit"
-          className="mt-4 inline-block text-emerald-600 hover:text-emerald-700 font-medium"
-        >
-          Modifier mon profil →
-        </Link>
+          {bio && (
+            <p className="mt-3 text-gray-700 text-sm">
+              {bio}
+            </p>
+          )}
 
+          <Link
+            href="/profile/edit"
+            className="mt-4 inline-block text-emerald-600 hover:text-emerald-700 font-medium"
+          >
+            Modifier mon profil →
+          </Link>
+
+        </div>
       </div>
     </div>
   );

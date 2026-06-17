@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Play, Radio, Eye, Calendar } from "lucide-react";
 import type { LiveBroadcast } from "@/types/preaching";
+import Navbar from "@/components/layout/Navbar";
 
 export default function LivePage() {
   const [broadcasts, setBroadcasts] = useState<LiveBroadcast[]>([]);
@@ -40,10 +41,11 @@ export default function LivePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => {}} />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
+          <h1 className="text-3xl font-bold flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
             <Radio className="text-red-500" />
             Diffusions en direct
           </h1>

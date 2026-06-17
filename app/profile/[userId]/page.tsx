@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { UserPlus, UserCheck, UserMinus, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Navbar from "@/components/layout/Navbar";
 
 type UserProfile = {
   id: string;
@@ -136,21 +137,23 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const isOwnProfile = session?.user?.id === user.id;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="bg-white p-4 md:p-6 rounded-xl shadow w-full max-w-md space-y-4">
-        <div className="flex items-start gap-4">
-          <img
-            src={user.image || "/avatar.png"}
-            alt={user.name || "Avatar utilisateur"}
-            className="w-20 h-20 rounded-full"
-          />
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => {}} />
+      <div className="p-4 md:p-6">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow w-full max-w-md space-y-4">
+          <div className="flex items-start gap-4">
+            <img
+              src={user.image || "/avatar.png"}
+              alt={user.name || "Avatar utilisateur"}
+              className="w-20 h-20 rounded-full"
+            />
 
-          <div className="flex-1">
-            <h2 className="text-xl font-bold">{user.name || "Anonyme"}</h2>
-            <p className="text-gray-500 text-sm">{user.email}</p>
-            {user.bio && <p className="mt-2 text-gray-700 text-sm">{user.bio}</p>}
+            <div className="flex-1">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">{user.name || "Anonyme"}</h2>
+              <p className="text-gray-500 text-sm">{user.email}</p>
+              {user.bio && <p className="mt-2 text-gray-700 text-sm">{user.bio}</p>}
+            </div>
           </div>
-        </div>
 
         {!isOwnProfile && (
           <div className="flex gap-2 pt-4 border-t">
@@ -202,6 +205,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

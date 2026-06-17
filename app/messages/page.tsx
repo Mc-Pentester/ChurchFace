@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import ConversationList from "@/components/messaging/ConversationList";
 import ChatWindow from "@/components/messaging/ChatWindow";
 import NewConversationModal from "@/components/messaging/NewConversationModal";
+import Navbar from "@/components/layout/Navbar";
 import type { Conversation, Chat } from "@/types/messaging";
 import { socket } from "@/lib/socket";
 import { useCurrentUser } from "@/lib/client-auth";
@@ -99,6 +100,9 @@ export default function MessagesPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      {/* Navbar */}
+      <Navbar onLoginClick={() => {}} />
+
       {/* Mobile Header */}
       <div className="lg:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">

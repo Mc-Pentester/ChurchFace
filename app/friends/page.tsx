@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, UserPlus, Mail, Users, Settings, Church, BookOpen, Radio, Tv, Music, Grid3x3, Calendar, Home, Menu, X, MessageCircle, Bell, User as UserIcon } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
 import UserSearch from "@/components/friends/UserSearch";
 import FriendRequests from "@/components/friends/FriendRequests";
 import FriendSuggestions from "@/components/friends/FriendSuggestions";
@@ -36,9 +37,10 @@ export default function FriendsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => {}} />
       {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white shadow-sm">
+      <div className="lg:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={() => setMobileMenuOpen(true)}
@@ -46,7 +48,7 @@ export default function FriendsPage() {
           >
             <Menu size={24} />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">Amis</h1>
+          <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">Amis</h1>
           <div className="w-10" />
         </div>
       </div>

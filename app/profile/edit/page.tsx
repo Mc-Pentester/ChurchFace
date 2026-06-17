@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Navbar from "@/components/layout/Navbar";
 
 export default function EditProfilePage() {
   const { data: session, status, update } = useSession();
@@ -70,17 +71,19 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Modifier mon profil</h1>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => {}} />
+      <div className="max-w-xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-6 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">Modifier mon profil</h1>
 
-      {message && (
-        <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-xl">
-          {message}
-        </div>
-      )}
+        {message && (
+          <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-xl">
+            {message}
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Nom
           </label>
@@ -137,6 +140,7 @@ export default function EditProfilePage() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 }
