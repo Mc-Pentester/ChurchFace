@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "prisma generate && next build",
-    "start": "tsx server.ts",
-    "postinstall": "prisma generate && prisma db push",
+    "start": "prisma db push && tsx server.ts",
+    "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "lint": "eslint"
