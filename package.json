@@ -9,7 +9,7 @@
     "dev": "tsx server.ts",
     "build": "prisma generate && next build",
     "start": "tsx server.ts",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && prisma db push",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "lint": "eslint"
