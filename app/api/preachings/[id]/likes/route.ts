@@ -24,12 +24,6 @@ export async function POST(
       },
     });
 
-    // Increment like count on preaching
-    await prisma.preaching.update({
-      where: { id },
-      data: { likes: { increment: 1 } },
-    });
-
     return NextResponse.json(like, { status: 201 });
   } catch (error) {
     console.error("Error liking preaching:", error);
@@ -57,12 +51,6 @@ export async function DELETE(
         preachingId: id,
         userId: session.user.id,
       },
-    });
-
-    // Decrement like count on preaching
-    await prisma.preaching.update({
-      where: { id },
-      data: { likes: { decrement: 1 } },
     });
 
     return NextResponse.json({ success: true });
