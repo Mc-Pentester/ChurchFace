@@ -7,9 +7,10 @@ export const runtime = "nodejs";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +18,7 @@ export async function GET(
 
   try {
     const chat = await prisma.chat.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         members: {
           include: {
@@ -78,7 +79,7 @@ export async function GET(
       where: {
         userId_chatId: {
           userId: session.user.id,
-          chatId: params.id,
+          chatId: id,
         },
       },
       data: {
@@ -98,9 +99,10 @@ export async function GET(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -108,7 +110,7 @@ export async function DELETE(
 
   try {
     const chat = await prisma.chat.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         members: true,
       },
@@ -129,7 +131,7 @@ export async function DELETE(
       where: {
         userId_chatId: {
           userId: session.user.id,
-          chatId: params.id,
+          chatId: id,
         },
       },
     });

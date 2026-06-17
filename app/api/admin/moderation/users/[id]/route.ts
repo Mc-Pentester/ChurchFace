@@ -7,9 +7,10 @@ export const runtime = "nodejs";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -50,7 +51,7 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    const user = await prisma.user.update({
+    const user = a.user.update({
       where: { id: params.id },
       data: updateData,
       select: {
@@ -70,10 +71,10 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: adminAction,
-        targetId: params.id,
+        targetId: id,
         targetType: "user",
         details: {
-          userId: params.id,
+          userId: id,
           email: user.email,
         },
       },

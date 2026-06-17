@@ -7,9 +7,10 @@ export const runtime = "nodejs";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,7 +52,7 @@ export async function PATCH(
     }
 
     const post = await prisma.post.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         author: {
@@ -91,9 +92,10 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -105,7 +107,7 @@ export async function DELETE(
 
   try {
     const post = await prisma.post.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     // Log admin action
@@ -113,10 +115,10 @@ export async function DELETE(
       data: {
         adminId: session.user.id,
         action: "delete_post",
-        targetId: params.id,
+        targetId: id,
         targetType: "post",
         details: {
-          postId: params.id,
+          postId: id,
           authorId: post.authorId,
         },
       },

@@ -7,9 +7,10 @@ export const runtime = "nodejs";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -61,10 +62,10 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: action || (status === "RESOLVED" ? "resolve_report" : "dismiss_report"),
-        targetId: params.id,
+        targetId: id,
         targetType: "report",
         details: {
-          reportId: params.id,
+          reportId: id,
           targetType: report.targetType,
           reason: report.reason,
         },
