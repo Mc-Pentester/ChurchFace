@@ -18,6 +18,10 @@ model User {
   church    String?
   city      String?
   role      String   @default("USER")
+  isSuspended Boolean @default(false)
+  isBanned   Boolean @default(false)
+  suspendedAt DateTime?
+  bannedAt   DateTime?
 
   pushSubscriptions PushSubscription[]
 
@@ -45,6 +49,8 @@ model User {
   streams                Stream[]
   friendshipsSent        Friendship[]            @relation("SentFriendships")
   friendshipsReceived    Friendship[]            @relation("ReceivedFriendships")
+  reports                Report[]                @relation("ReportedItems")
+  adminLogs              AdminLog[]
 }
 
 model Chat {
@@ -98,6 +104,8 @@ model Post {
   hashtags  String[]  @default([])
   imageUrl  String?
   videoUrl  String?
+  isHidden  Boolean   @default(false)
+  isPinned  Boolean   @default(false)
   comments  Comment[]
   likes     Like[]
   author    User      @relation(fields: [authorId], references: [id])
@@ -105,6 +113,8 @@ model Post {
 
   @@index([createdAt])
   @@index([authorId, createdAt])
+  @@index([isHidden])
+  @@index([isPinned])
 }
 
 model Like {
@@ -136,14 +146,17 @@ model Comment {
   postId    String
   createdAt DateTime  @default(now())
   parentId  String?
+  isHidden  Boolean   @default(false)
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies   Comment[] @relation("CommentReplies")
   post      Post      @relation(fields: [postId], references: [id])
   user      User      @relation(fields: [userId], references: [id])
+  reports   Report[]
 
   @@index([postId, createdAt])
   @@index([userId, createdAt])
   @@index([parentId])
+  @@index([isHidden])
 }
 
 model Story {
@@ -154,8 +167,13 @@ model Story {
   createdAt DateTime    @default(now())
   expiresAt DateTime
   authorId  String
+  isHidden  Boolean     @default(false)
   author    User        @relation(fields: [authorId], references: [id])
   views     StoryView[]
+
+  @@index([expiresAt])
+  @@index([authorId, createdAt])
+  @@index([isHidden])
 }
 
 model StoryView {
@@ -532,4 +550,41 @@ model Friendship {
   @@index([senderId, status])
   @@index([receiverId, status])
   @@index([status, createdAt])
+}
+
+// ─── SYSTÈME DE MODÉRATION ───
+
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  targetId    String
+  targetType  String   // "post", "comment", "story", "user"
+  reason      String   // "spam", "harassment", "fake_account", "offensive", "inappropriate", "other"
+  description String?
+  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  String?
+
+  reporter User @relation("ReportedItems", fields: [reporterId], references: [id])
+
+  @@index([targetType, status])
+  @@index([status, createdAt])
+  @@index([reporterId, createdAt])
+}
+
+model AdminLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String   // "approve_post", "hide_post", "delete_post", "restore_post", "pin_post", "suspend_user", "ban_user", "reactivate_user", "resolve_report", "dismiss_report"
+  targetId   String?
+  targetType String?  // "post", "comment", "story", "user", "report"
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, createdAt])
 }

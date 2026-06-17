@@ -1,0 +1,125 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+export const runtime = "nodejs";
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { action } = await req.json();
+
+    if (!action) {
+      return NextResponse.json({ error: "Action is required" }, { status: 400 });
+    }
+
+    let updateData: any = {};
+    let adminAction: string = "";
+
+    switch (action) {
+      case "hide":
+        updateData = { isHidden: true };
+        adminAction = "hide_story";
+        break;
+      case "unhide":
+        updateData = { isHidden: false };
+        adminAction = "restore_story";
+        break;
+      default:
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    const story = await prisma.story.update({
+      where: { id: params.id },
+      data: updateData,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    // Log admin action
+    await prisma.adminLog.create({
+      data: {
+        adminId: session.user.id,
+        action: adminAction,
+        targetId: params.id,
+        targetType: "story",
+        details: {
+          storyId: params.id,
+          authorId: story.authorId,
+        },
+      },
+    });
+
+    return NextResponse.json(story);
+  } catch (error) {
+    console.error("Error moderating story:", error);
+    return NextResponse.json(
+      { error: "Failed to moderate story" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const story = await prisma.story.delete({
+      where: { id: params.id },
+    });
+
+    // Log admin action
+    await prisma.adminLog.create({
+      data: {
+        adminId: session.user.id,
+        action: "delete_story",
+        targetId: params.id,
+        targetType: "story",
+        details: {
+          storyId: params.id,
+          authorId: story.authorId,
+        },
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting story:", error);
+    return NextResponse.json(
+      { error: "Failed to delete story" },
+      { status: 500 }
+    );
+  }
+}
