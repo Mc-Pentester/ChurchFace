@@ -28,14 +28,6 @@ export async function GET() {
             image: true,
           },
         },
-        target: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
       },
       orderBy: {
         createdAt: "desc",
