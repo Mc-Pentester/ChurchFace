@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import ConversationList from "@/components/messaging/ConversationList";
 import ChatWindow from "@/components/messaging/ChatWindow";
+import NewConversationModal from "@/components/messaging/NewConversationModal";
 import type { Conversation, Chat } from "@/types/messaging";
 import { socket } from "@/lib/socket";
 import { useCurrentUser } from "@/lib/client-auth";
@@ -14,6 +15,7 @@ export default function MessagesPage() {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showConversationList, setShowConversationList] = useState(true);
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -74,14 +76,31 @@ export default function MessagesPage() {
   };
 
   const handleNewConversation = () => {
-    // TODO: Implement new conversation modal
-    console.log("New conversation");
+    setShowNewConversationModal(true);
+  };
+
+  const handleSelectUser = async (userId: string) => {
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: userId }),
+      });
+      const data = await res.json();
+      
+      // Refresh conversations and select the new one
+      await fetchConversations();
+      setSelectedConversationId(data.conversation.id);
+      setShowConversationList(false);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+    }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-purple-50">
       {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white shadow-sm">
+      <div className="lg:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
             Messages
@@ -130,6 +149,13 @@ export default function MessagesPage() {
           />
         </div>
       </div>
+
+      {/* New Conversation Modal */}
+      <NewConversationModal
+        isOpen={showNewConversationModal}
+        onClose={() => setShowNewConversationModal(false)}
+        onSelectUser={handleSelectUser}
+      />
     </div>
   );
 }
