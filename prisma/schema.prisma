@@ -8,20 +8,20 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  image     String?
-  name      String?
-  bio       String?
-  church    String?
-  city      String?
-  role      String   @default("USER")
-  isSuspended Boolean @default(false)
-  isBanned   Boolean @default(false)
+  id          String    @id @default(cuid())
+  email       String    @unique
+  password    String
+  createdAt   DateTime  @default(now())
+  image       String?
+  name        String?
+  bio         String?
+  church      String?
+  city        String?
+  role        String    @default("USER")
+  isSuspended Boolean   @default(false)
+  isBanned    Boolean   @default(false)
   suspendedAt DateTime?
-  bannedAt   DateTime?
+  bannedAt    DateTime?
 
   pushSubscriptions PushSubscription[]
 
@@ -151,7 +151,6 @@ model Comment {
   replies   Comment[] @relation("CommentReplies")
   post      Post      @relation(fields: [postId], references: [id])
   user      User      @relation(fields: [userId], references: [id])
-  reports   Report[]
 
   @@index([postId, createdAt])
   @@index([userId, createdAt])
@@ -540,8 +539,8 @@ model Friendship {
   senderId   String
   receiverId String
   status     String   @default("PENDING") // PENDING, ACCEPTED, DECLINED, BLOCKED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   sender   User @relation("SentFriendships", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("ReceivedFriendships", fields: [receiverId], references: [id], onDelete: Cascade)
@@ -555,14 +554,14 @@ model Friendship {
 // ─── SYSTÈME DE MODÉRATION ───
 
 model Report {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   reporterId  String
   targetId    String
-  targetType  String   // "post", "comment", "story", "user"
-  reason      String   // "spam", "harassment", "fake_account", "offensive", "inappropriate", "other"
+  targetType  String // "post", "comment", "story", "user"
+  reason      String // "spam", "harassment", "fake_account", "offensive", "inappropriate", "other"
   description String?
-  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
-  createdAt   DateTime @default(now())
+  status      String    @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt   DateTime  @default(now())
   resolvedAt  DateTime?
   resolvedBy  String?
 
@@ -576,9 +575,9 @@ model Report {
 model AdminLog {
   id         String   @id @default(cuid())
   adminId    String
-  action     String   // "approve_post", "hide_post", "delete_post", "restore_post", "pin_post", "suspend_user", "ban_user", "reactivate_user", "resolve_report", "dismiss_report"
+  action     String // "approve_post", "hide_post", "delete_post", "restore_post", "pin_post", "suspend_user", "ban_user", "reactivate_user", "resolve_report", "dismiss_report"
   targetId   String?
-  targetType String?  // "post", "comment", "story", "user", "report"
+  targetType String? // "post", "comment", "story", "user", "report"
   details    Json?
   createdAt  DateTime @default(now())
 

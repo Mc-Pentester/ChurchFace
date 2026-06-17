@@ -1,11 +1,14 @@
 import HashtagText from "./HashtagText";
+import ReportButton from "../moderation/ReportButton";
 
 type Props = {
+  id: string;
   author: string;
   content: string;
 };
 
 export default function PostCard({
+  id,
   author,
   content,
 }: Props) {
@@ -23,6 +26,7 @@ export default function PostCard({
         <button>❤️ Amen</button>
         <button>🙏 Prier</button>
         <button>💬 Répondre</button>
+        <ReportButton targetId={id} targetType="post" />
       </div>
     </div>
   );

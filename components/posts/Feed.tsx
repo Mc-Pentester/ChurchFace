@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UploadButton } from "@/lib/uploadthing";
 import ShareMenu from "./ShareMenu";
+import ReportButton from "../moderation/ReportButton";
 
 
 /**
@@ -601,8 +602,13 @@ function CommentItem({
 
   return (
     <div className="text-sm space-y-1">
-      <div>
-        <b>{comment.user}</b> {comment.content}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <b>{comment.user}</b> {comment.content}
+        </div>
+        {comment.id && (
+          <ReportButton targetId={comment.id} targetType="comment" />
+        )}
       </div>
 
       {isAuth && (

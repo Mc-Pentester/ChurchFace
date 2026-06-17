@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import ReportButton from "../moderation/ReportButton";
 
 type Story = {
   id: string;
@@ -73,7 +74,7 @@ export default function StoriesBar() {
           <Link
             key={story.id}
             href={`/stories/${story.id}`}
-            className="flex flex-col items-center flex-shrink-0"
+            className="flex flex-col items-center flex-shrink-0 relative"
           >
             <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500">
 
@@ -91,6 +92,10 @@ export default function StoriesBar() {
             <span className="text-xs truncate w-16 text-center mt-1">
               {story.author.name}
             </span>
+            
+            <div className="absolute -top-1 -right-1">
+              <ReportButton targetId={story.id} targetType="story" />
+            </div>
           </Link>
         ))}
       </div>
