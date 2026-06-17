@@ -31,7 +31,7 @@ export async function PATCH(
     }
 
     const report = await prisma.report.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status,
         resolvedAt: new Date(),
