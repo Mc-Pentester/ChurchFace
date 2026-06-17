@@ -39,7 +39,7 @@ export async function GET(
 
     const messages = await prisma.message.findMany({
       where: {
-        chatId: params.id,
+        chatId: id,
         ...(before && { createdAt: { lt: new Date(before) } }),
       },
       orderBy: {
@@ -116,7 +116,7 @@ export async function POST(
     const message = await prisma.message.create({
       data: {
         content: content.trim(),
-        chatId: params.id,
+        chatId: id,
         senderId: session.user.id,
       },
       include: {
