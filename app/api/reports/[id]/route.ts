@@ -46,14 +46,6 @@ export async function PATCH(
             image: true,
           },
         },
-        target: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
       },
     });
 
