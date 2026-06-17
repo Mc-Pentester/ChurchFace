@@ -276,5 +276,6 @@ export default function CreateChurchPage() {
         </div>
       </div>
     </div>
+    </div>
   );
 }
