@@ -63,7 +63,7 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: adminAction,
-        targetId: params.id,
+        targetId: id,
         targetType: "comment",
         details: {
           commentId: id,
