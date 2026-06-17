@@ -236,11 +236,11 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
               <div className="flex items-center gap-3 mb-6">
                 <button
                   onClick={preaching.isLiked ? handleUnlike : handleLike}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
                     preaching.isLiked
                       ? "bg-red-100 text-red-600"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }
+                  }`}
                 >
                   <Heart
                     size={20}
