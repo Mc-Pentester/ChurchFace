@@ -61,6 +61,15 @@ model User {
   preachingBookmarks  PreachingBookmark[] @relation("PreachingBookmarks")
   preachingNotes      PreachingNote[] @relation("PreachingNotes")
   liveBroadcasts      LiveBroadcast[] @relation("LiveBroadcasts")
+  
+  // Church System
+  churchMembers       ChurchMember[]
+  churchAdmins        ChurchAdmin[]
+  churchEventAttendees ChurchEventAttendee[]
+  churchCourseEnrollments ChurchCourseEnrollment[]
+  churchPostLikes     ChurchPostLike[]
+  churchPostComments  ChurchPostComment[]
+  churchFollows       ChurchFollow[]
 }
 
 model Chat {
@@ -775,4 +784,271 @@ model LiveBroadcast {
   @@index([authorId, status])
   @@index([status, scheduledAt])
   @@index([status, startedAt])
+}
+
+// ─── SYSTÈME D'ÉGLISE ───
+
+model Church {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  description     String?  @db.Text
+  slogan          String?
+  logo            String?
+  coverImage      String?
+  website         String?
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  country         String?
+  isVerified      Boolean  @default(false)
+  memberCount     Int      @default(0)
+  followerCount   Int      @default(0)
+  viewCount       Int      @default(0)
+  donationEnabled Boolean  @default(false)
+  radioEnabled    Boolean  @default(false)
+  liveEnabled     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  members     ChurchMember[]
+  admins      ChurchAdmin[]
+  events      ChurchEvent[]
+  media       ChurchMedia[]
+  radios      ChurchRadio[]
+  lives       ChurchLive[]
+  courses     ChurchCourse[]
+  posts       ChurchPost[]
+  followers   ChurchFollow[]
+
+  @@index([slug])
+  @@index([isVerified])
+  @@index([city])
+  @@index([country])
+}
+
+model ChurchMember {
+  id        String   @id @default(cuid())
+  churchId  String
+  userId    String
+  role      String   @default("MEMBER") // MEMBER, ELDER, DEACON, YOUTH_LEADER, MUSICIAN
+  joinedAt  DateTime @default(now())
+  isActive  Boolean  @default(true)
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, userId])
+  @@index([churchId, role])
+  @@index([userId])
+}
+
+model ChurchAdmin {
+  id        String   @id @default(cuid())
+  churchId  String
+  userId    String
+  role      String   @default("CHURCH_ADMIN") // CHURCH_ADMIN, PASTOR, ASSOCIATE_PASTOR
+  appointedAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, userId])
+  @@index([churchId, role])
+  @@index([userId])
+}
+
+model ChurchEvent {
+  id          String   @id @default(cuid())
+  churchId    String
+  title       String
+  description String?  @db.Text
+  imageUrl    String?
+  startDate   DateTime
+  endDate     DateTime?
+  location    String?
+  isPublic    Boolean  @default(true)
+  attendeeCount Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  church   Church           @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  attendees ChurchEventAttendee[]
+
+  @@index([churchId, startDate])
+  @@index([startDate])
+  @@index([isPublic])
+}
+
+model ChurchEventAttendee {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  event ChurchEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model ChurchMedia {
+  id        String   @id @default(cuid())
+  churchId  String
+  type      String   @default("IMAGE") // IMAGE, VIDEO, ALBUM
+  title     String?
+  url       String
+  thumbnail String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId, type])
+  @@index([churchId, order])
+}
+
+model ChurchRadio {
+  id        String   @id @default(cuid())
+  churchId  String
+  radioId   String?  // Link to existing Radio model
+  name      String
+  streamUrl String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId])
+  @@index([isActive])
+}
+
+model ChurchLive {
+  id           String   @id @default(cuid())
+  churchId     String
+  liveBroadcastId String? // Link to existing LiveBroadcast model
+  title        String
+  streamUrl    String?
+  thumbnail    String?
+  status       String   @default("OFFLINE") // OFFLINE, SCHEDULED, LIVE
+  viewerCount  Int      @default(0)
+  scheduledAt  DateTime?
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId, status])
+  @@index([status])
+}
+
+model ChurchCourse {
+  id          String   @id @default(cuid())
+  churchId    String
+  title       String
+  description String?  @db.Text
+  instructor  String?
+  thumbnail   String?
+  duration    Int?     // in minutes
+  level       String   @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
+  category    String?
+  isPublished Boolean  @default(false)
+  enrollCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  church     Church           @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  enrollments ChurchCourseEnrollment[]
+
+  @@index([churchId, isPublished])
+  @@index([level])
+  @@index([category])
+}
+
+model ChurchCourseEnrollment {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  progress  Int      @default(0) // percentage
+  completed Boolean  @default(false)
+  enrolledAt DateTime @default(now())
+  completedAt DateTime?
+
+  course ChurchCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@index([courseId])
+  @@index([userId])
+}
+
+model ChurchPost {
+  id        String   @id @default(cuid())
+  churchId  String
+  content   String?  @db.Text
+  imageUrl  String?
+  videoUrl  String?
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  church   Church          @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  likes    ChurchPostLike[]
+  comments ChurchPostComment[]
+
+  @@index([churchId, createdAt])
+  @@index([isPinned])
+}
+
+model ChurchPostLike {
+  id         String     @id @default(cuid())
+  churchPostId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  churchPost ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchPostId, userId])
+  @@index([churchPostId])
+  @@index([userId])
+}
+
+model ChurchPostComment {
+  id          String     @id @default(cuid())
+  churchPostId String
+  userId      String
+  content     String
+  parentId    String?
+  createdAt   DateTime @default(now())
+
+  churchPost ChurchPost           @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent     ChurchPostComment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    ChurchPostComment[]  @relation("CommentReplies")
+
+  @@index([churchPostId, createdAt])
+  @@index([userId, createdAt])
+  @@index([parentId])
+}
+
+model ChurchFollow {
+  id        String   @id @default(cuid())
+  churchId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, userId])
+  @@index([churchId])
+  @@index([userId])
 }
