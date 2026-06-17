@@ -106,12 +106,6 @@ export async function POST(
       },
     });
 
-    // Increment comment count on preaching
-    await prisma.preaching.update({
-      where: { id },
-      data: { comments: { increment: 1 } },
-    });
-
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {
     console.error("Error creating comment:", error);
