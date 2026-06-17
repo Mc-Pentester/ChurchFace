@@ -186,12 +186,12 @@ export default function Navbar({ onLoginClick }: any) {
   }, [search]);
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-purple-600 px-4 py-3 flex items-center justify-between shadow-lg">
 
       {/* LEFT */}
       <div className="flex items-center gap-4">
 
-        <div className="text-2xl font-extrabold text-emerald-600">
+        <div className="text-2xl font-extrabold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
           ChurchFace
         </div>
 
@@ -202,7 +202,7 @@ export default function Navbar({ onLoginClick }: any) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher personnes, posts..."
-            className="w-full bg-gray-100 px-5 py-2.5 rounded-full outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full bg-white/90 px-5 py-2.5 rounded-full outline-none focus:ring-2 focus:ring-purple-400 placeholder-gray-500"
           />
 
           {/* DROPDOWN */}
@@ -211,7 +211,7 @@ export default function Navbar({ onLoginClick }: any) {
               {results.map((r, i) => (
                 <div
                   key={i}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className="px-4 py-2 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 cursor-pointer"
                 >
                   {r}
                 </div>
@@ -228,33 +228,33 @@ export default function Navbar({ onLoginClick }: any) {
         <div className="hidden md:flex items-center gap-1">
           <a
             href="/prayer-space"
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
             🙏 Prière
           </a>
           <a
             href="/live"
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
             📺 Live
           </a>
           <a
             href="/radio"
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
             🎙️ Radio
           </a>
           <a
             href="/church/create"
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
             ⛪ Créer une église
           </a>
         </div>
 
         {/* ONLINE */}
-        <div className="hidden md:flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-full">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+        <div className="hidden md:flex items-center gap-2 text-sm text-white bg-white/20 backdrop-blur-sm px-3 py-2 rounded-full">
+          <div className="w-2 h-2 rounded-full bg-green-400" />
           {onlineUsers.length} en ligne
         </div>
 
@@ -265,11 +265,11 @@ export default function Navbar({ onLoginClick }: any) {
               setShowNotifications(!showNotifications);
               if (!showNotifications) fetchNotifications();
             }}
-            className="relative w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+            className="relative w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition"
           >
-            <Bell size={18} />
+            <Bell size={18} className="text-white" />
             {unreadNotifications > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                 {unreadNotifications}
               </span>
             )}

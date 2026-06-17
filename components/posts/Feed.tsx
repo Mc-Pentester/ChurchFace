@@ -421,12 +421,12 @@ export default function Feed() {
     <div className="space-y-8">
 
       {/* CREATE POST */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm">
+      <div className="bg-gradient-to-br from-white to-emerald-50 rounded-2xl p-5 shadow-sm border border-emerald-100">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Exprime-toi en Christ ✨"
-          className="w-full bg-gray-50 p-4 rounded-xl outline-none resize-none"
+          className="w-full bg-gradient-to-r from-emerald-50 to-purple-50 p-4 rounded-xl outline-none resize-none focus:ring-2 focus:ring-emerald-300"
         />
 
         <div className="flex items-center gap-3 mt-4">
@@ -458,7 +458,7 @@ export default function Feed() {
           <button
             onClick={createPost}
             disabled={!isAuth || isSubmittingPost}
-            className="px-6 py-2 rounded-xl bg-emerald-600 text-white"
+            className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-purple-600 text-white hover:shadow-lg transition"
           >
             {isSubmittingPost ? "Publication..." : "Publier"}
           </button>
@@ -480,7 +480,7 @@ export default function Feed() {
               <img
                 src={mediaUrl}
                 alt="Aperçu"
-                className="rounded-xl w-full max-h-96 object-contain bg-gray-100"
+                className="rounded-xl w-full max-h-96 object-contain bg-gradient-to-br from-emerald-100 to-purple-100"
               />
             )}
             <button
@@ -488,11 +488,11 @@ export default function Feed() {
                 setMediaUrl("");
                 setMediaIsVideo(false);
               }}
-              className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white text-xs px-2 py-1 rounded-full transition"
+              className="absolute top-2 right-2 bg-gradient-to-r from-emerald-600 to-purple-600 hover:from-emerald-700 hover:to-purple-700 text-white text-xs px-2 py-1 rounded-full transition"
             >
               ✕ Retirer
             </button>
-            <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full">
+            <span className="absolute bottom-2 left-2 bg-gradient-to-r from-emerald-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full">
               {mediaIsVideo ? "🎬 Vidéo" : "🖼️ Image"}
             </span>
           </div>
@@ -501,10 +501,10 @@ export default function Feed() {
 
       {/* POSTS */}
       {posts.map((p) => (
-        <div key={p.id} className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+        <div key={p.id} className="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-5 shadow-sm space-y-3 border border-purple-100">
 
           {/* AUTHOR */}
-          <div className="font-semibold text-emerald-700">
+          <div className="font-semibold bg-gradient-to-r from-emerald-700 to-purple-700 bg-clip-text text-transparent">
             {p.author?.name || "Utilisateur"}
           </div>
 
@@ -517,7 +517,7 @@ export default function Feed() {
               {p.hashtags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="text-emerald-600 text-sm bg-emerald-50 px-2 py-1 rounded-lg cursor-pointer hover:bg-emerald-100"
+                  className="text-emerald-700 text-sm bg-gradient-to-r from-emerald-100 to-purple-100 px-3 py-1.5 rounded-lg cursor-pointer hover:from-emerald-200 hover:to-purple-200 transition"
                   onClick={() => router.push(`/search?q=%23${encodeURIComponent(tag)}`)}
                 >
                   #{tag}
@@ -544,7 +544,7 @@ export default function Feed() {
 
             <button
               onClick={() => handleLike(p.id)}
-              className="text-gray-600 hover:text-red-600"
+              className="text-gray-600 hover:text-red-600 transition"
             >
               {p.likes?.some((l) => l.userId === session?.user?.id) ? "❤️" : "🤍"} ({p.likes?.length || 0})
             </button>

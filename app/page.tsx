@@ -15,7 +15,7 @@ export default function HomePage() {
   const [openLogin, setOpenLogin] = useState(false);
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
 
       <NotificationToast />
 
