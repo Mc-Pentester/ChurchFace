@@ -1,52 +1,134 @@
-import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+"use client";
 
-export default async function MessagesPage() {
-  const session = await getServerSession(authOptions);
+import { useEffect, useState } from "react";
+import ConversationList from "@/components/messaging/ConversationList";
+import ChatWindow from "@/components/messaging/ChatWindow";
+import type { Conversation, Chat } from "@/types/messaging";
+import { socket } from "@/lib/socket";
+import { useCurrentUser } from "@/lib/client-auth";
 
-  const chats = await prisma.chat.findMany({
-    where: {
-      members: {
-        some: {
-          userId: session?.user?.id,
-        },
-      },
-    },
-    include: {
-      members: true,
-      messages: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-    },
-  });
+export default function MessagesPage() {
+  const { userId: currentUserId, isLoading: sessionLoading } = useCurrentUser();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showConversationList, setShowConversationList] = useState(true);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    fetchConversations();
+    
+    socket.on("user:online", (userId: string) => {
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.members.some((m) => m.userId === userId)
+            ? { ...conv, isOnline: true }
+            : conv
+        )
+      );
+    });
+
+    return () => {
+      socket.off("user:online");
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (selectedConversationId) {
+      fetchChat(selectedConversationId);
+    }
+  }, [selectedConversationId]);
+
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch("/api/conversations");
+      const data = await res.json();
+      setConversations(data);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchChat = async (chatId: string) => {
+    try {
+      const res = await fetch(`/api/conversations/${chatId}`);
+      const data = await res.json();
+      setSelectedChat(data);
+    } catch (error) {
+      console.error("Error fetching chat:", error);
+    }
+  };
+
+  const handleSelectConversation = (id: string) => {
+    setSelectedConversationId(id);
+    setShowConversationList(false);
+  };
+
+  const handleBack = () => {
+    setShowConversationList(true);
+    setSelectedConversationId(null);
+    setSelectedChat(null);
+  };
+
+  const handleNewConversation = () => {
+    // TODO: Implement new conversation modal
+    console.log("New conversation");
+  };
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">💬 Messages</h1>
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 z-40 bg-white shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
+            Messages
+          </h1>
+        </div>
+      </div>
 
-      <div className="space-y-3">
-        {chats.map((chat) => {
-          const lastMessage = chat.messages?.[0];
+      <div className="flex-1 flex overflow-hidden">
+        {/* Conversation List - Desktop Sidebar */}
+        <div className={`hidden lg:flex lg:w-96 flex-col ${showConversationList ? "flex" : "hidden"}`}>
+          <ConversationList
+            conversations={conversations}
+            selectedConversationId={selectedConversationId}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+          />
+        </div>
 
-          return (
-            <Link
-              key={chat.id}
-              href={`/messages/${chat.id}`}
-              className="block p-3 border rounded-lg hover:bg-gray-100"
-            >
-              <div className="font-semibold">
-                {chat.isGroup ? chat.name || "Groupe" : "Conversation"}
-              </div>
+        {/* Conversation List - Mobile */}
+        <div className={`lg:hidden flex-1 flex-col ${showConversationList ? "flex" : "hidden"}`}>
+          <ConversationList
+            conversations={conversations}
+            selectedConversationId={selectedConversationId}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+          />
+        </div>
 
-              <div className="text-sm text-gray-500 truncate">
-                {lastMessage?.content || "Aucun message"}
-              </div>
-            </Link>
-          );
-        })}
+        {/* Chat Window - Desktop */}
+        <div className={`hidden lg:flex flex-1 ${!showConversationList ? "flex" : "hidden"}`}>
+          <ChatWindow
+            chat={selectedChat}
+            currentUserId={currentUserId || ""}
+            onBack={handleBack}
+            onNewConversation={handleNewConversation}
+          />
+        </div>
+
+        {/* Chat Window - Mobile */}
+        <div className={`lg:hidden flex-1 flex-col ${!showConversationList ? "flex" : "hidden"}`}>
+          <ChatWindow
+            chat={selectedChat}
+            currentUserId={currentUserId || ""}
+            onBack={handleBack}
+            onNewConversation={handleNewConversation}
+          />
+        </div>
       </div>
     </div>
   );
