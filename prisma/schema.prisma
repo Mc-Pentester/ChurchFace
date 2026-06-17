@@ -51,6 +51,16 @@ model User {
   friendshipsReceived    Friendship[]            @relation("ReceivedFriendships")
   reports                Report[]                @relation("ReportedItems")
   adminLogs              AdminLog[]
+  
+  // Preaching System
+  preachings          Preaching[] @relation("Preachings")
+  preachingSeries     PreachingSeries[] @relation("PreachingSeries")
+  preachingViews      PreachingView[] @relation("PreachingViews")
+  preachingLikes      PreachingLike[] @relation("PreachingLikes")
+  preachingComments   PreachingComment[] @relation("PreachingComments")
+  preachingBookmarks  PreachingBookmark[] @relation("PreachingBookmarks")
+  preachingNotes      PreachingNote[] @relation("PreachingNotes")
+  liveBroadcasts      LiveBroadcast[] @relation("LiveBroadcasts")
 }
 
 model Chat {
@@ -586,4 +596,183 @@ model AdminLog {
   @@index([adminId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, createdAt])
+}
+
+// ─── ESPACE DE DIFFUSION (PRÉDICATIONS) ───
+
+model PreachingCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  icon        String?    // emoji or icon name
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  preachings Preaching[]
+
+  @@index([order])
+}
+
+model PreachingSeries {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  thumbnail   String?
+  authorId    String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  author     User       @relation("PreachingSeries", fields: [authorId], references: [id], onDelete: Cascade)
+  preachings Preaching[]
+
+  @@index([authorId, createdAt])
+}
+
+model Preaching {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  thumbnail   String
+  videoUrl    String
+  duration    Int      // in seconds
+  views       Int      @default(0)
+  authorId    String
+  categoryId  String
+  seriesId    String?
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author     User              @relation("Preachings", fields: [authorId], references: [id], onDelete: Cascade)
+  category   PreachingCategory @relation(fields: [categoryId], references: [id])
+  series     PreachingSeries?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  preachingViews PreachingView[]
+  likes      PreachingLike[]
+  comments   PreachingComment[]
+  bookmarks  PreachingBookmark[]
+  notes      PreachingNote[]
+  verses     PreachingVerse[]
+
+  @@index([authorId, publishedAt])
+  @@index([categoryId, publishedAt])
+  @@index([seriesId, publishedAt])
+  @@index([publishedAt])
+  @@index([views])
+}
+
+model PreachingView {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  watchedAt   DateTime @default(now())
+  duration    Int?     // how much of the video was watched in seconds
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User       @relation("PreachingViews", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([preachingId, userId])
+  @@index([preachingId, watchedAt])
+  @@index([userId, watchedAt])
+}
+
+model PreachingLike {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User       @relation("PreachingLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([preachingId, userId])
+  @@index([preachingId])
+  @@index([userId])
+}
+
+model PreachingComment {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  content     String
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  preaching Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User               @relation("PreachingComments", fields: [userId], references: [id], onDelete: Cascade)
+  parent    PreachingComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   PreachingComment[] @relation("CommentReplies")
+
+  @@index([preachingId, createdAt])
+  @@index([userId, createdAt])
+  @@index([parentId])
+}
+
+model PreachingBookmark {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User       @relation("PreachingBookmarks", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([preachingId, userId])
+  @@index([preachingId])
+  @@index([userId, createdAt])
+}
+
+model PreachingNote {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  content     String     @db.Text
+  timestamp   Int?       // timestamp in the video where the note was taken
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User       @relation("PreachingNotes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([preachingId, userId])
+  @@index([userId, createdAt])
+}
+
+model PreachingVerse {
+  id          String   @id @default(cuid())
+  preachingId String
+  book        String    // e.g., "Jean", "Romains", "Psaume"
+  chapter     Int
+  verse       String    // e.g., "16", "28", "1-6"
+  text        String    @db.Text
+  createdAt   DateTime  @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+
+  @@index([preachingId])
+  @@index([book, chapter])
+}
+
+model LiveBroadcast {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  thumbnail   String?
+  streamUrl   String
+  authorId    String
+  viewerCount Int      @default(0)
+  status      String   @default("SCHEDULED") // SCHEDULED, LIVE, ENDED
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author User @relation("LiveBroadcasts", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, status])
+  @@index([status, scheduledAt])
+  @@index([status, startedAt])
 }

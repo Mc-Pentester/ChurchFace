@@ -63,10 +63,10 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: adminAction,
-        targetId: params.id,
+        targetId: id,
         targetType: "story",
         details: {
-          storyId: params.id,
+          storyId: id,
           authorId: story.authorId,
         },
       },
