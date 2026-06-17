@@ -245,6 +245,12 @@ export default function Navbar({ onLoginClick }: any) {
           >
             🎙️ Radio
           </a>
+          <a
+            href="/church/create"
+            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
+          >
+            ⛪ Créer une église
+          </a>
         </div>
 
         {/* ONLINE - Desktop only */}
@@ -356,6 +362,30 @@ export default function Navbar({ onLoginClick }: any) {
             </span>
           )}
         </a>
+
+        {/* AUTH - Desktop only */}
+        {!session ? (
+          <button
+            onClick={onLoginClick}
+            className="hidden md:block bg-gradient-to-r from-emerald-600 to-purple-600 text-white px-5 py-2.5 rounded-full hover:shadow-lg transition"
+          >
+            Connexion
+          </button>
+        ) : (
+          <div className="hidden md:flex items-center gap-2">
+            <img
+              src={session?.user?.image || "https://i.pravatar.cc/150"}
+              alt="avatar"
+              className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+            />
+            <button
+              onClick={() => signOut()}
+              className="text-sm text-white/90 hover:text-white font-medium"
+            >
+              Déconnexion
+            </button>
+          </div>
+        )}
 
         {/* HAMBURGER MENU - Mobile */}
         <HamburgerMenu />
