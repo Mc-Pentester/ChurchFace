@@ -228,6 +228,12 @@ export default function Navbar({ onLoginClick }: any) {
         {/* LINKS - Desktop only */}
         <div className="hidden md:flex items-center gap-1">
           <a
+            href="/prayer-space"
+            className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
+          >
+            🙏 Prière
+          </a>
+          <a
             href="/live"
             className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
