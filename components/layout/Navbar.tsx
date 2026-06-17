@@ -244,6 +244,12 @@ export default function Navbar({ onLoginClick }: any) {
           >
             🎙️ Radio
           </a>
+          <a
+            href="/church/create"
+            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-full hover:bg-emerald-50 transition"
+          >
+            ⛪ Créer une église
+          </a>
         </div>
 
         {/* ONLINE */}
