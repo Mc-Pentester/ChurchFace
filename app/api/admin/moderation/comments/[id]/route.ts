@@ -7,9 +7,10 @@ export const runtime = "nodejs";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const { id } = await params;
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -65,7 +66,7 @@ export async function PATCH(
         targetId: params.id,
         targetType: "comment",
         details: {
-          commentId: params.id,
+          commentId: id,
           userId: comment.userId,
           postId: comment.postId,
         },
@@ -125,5 +126,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
 }
