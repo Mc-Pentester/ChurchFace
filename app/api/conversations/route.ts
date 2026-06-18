@@ -110,10 +110,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { userId, isGroup = false, name } = await req.json();
+    const { userId, participantId, isGroup = false, name } = await req.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    const targetUserId = participantId || userId;
+
+    if (!targetUserId) {
+      return NextResponse.json({ error: "userId or participantId is required" }, { status: 400 });
     }
 
     // Check if conversation already exists
@@ -123,7 +125,7 @@ export async function POST(req: Request) {
         members: {
           every: {
             userId: {
-              in: [session.user.id, userId],
+              in: [session.user.id, targetUserId],
             },
           },
         },
@@ -142,7 +144,7 @@ export async function POST(req: Request) {
         members: {
           create: [
             { userId: session.user.id },
-            { userId },
+            { userId: targetUserId },
           ],
         },
       },
