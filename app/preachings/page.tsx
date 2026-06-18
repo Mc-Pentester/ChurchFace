@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Search, TrendingUp, Radio, BookOpen, Church, Music, Users, Heart, Calendar, Flame, Star, Play, Eye } from "lucide-react";
 import VideoCard from "@/components/preaching/VideoCard";
+import Navbar from "@/components/layout/Navbar";
 import type { Preaching, PreachingCategory } from "@/types/preaching";
 
 const categories = [
@@ -87,7 +88,8 @@ export default function PreachingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
+      <Navbar onLoginClick={() => {}} />
       {/* Featured Preaching */}
       {preachings.length > 0 && (
         <div className="bg-gradient-to-r from-emerald-500 to-purple-600 text-white py-12">
