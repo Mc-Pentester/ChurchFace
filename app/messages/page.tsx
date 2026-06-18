@@ -91,8 +91,16 @@ export default function MessagesPage() {
       
       // Refresh conversations and select the new one
       await fetchConversations();
-      setSelectedConversationId(data.conversation.id);
-      setShowConversationList(false);
+      
+      // Find the new conversation from the refreshed list
+      const newConversation = conversations.find(c => 
+        c.participants.some(p => p.id === userId)
+      );
+      
+      if (newConversation) {
+        setSelectedConversationId(newConversation.id);
+        setShowConversationList(false);
+      }
     } catch (error) {
       console.error("Error creating conversation:", error);
     }
