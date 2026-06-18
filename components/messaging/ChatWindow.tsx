@@ -71,7 +71,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
     };
   }, [chat]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!text.trim() || !chat) return;
 
     const msg = {
@@ -80,10 +80,31 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       content: text,
     };
 
-    socket.emit("message:send", msg);
-    setText("");
+    try {
+      // Save message to database via API
+      const res = await fetch(`/api/conversations/${chat.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text }),
+      });
 
-    socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
+      if (!res.ok) {
+        console.error("Failed to send message");
+        return;
+      }
+
+      const savedMessage = await res.json();
+
+      // Add message to local state immediately
+      setMessages((prev) => [...prev, savedMessage]);
+      setText("");
+
+      // Broadcast via socket for real-time updates
+      socket.emit("message:send", savedMessage);
+      socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
 
   const handleTypingInput = (value: string) => {
