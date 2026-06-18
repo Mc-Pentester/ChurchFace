@@ -87,6 +87,12 @@ export default function MessagesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ participantId: userId }),
       });
+      
+      if (!res.ok) {
+        console.error("Failed to create conversation:", res.status);
+        return;
+      }
+      
       const data = await res.json();
       
       // Refresh conversations and select the new one
@@ -94,7 +100,7 @@ export default function MessagesPage() {
       
       // Find the new conversation from the refreshed list
       const newConversation = conversations.find(c => 
-        c.participants.some(p => p.id === userId)
+        c.members.some((m: { user?: { id: string } }) => m.user?.id === userId)
       );
       
       if (newConversation) {
@@ -115,7 +121,7 @@ export default function MessagesPage() {
       <div className="lg:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
-            Messages
+            
           </h1>
         </div>
       </div>
