@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, MoreVertical, Phone, Video, Info, Plus } from "lucide-react";
 import type { Message, Chat } from "@/types/messaging";
 import { socket } from "@/lib/socket";
+import CallModal from "./CallModal";
 
 interface ChatWindowProps {
   chat: Chat | null;
@@ -17,6 +18,8 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   const [text, setText] = useState("");
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [callType, setCallType] = useState<"audio" | "video">("audio");
 
   const typingTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -140,6 +143,20 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
     return otherMember?.user?.image || null;
   };
 
+  const handleStartAudioCall = () => {
+    setCallType("audio");
+    setIsCallModalOpen(true);
+  };
+
+  const handleStartVideoCall = () => {
+    setCallType("video");
+    setIsCallModalOpen(true);
+  };
+
+  const handleEndCall = () => {
+    setIsCallModalOpen(false);
+  };
+
   if (!chat) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-purple-50">
@@ -192,10 +209,16 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
         </div>
 
         <div className="flex gap-2">
-          <button className="p-2 rounded-full hover:bg-white/20 transition text-white">
+          <button
+            onClick={handleStartAudioCall}
+            className="p-2 rounded-full hover:bg-white/20 transition text-white"
+          >
             <Phone size={18} />
           </button>
-          <button className="p-2 rounded-full hover:bg-white/20 transition text-white">
+          <button
+            onClick={handleStartVideoCall}
+            className="p-2 rounded-full hover:bg-white/20 transition text-white"
+          >
             <Video size={18} />
           </button>
           <button className="p-2 rounded-full hover:bg-white/20 transition text-white">
@@ -281,6 +304,15 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
           </button>
         </div>
       </div>
+
+      {/* Call Modal */}
+      <CallModal
+        isOpen={isCallModalOpen}
+        onClose={handleEndCall}
+        callType={callType}
+        recipientName={getChatName()}
+        recipientImage={getChatAvatar()}
+      />
     </div>
   );
 }
