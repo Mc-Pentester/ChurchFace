@@ -144,7 +144,9 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       setMessages((prev) => [...prev, savedMessage]);
       setText("");
 
-      // Socket event is now emitted from the API route
+      // Broadcast via socket for real-time updates
+      console.log("Broadcasting message via socket");
+      socket.emit("message:send", savedMessage);
       socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
     } catch (error) {
       console.error("Error sending message:", error);

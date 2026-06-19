@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { getSocketServer } from "@/lib/io";
 
 export const runtime = "nodejs";
 
@@ -148,17 +147,6 @@ export async function POST(
       where: { id },
       data: { createdAt: new Date() },
     });
-
-    // Emit socket event for real-time updates
-    const io = getSocketServer();
-    console.log("Socket server available:", !!io);
-    console.log("Emitting message:new to chat room:", id);
-    if (io) {
-      io.to(id).emit("message:new", message);
-      console.log("Message emitted successfully");
-    } else {
-      console.error("Socket server not available");
-    }
 
     return NextResponse.json(message);
   } catch (error) {

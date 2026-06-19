@@ -142,8 +142,13 @@ app.prepare().then(async () => {
     // =========================
     // 💬 PRIVATE CHAT
     // =========================
-    // Message handling is now done in API route: /api/conversations/[id]/messages
-    // This ensures proper database operations and socket event emission
+    socket.on("message:send", async (msg: any) => {
+      console.log("Message received via socket:", msg);
+      // Message is already saved in database by API route
+      // Just emit to chat room for real-time updates
+      io.to(msg.chatId).emit("message:new", msg);
+      console.log("Message emitted to chat room:", msg.chatId);
+    });
 
     // =========================
     // 🔥 SOCIAL EVENTS (LIKE / COMMENT / FOLLOW)
