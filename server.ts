@@ -142,17 +142,8 @@ app.prepare().then(async () => {
     // =========================
     // 💬 PRIVATE CHAT
     // =========================
-    socket.on("message:send", async (msg: any) => {
-      const saved = await prisma.message.create({
-        data: {
-          content: msg.content,
-          chatId: msg.chatId,
-          senderId: msg.senderId,
-        },
-      });
-
-      io.to(msg.chatId).emit("message:new", saved);
-    });
+    // Message handling is now done in API route: /api/conversations/[id]/messages
+    // This ensures proper database operations and socket event emission
 
     // =========================
     // 🔥 SOCIAL EVENTS (LIKE / COMMENT / FOLLOW)

@@ -151,8 +151,13 @@ export async function POST(
 
     // Emit socket event for real-time updates
     const io = getSocketServer();
+    console.log("Socket server available:", !!io);
+    console.log("Emitting message:new to chat room:", id);
     if (io) {
       io.to(id).emit("message:new", message);
+      console.log("Message emitted successfully");
+    } else {
+      console.error("Socket server not available");
     }
 
     return NextResponse.json(message);
