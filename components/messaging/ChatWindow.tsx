@@ -179,6 +179,10 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
   const handleStartAudioCall = () => {
     const otherMember = chat?.members.find((m) => m.userId !== currentUserId);
+    if (!otherMember?.userId) {
+      console.error("No recipient found for call");
+      return;
+    }
     setCallType("audio");
     setIsIncomingCall(false);
     setIsCallModalOpen(true);
@@ -186,6 +190,10 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
   const handleStartVideoCall = () => {
     const otherMember = chat?.members.find((m) => m.userId !== currentUserId);
+    if (!otherMember?.userId) {
+      console.error("No recipient found for call");
+      return;
+    }
     setCallType("video");
     setIsIncomingCall(false);
     setIsCallModalOpen(true);

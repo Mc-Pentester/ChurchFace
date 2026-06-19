@@ -22,7 +22,7 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
       </div>
 
       {/* Hero Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 sm:-mt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 sm:-mt-16">
         <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
           {/* Logo */}
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-white shadow-xl border-4 border-white">

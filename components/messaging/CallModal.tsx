@@ -68,7 +68,9 @@ export default function CallModal({
       };
     } else {
       // Handle outgoing call
-      startOutgoingCall();
+      if (recipientId) {
+        startOutgoingCall();
+      }
     }
   }, [isOpen, isIncoming, currentUserId, recipientId]);
 
@@ -242,7 +244,7 @@ export default function CallModal({
           socket.emit("call:ice", {
             callId: callIdRef.current,
             candidate: event.candidate,
-            recipientId
+            recipientId: incomingCallData?.callerId
           });
         }
       };
@@ -267,7 +269,7 @@ export default function CallModal({
         socket.emit("call:answer", {
           callId: callIdRef.current,
           answer,
-          recipientId
+          recipientId: incomingCallData?.callerId
         });
       }
       
