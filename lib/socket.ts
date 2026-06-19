@@ -9,12 +9,20 @@ const socketUrl =
 
 export const socket = io(socketUrl, {
   path: "/socket.io",
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
   autoConnect: true,
 });
 
 socket.on("connect", () => {
   console.log("CONNECTÉ ID :", socket.id);
+});
+
+socket.on("connect_error", (error) => {
+  console.error("Socket connection error:", error);
+});
+
+socket.on("disconnect", () => {
+  console.log("Socket disconnected");
 });
 
 // Hook to emit user:online when session is available
@@ -23,13 +31,16 @@ export function useSocketPresence() {
 
   useEffect(() => {
     if (session?.user?.id && socket.connected) {
+      console.log("Emitting user:online for:", session.user.id);
       socket.emit("user:online", session.user.id);
     }
   }, [session?.user?.id, socket.connected]);
 
   useEffect(() => {
     const handleConnect = () => {
+      console.log("Socket connected, checking session");
       if (session?.user?.id) {
+        console.log("Emitting user:online on connect for:", session.user.id);
         socket.emit("user:online", session.user.id);
       }
     };

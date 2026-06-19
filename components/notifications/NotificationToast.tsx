@@ -29,6 +29,7 @@ export default function NotificationToast() {
     const handleNotification = (data: {
       message: string;
     }) => {
+      console.log("Notification received:", data);
       const notification = {
         id: crypto.randomUUID(),
         message: data.message,
@@ -54,6 +55,8 @@ export default function NotificationToast() {
       "notification:new",
       handleNotification
     );
+
+    console.log("NotificationToast mounted, listening for notifications");
 
     return () => {
       socket.off(

@@ -56,11 +56,14 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
     // Listen for new messages
     const handleNewMessage = (msg: any) => {
+      console.log("New message received:", msg);
       // Don't add duplicate messages
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) {
+          console.log("Duplicate message ignored:", msg.id);
           return prev;
         }
+        console.log("Adding new message:", msg.id);
         return [...prev, msg];
       });
       
@@ -86,6 +89,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
     // Listen for incoming calls
     const handleIncomingCall = (data: any) => {
+      console.log("Incoming call received:", data);
       setIncomingCallData(data);
       setIsIncomingCall(true);
       setIsCallModalOpen(true);
@@ -106,7 +110,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       socket.off("typing:update", handleTyping);
       socket.off("call:incoming", handleIncomingCall);
     };
-  }, [chat]);
+  }, [chat, currentUserId]);
 
   const sendMessage = async () => {
     if (!text.trim() || !chat) return;
