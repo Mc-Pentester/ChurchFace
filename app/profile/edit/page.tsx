@@ -72,7 +72,7 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
-      <Navbar onLoginClick={() => {}} />
+      <Navbar />
       <div className="max-w-xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-6 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">Modifier mon profil</h1>
 

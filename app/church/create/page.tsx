@@ -77,7 +77,7 @@ export default function CreateChurchPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
-      <Navbar onLoginClick={() => router.push("/login")} />
+      <Navbar />
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">

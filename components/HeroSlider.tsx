@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
-
-type Props = {
-  onLoginClick: () => void;
-};
+import { useRouter } from "next/navigation";
 
 const slides = [
   {
@@ -31,9 +28,8 @@ const slides = [
   },
 ];
 
-export default function HeroSlider({
-  onLoginClick,
-}: Props) {
+export default function HeroSlider() {
+  const router = useRouter();
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -110,7 +106,7 @@ export default function HeroSlider({
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-5">
 
             <button
-              onClick={onLoginClick}
+              onClick={() => router.push("/login")}
               className="bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 hover:scale-105 shadow-2xl"
             >
               Commencer maintenant

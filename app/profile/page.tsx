@@ -23,7 +23,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
-      <Navbar onLoginClick={() => {}} />
+      <Navbar />
       <div className="p-4 md:p-6">
         <div className="bg-white p-4 md:p-6 rounded-xl shadow w-full max-w-md">
 

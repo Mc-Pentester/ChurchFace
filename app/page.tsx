@@ -20,10 +20,10 @@ export default function HomePage() {
       <NotificationToast />
 
       {/* NAVBAR */}
-      <Navbar onLoginClick={() => setOpenLogin(true)} />
+      <Navbar />
 
       {/* HERO */}
-      <HeroSlider onLoginClick={() => setOpenLogin(true)} />
+      <HeroSlider />
 
       {/* BODY */}
       <section className="w-full">

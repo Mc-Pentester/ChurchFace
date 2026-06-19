@@ -38,7 +38,7 @@ export default function FriendsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
-      <Navbar onLoginClick={() => {}} />
+      <Navbar />
       {/* Mobile Header */}
       <div className="lg:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">

@@ -89,7 +89,7 @@ export default function PreachingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
-      <Navbar onLoginClick={() => {}} />
+      <Navbar />
       {/* Featured Preaching */}
       {preachings.length > 0 && (
         <div className="bg-gradient-to-r from-emerald-500 to-purple-600 text-white py-12">

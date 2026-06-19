@@ -161,7 +161,7 @@ export default function PrayerSpacePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
       {/* Navbar */}
-      <Navbar onLoginClick={() => router.push("/login")} />
+      <Navbar />
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-30">

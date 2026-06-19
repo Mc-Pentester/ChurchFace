@@ -13,6 +13,7 @@ import {
 
 import { useEffect, useState, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
 import { notificationSound } from "@/lib/sounds";
 import HamburgerMenu from "./HamburgerMenu";
@@ -32,8 +33,9 @@ type Notification = {
   entityType?: string | null;
 };
 
-export default function Navbar({ onLoginClick }: any) {
+export default function Navbar() {
   const { data: session } = useSession();
+  const router = useRouter();
 
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -366,7 +368,7 @@ export default function Navbar({ onLoginClick }: any) {
         {/* AUTH - Desktop only */}
         {!session ? (
           <button
-            onClick={onLoginClick}
+            onClick={() => router.push("/login")}
             className="hidden md:block bg-gradient-to-r from-emerald-600 to-purple-600 text-white px-5 py-2.5 rounded-full hover:shadow-lg transition"
           >
             Connexion
