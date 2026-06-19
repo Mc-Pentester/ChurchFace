@@ -145,8 +145,9 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       setText("");
 
       // Broadcast via socket for real-time updates
-      console.log("Broadcasting message via socket");
+      console.log("Broadcasting message via socket to chat:", chat.id);
       socket.emit("message:send", savedMessage);
+      console.log("Socket emit completed");
       socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
     } catch (error) {
       console.error("Error sending message:", error);
