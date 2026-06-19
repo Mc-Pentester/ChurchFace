@@ -5,6 +5,7 @@ import { ArrowLeft, MoreVertical, Phone, Video, Info, Plus } from "lucide-react"
 import type { Message, Chat } from "@/types/messaging";
 import { socket } from "@/lib/socket";
 import CallModal from "./CallModal";
+import IncomingCallModal from "./IncomingCallModal";
 
 interface ChatWindowProps {
   chat: Chat | null;
@@ -20,6 +21,8 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   const [isLoading, setIsLoading] = useState(false);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [callType, setCallType] = useState<"audio" | "video">("audio");
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [incomingCallData, setIncomingCallData] = useState<any>(null);
 
   const typingTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,12 +68,22 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       });
     };
 
+    // Listen for incoming calls
+    const handleIncomingCall = (data: any) => {
+      setIncomingCallData(data);
+      setIsIncomingCall(true);
+      setIsCallModalOpen(true);
+      setCallType(data.callType);
+    };
+
     socket.on("message:new", handleNewMessage);
     socket.on("typing:update", handleTyping);
+    socket.on("call:incoming", handleIncomingCall);
 
     return () => {
       socket.off("message:new", handleNewMessage);
       socket.off("typing:update", handleTyping);
+      socket.off("call:incoming", handleIncomingCall);
     };
   }, [chat]);
 
@@ -144,17 +157,28 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   };
 
   const handleStartAudioCall = () => {
+    const otherMember = chat?.members.find((m) => m.userId !== currentUserId);
     setCallType("audio");
+    setIsIncomingCall(false);
     setIsCallModalOpen(true);
   };
 
   const handleStartVideoCall = () => {
+    const otherMember = chat?.members.find((m) => m.userId !== currentUserId);
     setCallType("video");
+    setIsIncomingCall(false);
     setIsCallModalOpen(true);
   };
 
   const handleEndCall = () => {
     setIsCallModalOpen(false);
+    setIsIncomingCall(false);
+    setIncomingCallData(null);
+  };
+
+  const handleAcceptIncomingCall = () => {
+    setIsIncomingCall(false);
+    // The CallModal will handle the WebRTC answer logic
   };
 
   if (!chat) {
@@ -312,7 +336,25 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
         callType={callType}
         recipientName={getChatName()}
         recipientImage={getChatAvatar()}
+        recipientId={chat?.members.find((m) => m.userId !== currentUserId)?.userId}
+        currentUserId={currentUserId}
+        isIncoming={isIncomingCall}
+        incomingCallData={incomingCallData}
       />
+
+      {/* Incoming Call Modal */}
+      {incomingCallData && (
+        <IncomingCallModal
+          isOpen={isIncomingCall}
+          onClose={handleEndCall}
+          callerName={incomingCallData.callerName || getChatName()}
+          callerImage={incomingCallData.callerImage || getChatAvatar()}
+          callType={incomingCallData.callType || callType}
+          callerId={incomingCallData.callerId}
+          currentUserId={currentUserId}
+          onAccept={handleAcceptIncomingCall}
+        />
+      )}
     </div>
   );
 }

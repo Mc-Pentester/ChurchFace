@@ -53,7 +53,39 @@ export function initSocket(server: any) {
     });
 
     /* =========================
-       👀 SEEN (READ RECEIPTS)
+       � CALLS (WebRTC)
+    ========================== */
+    socket.on("call:offer", ({ callId, offer, recipientId, callerId, callType }) => {
+      socket.to(recipientId).emit("call:incoming", {
+        callId,
+        offer,
+        callerId,
+        callType,
+      });
+    });
+
+    socket.on("call:answer", ({ callId, answer, recipientId }) => {
+      socket.to(recipientId).emit("call:answer", {
+        callId,
+        answer,
+      });
+    });
+
+    socket.on("call:ice", ({ callId, candidate, recipientId }) => {
+      socket.to(recipientId).emit("call:ice", {
+        callId,
+        candidate,
+      });
+    });
+
+    socket.on("call:end", ({ callId, recipientId }) => {
+      socket.to(recipientId).emit("call:end", {
+        callId,
+      });
+    });
+
+    /* =========================
+       �👀 SEEN (READ RECEIPTS)
     ========================== */
     socket.on("message:seen", ({ chatId, userId, messageId }) => {
       io.to(chatId).emit("message:seen:update", {
