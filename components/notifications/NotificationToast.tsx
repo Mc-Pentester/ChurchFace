@@ -13,6 +13,18 @@ export default function NotificationToast() {
     NotificationToastData[]
   >([]);
 
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio("/sounds/notification.mp3");
+      audio.volume = 0.5;
+      audio.play().catch(() => {
+        // Ignore autoplay errors
+      });
+    } catch (error) {
+      // Ignore audio errors
+    }
+  };
+
   useEffect(() => {
     const handleNotification = (data: {
       message: string;
@@ -21,6 +33,8 @@ export default function NotificationToast() {
         id: crypto.randomUUID(),
         message: data.message,
       };
+
+      playNotificationSound();
 
       setNotifications((prev) => [
         ...prev,
