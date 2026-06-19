@@ -43,7 +43,7 @@ export default function ChurchSettings({ church }: ChurchSettingsProps) {
     setSuccess("");
 
     try {
-      const response = await fetch(`/api/church/${church.id}`, {
+      const response = await fetch(`/api/church/${church.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
