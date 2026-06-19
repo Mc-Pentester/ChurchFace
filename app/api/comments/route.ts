@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     const postExists = await prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true },
+      select: { id: true, authorId: true },
     });
     if (!postExists) {
       return NextResponse.json(
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
     if (parentId) {
       const parentExists = await prisma.comment.findUnique({
         where: { id: parentId },
-        select: { id: true },
+        select: { id: true, userId: true },
       });
       if (!parentExists) {
         return NextResponse.json(
@@ -92,6 +93,18 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    // Create notification for post author if not self-comment
+    if (postExists.authorId !== userId) {
+      await createNotification({
+        toUserId: postExists.authorId,
+        fromUserId: userId,
+        type: "POST_COMMENT",
+        message: "Someone commented on your post",
+        entityId: postId,
+        entityType: "post",
+      });
+    }
 
     return NextResponse.json({
       id: created.id,

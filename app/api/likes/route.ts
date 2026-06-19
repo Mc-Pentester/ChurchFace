@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const postExists = await prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true },
+      select: { id: true, authorId: true },
     });
 
     if (!postExists) {
@@ -70,6 +71,18 @@ export async function POST(req: NextRequest) {
           postId,
         },
       });
+
+      // Create notification for post author if not self-like
+      if (postExists.authorId !== userId) {
+        await createNotification({
+          toUserId: postExists.authorId,
+          fromUserId: userId,
+          type: "POST_LIKE",
+          message: "Someone liked your post",
+          entityId: postId,
+          entityType: "post",
+        });
+      }
 
       return NextResponse.json({ liked: true });
     }

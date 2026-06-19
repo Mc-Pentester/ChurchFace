@@ -56,7 +56,13 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
     // Listen for new messages
     const handleNewMessage = (msg: any) => {
-      setMessages((prev) => [...prev, msg]);
+      // Don't add duplicate messages
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) {
+          return prev;
+        }
+        return [...prev, msg];
+      });
       
       // Emit notification for incoming messages from other users
       if (msg.senderId !== currentUserId) {
@@ -84,6 +90,11 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       setIsIncomingCall(true);
       setIsCallModalOpen(true);
       setCallType(data.callType);
+      
+      // Emit notification for incoming call
+      socket.emit("notification:new", {
+        message: `Appel ${data.callType === "video" ? "vidéo" : "audio"} entrant`,
+      });
     };
 
     socket.on("message:new", handleNewMessage);
