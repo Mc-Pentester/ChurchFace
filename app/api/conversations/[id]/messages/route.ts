@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { getSocketServer } from "@/lib/io";
 
 export const runtime = "nodejs";
 
@@ -147,6 +148,12 @@ export async function POST(
       where: { id },
       data: { createdAt: new Date() },
     });
+
+    // Emit socket event for real-time updates
+    const io = getSocketServer();
+    if (io) {
+      io.to(id).emit("message:new", message);
+    }
 
     return NextResponse.json(message);
   } catch (error) {

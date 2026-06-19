@@ -52,6 +52,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       });
 
     // Join chat room
+    console.log("Joining chat room:", chat.id);
     socket.emit("chat:join", chat.id);
 
     // Listen for new messages
@@ -121,6 +122,8 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       content: text,
     };
 
+    console.log("Sending message:", msg);
+
     try {
       // Save message to database via API
       const res = await fetch(`/api/conversations/${chat.id}/messages`, {
@@ -135,13 +138,13 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       }
 
       const savedMessage = await res.json();
+      console.log("Message saved to database:", savedMessage);
 
       // Add message to local state immediately
       setMessages((prev) => [...prev, savedMessage]);
       setText("");
 
-      // Broadcast via socket for real-time updates
-      socket.emit("message:send", savedMessage);
+      // Socket event is now emitted from the API route
       socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
     } catch (error) {
       console.error("Error sending message:", error);
