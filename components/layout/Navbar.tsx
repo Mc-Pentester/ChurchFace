@@ -97,11 +97,15 @@ export default function Navbar() {
     setLoadingNotifications(true);
     try {
       const res = await fetch("/api/notifications");
+      if (!res.ok) {
+        console.error("Failed to fetch notifications:", res.status);
+        return;
+      }
       const data = await res.json();
       setNotifications(data.notifications || []);
       setUnreadNotifications(data.unreadCount || 0);
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching notifications:", e);
     } finally {
       setLoadingNotifications(false);
     }
@@ -118,11 +122,15 @@ export default function Navbar() {
     if (!session?.user?.id) return;
     try {
       const res = await fetch("/api/friends?status=PENDING");
+      if (!res.ok) {
+        console.error("Failed to fetch pending requests:", res.status);
+        return;
+      }
       const data = await res.json();
       const incomingRequests = (data.users || []).filter((u: any) => !u.isSender);
       setPendingRequests(incomingRequests.length);
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching pending requests:", e);
     }
   };
 
@@ -131,7 +139,7 @@ export default function Navbar() {
    */
   const markAsRead = async (notificationIds?: string[]) => {
     try {
-      await fetch("/api/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -139,9 +147,11 @@ export default function Navbar() {
           markAll: !notificationIds,
         }),
       });
-      fetchNotifications();
+      if (res.ok) {
+        fetchNotifications();
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Error marking notifications as read:", e);
     }
   };
 
