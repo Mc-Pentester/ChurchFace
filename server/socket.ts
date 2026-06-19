@@ -56,32 +56,58 @@ export function initSocket(server: any) {
        � CALLS (WebRTC)
     ========================== */
     socket.on("call:offer", ({ callId, offer, recipientId, callerId, callType }) => {
-      socket.to(recipientId).emit("call:incoming", {
-        callId,
-        offer,
-        callerId,
-        callType,
-      });
+      // Get recipient's socket IDs from presence system
+      const recipientSockets = onlineUsers.get(recipientId);
+      
+      if (recipientSockets && recipientSockets.size > 0) {
+        // Send to all recipient's sockets
+        recipientSockets.forEach((socketId) => {
+          io.to(socketId).emit("call:incoming", {
+            callId,
+            offer,
+            callerId,
+            callType,
+          });
+        });
+      }
     });
 
     socket.on("call:answer", ({ callId, answer, recipientId }) => {
-      socket.to(recipientId).emit("call:answer", {
-        callId,
-        answer,
-      });
+      const recipientSockets = onlineUsers.get(recipientId);
+      
+      if (recipientSockets && recipientSockets.size > 0) {
+        recipientSockets.forEach((socketId) => {
+          io.to(socketId).emit("call:answer", {
+            callId,
+            answer,
+          });
+        });
+      }
     });
 
     socket.on("call:ice", ({ callId, candidate, recipientId }) => {
-      socket.to(recipientId).emit("call:ice", {
-        callId,
-        candidate,
-      });
+      const recipientSockets = onlineUsers.get(recipientId);
+      
+      if (recipientSockets && recipientSockets.size > 0) {
+        recipientSockets.forEach((socketId) => {
+          io.to(socketId).emit("call:ice", {
+            callId,
+            candidate,
+          });
+        });
+      }
     });
 
     socket.on("call:end", ({ callId, recipientId }) => {
-      socket.to(recipientId).emit("call:end", {
-        callId,
-      });
+      const recipientSockets = onlineUsers.get(recipientId);
+      
+      if (recipientSockets && recipientSockets.size > 0) {
+        recipientSockets.forEach((socketId) => {
+          io.to(socketId).emit("call:end", {
+            callId,
+          });
+        });
+      }
     });
 
     /* =========================

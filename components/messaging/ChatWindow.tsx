@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, MoreVertical, Phone, Video, Info, Plus } from "lucide-react";
 import type { Message, Chat } from "@/types/messaging";
-import { socket } from "@/lib/socket";
+import { socket, useSocketPresence } from "@/lib/socket";
 import CallModal from "./CallModal";
 import IncomingCallModal from "./IncomingCallModal";
 
@@ -15,6 +15,9 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({ chat, currentUserId, onBack, onNewConversation }: ChatWindowProps) {
+  // Mark user as online for socket presence
+  useSocketPresence();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -54,6 +57,13 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
     // Listen for new messages
     const handleNewMessage = (msg: any) => {
       setMessages((prev) => [...prev, msg]);
+      
+      // Emit notification for incoming messages from other users
+      if (msg.senderId !== currentUserId) {
+        socket.emit("notification:new", {
+          message: `Nouveau message de ${msg.senderName || "quelqu'un"}`,
+        });
+      }
     };
 
     // Listen for typing updates
