@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { UserPlus, UserMinus } from "lucide-react";
 import type { FriendSuggestion } from "@/types/friends";
 
 export default function FriendSuggestions() {
   const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchSuggestions();
@@ -17,6 +18,25 @@ export default function FriendSuggestions() {
       const res = await fetch("/api/friends/suggestions");
       const data = await res.json();
       setSuggestions(data.suggestions || []);
+      
+      // Check following status for each suggestion
+      const followingPromises = (data.suggestions || []).map(async (suggestion: FriendSuggestion) => {
+        try {
+          const followRes = await fetch(`/api/users/${suggestion.id}/follow`);
+          const followData = await followRes.json();
+          return { id: suggestion.id, isFollowing: followData.isFollowing || false };
+        } catch {
+          return { id: suggestion.id, isFollowing: false };
+        }
+      });
+      
+      const followingStatus = await Promise.all(followingPromises);
+      const followingMap = followingStatus.reduce((acc, { id, isFollowing }) => {
+        acc[id] = isFollowing;
+        return acc;
+      }, {} as Record<string, boolean>);
+      
+      setFollowingStates(followingMap);
     } catch (error) {
       console.error("Fetch suggestions error:", error);
     } finally {
@@ -37,6 +57,23 @@ export default function FriendSuggestions() {
       }
     } catch (error) {
       console.error("Send request error:", error);
+    }
+  };
+
+  const handleFollow = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/users/${userId}/follow`, {
+        method: followingStates[userId] ? "DELETE" : "POST",
+      });
+
+      if (res.ok) {
+        setFollowingStates((prev) => ({
+          ...prev,
+          [userId]: !prev[userId],
+        }));
+      }
+    } catch (error) {
+      console.error("Follow error:", error);
     }
   };
 
@@ -88,6 +125,26 @@ export default function FriendSuggestions() {
                     >
                       <UserPlus size={16} />
                       Ajouter
+                    </button>
+                    <button
+                      onClick={() => handleFollow(suggestion.id)}
+                      className={`flex-1 text-sm font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 ${
+                        followingStates[suggestion.id]
+                          ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {followingStates[suggestion.id] ? (
+                        <>
+                          <UserMinus size={16} />
+                          Ne plus suivre
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus size={16} />
+                          Suivre
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
