@@ -73,6 +73,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       console.log("Joined chat room:", chat.id);
 
     const handleNewMessage = (msg: any) => {
+      console.log("handleNewMessage called with:", msg);
       console.log("New message received via socket:", msg);
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
@@ -97,8 +98,10 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
     socket.on("message:new", handleNewMessage);
     socket.on("typing:update", handleTyping);
+    console.log("Socket listeners set up for message:new and typing:update");
 
     return () => {
+      console.log("Cleaning up socket listeners");
       socket.off("message:new", handleNewMessage);
       socket.off("typing:update", handleTyping);
     };
