@@ -19,6 +19,7 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({ chat, currentUserId, onBack, onNewConversation }: ChatWindowProps) {
+  console.log("ChatWindow component mounted, chat:", chat, "currentUserId:", currentUserId);
   useSocketPresence();
 
   const { data: session } = useSession();
