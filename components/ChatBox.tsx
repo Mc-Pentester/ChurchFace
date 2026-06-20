@@ -17,11 +17,14 @@ export default function ChatBox({ chatId, userId }: any) {
   }, [messages]);
 
   useEffect(() => {
+    console.log("ChatBox useEffect running, chatId:", chatId, "userId:", userId);
     if (!chatId) return;
 
     socket.emit("chat:join", chatId);
+    console.log("Joined chat room:", chatId);
 
     const handleNewMessage = (msg: any) => {
+      console.log("New message received via socket in ChatBox:", msg);
       setMessages((prev) => [...prev, msg]);
       messageSound?.play();
     };
