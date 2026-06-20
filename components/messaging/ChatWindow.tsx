@@ -42,24 +42,29 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   }, [messages]);
 
   useEffect(() => {
-    console.log("ChatWindow useEffect running, chat:", chat, "currentUserId:", currentUserId);
-    if (!chat) return;
+    console.log("ChatWindow useEffect called, chat:", chat, "currentUserId:", currentUserId);
+    try {
+      if (!chat) {
+        console.log("ChatWindow useEffect early return - no chat");
+        return;
+      }
 
-    setIsLoading(true);
+      console.log("ChatWindow useEffect proceeding with chat:", chat.id);
+      setIsLoading(true);
 
-    fetch(`/api/conversations/${chat.id}/messages`)
-      .then((res) => res.json())
-      .then((data) => {
-        setMessages(data);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("Erreur chargement messages:", error);
-        setIsLoading(false);
-      });
+      fetch(`/api/conversations/${chat.id}/messages`)
+        .then((res) => res.json())
+        .then((data) => {
+          setMessages(data);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error("Erreur chargement messages:", error);
+          setIsLoading(false);
+        });
 
-    socket.emit("chat:join", chat.id);
-    console.log("Joined chat room:", chat.id);
+      socket.emit("chat:join", chat.id);
+      console.log("Joined chat room:", chat.id);
 
     const handleNewMessage = (msg: any) => {
       console.log("New message received via socket:", msg);
@@ -91,6 +96,9 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       socket.off("message:new", handleNewMessage);
       socket.off("typing:update", handleTyping);
     };
+    } catch (error) {
+      console.error("Error in ChatWindow useEffect:", error);
+    }
   }, [chat, currentUserId]);
 
   const sendMessage = async () => {
