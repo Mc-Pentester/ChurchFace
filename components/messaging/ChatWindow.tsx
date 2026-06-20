@@ -41,6 +41,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   }, [messages]);
 
   useEffect(() => {
+    console.log("ChatWindow useEffect running, chat:", chat, "currentUserId:", currentUserId);
     if (!chat) return;
 
     setIsLoading(true);
