@@ -849,7 +849,7 @@ model ChurchAdmin {
   id        String   @id @default(cuid())
   churchId  String
   userId    String
-  role      String   @default("CHURCH_ADMIN") // CHURCH_ADMIN, PASTOR, ASSOCIATE_PASTOR
+  role      String   @default("CHURCH_ADMIN") // CHURCH_OWNER, CHURCH_ADMIN, CHURCH_MODERATOR, PASTOR, ASSOCIATE_PASTOR, RADIO_MANAGER, LIVE_MANAGER, COURSE_MANAGER
   appointedAt DateTime @default(now())
 
   church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
