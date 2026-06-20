@@ -51,6 +51,8 @@ model User {
   friendshipsReceived    Friendship[]            @relation("ReceivedFriendships")
   reports                Report[]                @relation("ReportedItems")
   adminLogs              AdminLog[]
+  following              UserFollow[]            @relation("Following")
+  followers              UserFollow[]            @relation("Followers")
   
   // Preaching System
   preachings          Preaching[] @relation("Preachings")
@@ -552,6 +554,20 @@ model RadioChatMessage {
 }
 
 // ─── SYSTÈME D'AMIS ───
+
+model UserFollow {
+  id        String   @id @default(cuid())
+  followerId String
+  followingId String
+  createdAt DateTime @default(now())
+
+  follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
 
 model Friendship {
   id         String   @id @default(cuid())
