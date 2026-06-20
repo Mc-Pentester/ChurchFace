@@ -57,8 +57,10 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       });
 
     socket.emit("chat:join", chat.id);
+    console.log("Joined chat room:", chat.id);
 
     const handleNewMessage = (msg: any) => {
+      console.log("New message received via socket:", msg);
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
