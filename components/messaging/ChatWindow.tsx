@@ -22,6 +22,12 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   console.log("ChatWindow component mounted, chat:", chat, "currentUserId:", currentUserId);
   useSocketPresence();
 
+  // Force join chat room immediately when component mounts
+  if (chat) {
+    console.log("Force joining chat room:", chat.id);
+    socket.emit("chat:join", chat.id);
+  }
+
   const { data: session } = useSession();
   const { startCall } = useCall();
 
