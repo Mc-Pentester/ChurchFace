@@ -5,7 +5,7 @@ import { useEffect } from "react";
 const socketUrl =
   typeof window !== "undefined"
     ? window.location.origin
-    : process.env.NEXT_PUBLIC_APP_URL || "";
+    : process.env.NEXT_PUBLIC_APP_URL || "https://churchface.onrender.com";
 
 export const socket = io(socketUrl, {
   path: "/socket.io",
