@@ -93,6 +93,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
     if (!text.trim() || !chat) return;
 
     try {
+      console.log("Sending message:", { chatId: chat.id, senderId: currentUserId, content: text });
       const res = await fetch(`/api/conversations/${chat.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,9 +106,12 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       }
 
       const savedMessage = await res.json();
+      console.log("Message saved to database:", savedMessage);
       setMessages((prev) => [...prev, savedMessage]);
       setText("");
+      console.log("Broadcasting message via socket to chat:", chat.id);
       socket.emit("message:send", savedMessage);
+      console.log("Socket emit completed");
       socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
     } catch (error) {
       console.error("Erreur envoi message:", error);
