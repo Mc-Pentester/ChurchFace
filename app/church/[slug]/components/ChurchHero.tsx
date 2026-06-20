@@ -1,11 +1,30 @@
+"use client";
+
 import Image from "next/image";
 import { CheckBadgeIcon } from "@heroicons/react/24/solid";
+import { useState } from "react";
 
 interface ChurchHeroProps {
   church: any;
 }
 
 export default function ChurchHero({ church }: ChurchHeroProps) {
+  const [isFollowing, setIsFollowing] = useState(church.isFollowing || false);
+
+  const handleFollow = async () => {
+    try {
+      const res = await fetch(`/api/church/${church.id}/follow`, {
+        method: isFollowing ? "DELETE" : "POST",
+      });
+
+      if (res.ok) {
+        setIsFollowing(!isFollowing);
+      }
+    } catch (error) {
+      console.error("Error following church:", error);
+    }
+  };
+
   return (
     <div className="relative">
       {/* Cover Image */}
@@ -72,8 +91,15 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-2">
-            <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium">
-              Suivre
+            <button
+              onClick={handleFollow}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                isFollowing
+                  ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "bg-emerald-600 text-white hover:bg-emerald-700"
+              }`}
+            >
+              {isFollowing ? "Abonné" : "Suivre"}
             </button>
             <button className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
               Message
