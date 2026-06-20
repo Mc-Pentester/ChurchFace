@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react";
 import { RadioPlayerProvider } from "@/contexts/RadioPlayerContext";
+import { CallProvider } from "@/contexts/CallContext";
 
 export default function Providers({
   children,
@@ -10,7 +11,12 @@ export default function Providers({
 }) {
   return (
     <SessionProvider>
-      <RadioPlayerProvider>{children}</RadioPlayerProvider>
+      <RadioPlayerProvider>
+        {/* CallProvider écoute call:incoming sur toute l'application */}
+        <CallProvider>
+          {children}
+        </CallProvider>
+      </RadioPlayerProvider>
     </SessionProvider>
   );
 }

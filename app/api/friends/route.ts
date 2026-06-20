@@ -6,63 +6,73 @@ import { createNotification } from "@/lib/notifications";
 
 // GET /api/friends - List friends and pending requests
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status") || "ACCEPTED";
+
+    console.log("Fetching friends for user:", session.user.id, "with status:", status);
+
+    const friendships = await prisma.friendship.findMany({
+      where: {
+        OR: [
+          { senderId: session.user.id },
+          { receiverId: session.user.id },
+        ],
+        status: status as string,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            bio: true,
+            church: true,
+            city: true,
+          },
+        },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            bio: true,
+            church: true,
+            city: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const users = friendships.map((f) => {
+      const friend = f.senderId === session.user.id ? f.receiver : f.sender;
+      return {
+        ...friend,
+        friendshipId: f.id,
+        status: f.status,
+        isSender: f.senderId === session.user.id,
+        createdAt: f.createdAt,
+      };
+    });
+
+    return NextResponse.json({ users });
+  } catch (error) {
+    console.error("Error fetching friends:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch friends", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    );
   }
-
-  const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status") || "ACCEPTED";
-
-  const friendships = await prisma.friendship.findMany({
-    where: {
-      OR: [
-        { senderId: session.user.id },
-        { receiverId: session.user.id },
-      ],
-      status: status as string,
-    },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          bio: true,
-          church: true,
-          city: true,
-        },
-      },
-      receiver: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          bio: true,
-          church: true,
-          city: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  const users = friendships.map((f) => {
-    const friend = f.senderId === session.user.id ? f.receiver : f.sender;
-    return {
-      ...friend,
-      friendshipId: f.id,
-      status: f.status,
-      isSender: f.senderId === session.user.id,
-      createdAt: f.createdAt,
-    };
-  });
-
-  return NextResponse.json({ users });
 }
 
 // POST /api/friends - Send friend request

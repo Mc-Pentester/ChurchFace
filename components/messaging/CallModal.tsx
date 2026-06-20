@@ -46,58 +46,50 @@ export default function CallModal({
       return;
     }
 
-    // Generate unique call ID
-    callIdRef.current = `${currentUserId}-${recipientId}-${Date.now()}`;
-
     if (isIncoming) {
-      // Handle incoming call - wait for user to accept
-      setIsRinging(true);
-      playRingingSound();
-      
-      // Listen for call end
-      const handleCallEnd = () => {
-        cleanup();
-        onClose();
-      };
-      
-      socket.on("call:end", handleCallEnd);
-      
-      return () => {
-        socket.off("call:end", handleCallEnd);
-        cleanup();
-      };
+      // Utiliser le callId fourni par l'appelant pour garantir la cohérence
+      callIdRef.current = incomingCallData?.callId ?? `${currentUserId}-${recipientId}-${Date.now()}`;
+      // L'appel entrant a déjà été accepté par l'utilisateur via IncomingCallModal
+      // On démarre directement la réponse WebRTC
+      acceptIncomingCall();
     } else {
-      // Handle outgoing call
+      // Appel sortant : générer un callId unique
+      callIdRef.current = `${currentUserId}-${recipientId}-${Date.now()}`;
       if (recipientId) {
         startOutgoingCall();
       }
     }
-  }, [isOpen, isIncoming, currentUserId, recipientId]);
 
-  // Handle incoming call acceptance
-  useEffect(() => {
-    if (isIncoming && isOpen && incomingCallData) {
-      // Auto-accept incoming call for now (in real app, user would click accept)
-      acceptIncomingCall();
-    }
-  }, [isIncoming, isOpen, incomingCallData]);
+    return () => {
+      cleanup();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const cleanup = () => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
-    
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
     }
-    
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    
+
+    // Nettoyer l'interval du chronomètre
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+
     setCallDuration(0);
     setIsConnected(false);
     setIsRinging(false);
@@ -119,90 +111,87 @@ export default function CallModal({
 
   const startOutgoingCall = async () => {
     try {
-      // Get local media stream
-      const constraints = {
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: callType === "video"
-      };
-      
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video: callType === "video",
+      });
       localStreamRef.current = stream;
-      
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
-      
-      // Create peer connection
+
       const pc = new RTCPeerConnection({
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" }
-        ]
+          { urls: "stun:stun1.l.google.com:19302" },
+        ],
       });
-      
       peerConnectionRef.current = pc;
-      
-      // Add local tracks to peer connection
-      stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream);
-      });
-      
-      // Handle ICE candidates
+
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("call:ice", {
             callId: callIdRef.current,
             candidate: event.candidate,
-            recipientId
+            recipientId,
           });
         }
       };
-      
-      // Handle remote stream
+
       pc.ontrack = (event) => {
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
-      
-      // Create offer
+
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      
-      // Send offer via socket
+
       socket.emit("call:offer", {
         callId: callIdRef.current,
         offer,
         recipientId,
         callerId: currentUserId,
-        callType
+        callerName: undefined, // fourni par le serveur via la session
+        callType,
       });
-      
-      // Listen for answer
-      socket.on("call:answer", async ({ answer }) => {
+
+      // Handlers nommés pour pouvoir les retirer proprement
+      const handleAnswer = async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
         await pc.setRemoteDescription(answer);
         setIsConnected(true);
         setIsRinging(false);
         stopRingingSound();
         startCallDuration();
-      });
-      
-      // Listen for ICE candidates
-      socket.on("call:ice", async ({ candidate }) => {
-        await pc.addIceCandidate(candidate);
-      });
-      
-      // Listen for call end
-      socket.on("call:end", () => {
+      };
+
+      const handleIce = async ({ candidate }: { candidate: RTCIceCandidateInit }) => {
+        try {
+          await pc.addIceCandidate(candidate);
+        } catch (e) {
+          console.error("Erreur ICE (sortant):", e);
+        }
+      };
+
+      const handleEnd = () => {
+        socket.off("call:answer", handleAnswer);
+        socket.off("call:ice", handleIce);
+        socket.off("call:end", handleEnd);
         cleanup();
         onClose();
-      });
-      
+      };
+
+      socket.on("call:answer", handleAnswer);
+      socket.on("call:ice", handleIce);
+      socket.on("call:end", handleEnd);
+
       setIsRinging(true);
       playRingingSound();
-      
     } catch (error) {
-      console.error("Error starting call:", error);
+      console.error("Erreur démarrage appel sortant:", error);
       cleanup();
       onClose();
     }
@@ -210,98 +199,90 @@ export default function CallModal({
 
   const acceptIncomingCall = async () => {
     try {
-      // Get local media stream
-      const constraints = {
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: callType === "video"
-      };
-      
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video: callType === "video",
+      });
       localStreamRef.current = stream;
-      
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
-      
-      // Create peer connection
+
       const pc = new RTCPeerConnection({
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" }
-        ]
+          { urls: "stun:stun1.l.google.com:19302" },
+        ],
       });
-      
       peerConnectionRef.current = pc;
-      
-      // Add local tracks to peer connection
-      stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream);
-      });
-      
-      // Handle ICE candidates
+
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("call:ice", {
             callId: callIdRef.current,
             candidate: event.candidate,
-            recipientId: incomingCallData?.callerId
+            recipientId: incomingCallData?.callerId,
           });
         }
       };
-      
-      // Handle remote stream
+
       pc.ontrack = (event) => {
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
-      
-      // Set remote description from offer
+
       const offer = incomingCallData?.offer;
       if (offer) {
         await pc.setRemoteDescription(offer);
-        
-        // Create answer
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        
-        // Send answer via socket
+
         socket.emit("call:answer", {
           callId: callIdRef.current,
           answer,
-          recipientId: incomingCallData?.callerId
+          recipientId: incomingCallData?.callerId,
         });
       }
-      
-      // Listen for ICE candidates
-      socket.on("call:ice", async ({ candidate }) => {
-        await pc.addIceCandidate(candidate);
-      });
-      
-      // Listen for call end
-      socket.on("call:end", () => {
+
+      // Handlers nommés pour pouvoir les retirer proprement
+      const handleIce = async ({ candidate }: { candidate: RTCIceCandidateInit }) => {
+        try {
+          await pc.addIceCandidate(candidate);
+        } catch (e) {
+          console.error("Erreur ICE (entrant):", e);
+        }
+      };
+
+      const handleEnd = () => {
+        socket.off("call:ice", handleIce);
+        socket.off("call:end", handleEnd);
         cleanup();
         onClose();
-      });
-      
+      };
+
+      socket.on("call:ice", handleIce);
+      socket.on("call:end", handleEnd);
+
       setIsConnected(true);
       setIsRinging(false);
       stopRingingSound();
       startCallDuration();
-      
     } catch (error) {
-      console.error("Error accepting call:", error);
+      console.error("Erreur acceptation appel entrant:", error);
       cleanup();
       onClose();
     }
   };
 
   const startCallDuration = () => {
-    const interval = setInterval(() => {
+    if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+    durationIntervalRef.current = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
-    
-    return () => clearInterval(interval);
   };
 
   const formatDuration = (seconds: number) => {
@@ -311,9 +292,11 @@ export default function CallModal({
   };
 
   const handleEndCall = () => {
+    // Pour un appel entrant, le destinataire à notifier est l'appelant
+    const targetId = isIncoming ? incomingCallData?.callerId : recipientId;
     socket.emit("call:end", {
       callId: callIdRef.current,
-      recipientId
+      recipientId: targetId,
     });
     cleanup();
     onClose();

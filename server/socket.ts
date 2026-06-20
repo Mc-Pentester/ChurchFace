@@ -55,17 +55,19 @@ export function initSocket(server: any) {
     /* =========================
        � CALLS (WebRTC)
     ========================== */
-    socket.on("call:offer", ({ callId, offer, recipientId, callerId, callType }) => {
-      // Get recipient's socket IDs from presence system
+    socket.on("call:offer", ({ callId, offer, recipientId, callerId, callerName, callerImage, callType }) => {
+      // Transmettre callerName et callerImage pour que le destinataire
+      // puisse afficher l'identité de l'appelant sur toutes les pages
       const recipientSockets = onlineUsers.get(recipientId);
-      
+
       if (recipientSockets && recipientSockets.size > 0) {
-        // Send to all recipient's sockets
         recipientSockets.forEach((socketId) => {
           io.to(socketId).emit("call:incoming", {
             callId,
             offer,
             callerId,
+            callerName: callerName ?? "Inconnu",
+            callerImage: callerImage ?? null,
             callType,
           });
         });

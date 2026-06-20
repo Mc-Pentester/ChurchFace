@@ -1,11 +1,15 @@
 "use client";
 
+// ChatWindow : gestion des messages et appels SORTANTS uniquement.
+// Les appels ENTRANTS sont gérés globalement par CallContext (providers.tsx).
+
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, Info, Plus } from "lucide-react";
+import { ArrowLeft, Phone, Video, Info, Plus } from "lucide-react";
 import type { Message, Chat } from "@/types/messaging";
 import { socket, useSocketPresence } from "@/lib/socket";
+import { useCall } from "@/contexts/CallContext";
+import { useSession } from "next-auth/react";
 import CallModal from "./CallModal";
-import IncomingCallModal from "./IncomingCallModal";
 
 interface ChatWindowProps {
   chat: Chat | null;
@@ -15,17 +19,19 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({ chat, currentUserId, onBack, onNewConversation }: ChatWindowProps) {
-  // Mark user as online for socket presence
   useSocketPresence();
+
+  const { data: session } = useSession();
+  const { startCall } = useCall();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+
+  // État pour appel SORTANT uniquement (depuis ce ChatWindow)
   const [callType, setCallType] = useState<"audio" | "video">("audio");
-  const [isIncomingCall, setIsIncomingCall] = useState(false);
-  const [incomingCallData, setIncomingCallData] = useState<any>(null);
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
 
   const typingTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -39,7 +45,6 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
     setIsLoading(true);
 
-    // Fetch initial messages
     fetch(`/api/conversations/${chat.id}/messages`)
       .then((res) => res.json())
       .then((data) => {
@@ -47,28 +52,18 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
         setIsLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching messages:", error);
+        console.error("Erreur chargement messages:", error);
         setIsLoading(false);
       });
 
-    // Join chat room
-    console.log("Joining chat room:", chat.id);
     socket.emit("chat:join", chat.id);
 
-    // Listen for new messages
     const handleNewMessage = (msg: any) => {
-      console.log("New message received:", msg);
-      // Don't add duplicate messages
       setMessages((prev) => {
-        if (prev.some((m) => m.id === msg.id)) {
-          console.log("Duplicate message ignored:", msg.id);
-          return prev;
-        }
-        console.log("Adding new message:", msg.id);
+        if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
-      
-      // Emit notification for incoming messages from other users
+
       if (msg.senderId !== currentUserId) {
         socket.emit("notification:new", {
           message: `Nouveau message de ${msg.senderName || "quelqu'un"}`,
@@ -76,56 +71,28 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       }
     };
 
-    // Listen for typing updates
     const handleTyping = ({ userId, isTyping }: any) => {
       setTypingUsers((prev) => {
         if (isTyping) {
-          if (!prev.includes(userId)) return [...prev, userId];
-          return prev;
-        } else {
-          return prev.filter((u) => u !== userId);
+          return prev.includes(userId) ? prev : [...prev, userId];
         }
-      });
-    };
-
-    // Listen for incoming calls
-    const handleIncomingCall = (data: any) => {
-      console.log("Incoming call received:", data);
-      setIncomingCallData(data);
-      setIsIncomingCall(true);
-      setIsCallModalOpen(true);
-      setCallType(data.callType);
-      
-      // Emit notification for incoming call
-      socket.emit("notification:new", {
-        message: `Appel ${data.callType === "video" ? "vidéo" : "audio"} entrant`,
+        return prev.filter((u) => u !== userId);
       });
     };
 
     socket.on("message:new", handleNewMessage);
     socket.on("typing:update", handleTyping);
-    socket.on("call:incoming", handleIncomingCall);
 
     return () => {
       socket.off("message:new", handleNewMessage);
       socket.off("typing:update", handleTyping);
-      socket.off("call:incoming", handleIncomingCall);
     };
   }, [chat, currentUserId]);
 
   const sendMessage = async () => {
     if (!text.trim() || !chat) return;
 
-    const msg = {
-      chatId: chat.id,
-      senderId: currentUserId,
-      content: text,
-    };
-
-    console.log("Sending message:", msg);
-
     try {
-      // Save message to database via API
       const res = await fetch(`/api/conversations/${chat.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,91 +100,70 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       });
 
       if (!res.ok) {
-        console.error("Failed to send message");
+        console.error("Échec envoi message");
         return;
       }
 
       const savedMessage = await res.json();
-      console.log("Message saved to database:", savedMessage);
-
-      // Add message to local state immediately
       setMessages((prev) => [...prev, savedMessage]);
       setText("");
-
-      // Broadcast via socket for real-time updates
-      console.log("Broadcasting message via socket to chat:", chat.id);
       socket.emit("message:send", savedMessage);
-      console.log("Socket emit completed");
       socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Erreur envoi message:", error);
     }
   };
 
   const handleTypingInput = (value: string) => {
     setText(value);
-
     if (!chat) return;
 
     socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: true });
 
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
-
     typingTimeout.current = setTimeout(() => {
       socket.emit("typing", { chatId: chat.id, userId: currentUserId, isTyping: false });
     }, 1000);
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  };
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
   const getChatName = () => {
     if (!chat) return "";
     if (chat.isGroup) return chat.name || "Groupe";
-    const otherMember = chat.members.find((m) => m.userId !== currentUserId);
-    return otherMember?.user?.name || "Inconnu";
+    return chat.members.find((m) => m.userId !== currentUserId)?.user?.name || "Inconnu";
   };
 
   const getChatAvatar = () => {
-    if (!chat) return null;
-    if (chat.isGroup) return null;
-    const otherMember = chat.members.find((m) => m.userId !== currentUserId);
-    return otherMember?.user?.image || null;
+    if (!chat || chat.isGroup) return null;
+    return chat.members.find((m) => m.userId !== currentUserId)?.user?.image || null;
   };
 
+  const getRecipientId = () =>
+    chat?.members.find((m) => m.userId !== currentUserId)?.userId;
+
+  // Lancer un appel sortant via le contexte global
   const handleStartAudioCall = () => {
-    const otherMember = chat?.members.find((m) => m.userId !== currentUserId);
-    if (!otherMember?.userId) {
-      console.error("No recipient found for call");
-      return;
-    }
-    setCallType("audio");
-    setIsIncomingCall(false);
-    setIsCallModalOpen(true);
+    const recipientId = getRecipientId();
+    if (!recipientId) return;
+    startCall({
+      recipientId,
+      recipientName: getChatName(),
+      recipientImage: getChatAvatar(),
+      callType: "audio",
+    });
   };
 
   const handleStartVideoCall = () => {
-    const otherMember = chat?.members.find((m) => m.userId !== currentUserId);
-    if (!otherMember?.userId) {
-      console.error("No recipient found for call");
-      return;
-    }
-    setCallType("video");
-    setIsIncomingCall(false);
-    setIsCallModalOpen(true);
-  };
-
-  const handleEndCall = () => {
-    setIsCallModalOpen(false);
-    setIsIncomingCall(false);
-    setIncomingCallData(null);
-  };
-
-  const handleAcceptIncomingCall = () => {
-    setIsIncomingCall(false);
-    // The CallModal will handle the WebRTC answer logic
+    const recipientId = getRecipientId();
+    if (!recipientId) return;
+    startCall({
+      recipientId,
+      recipientName: getChatName(),
+      recipientImage: getChatAvatar(),
+      callType: "video",
+    });
   };
 
   if (!chat) {
@@ -244,7 +190,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header */}
+      {/* En-tête */}
       <div className="p-4 bg-gradient-to-r from-emerald-500 to-purple-500 shadow-sm flex items-center gap-3">
         <button
           onClick={onBack}
@@ -301,10 +247,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
             {messages.map((message) => {
               const isMe = message.senderId === currentUserId;
               return (
-                <div
-                  key={message.id}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-                >
+                <div key={message.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[70%] ${isMe ? "flex flex-col items-end" : "flex flex-col items-start"}`}>
                     {!isMe && message.sender && (
                       <p className="text-xs text-gray-500 mb-1 ml-2">
@@ -332,7 +275,7 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
         )}
       </div>
 
-      {/* Input */}
+      {/* Zone de saisie */}
       <div className="p-4 bg-white shadow-sm">
         <div className="flex items-center gap-2">
           <button className="p-2 rounded-full hover:bg-gray-100 transition text-gray-500">
@@ -350,50 +293,14 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
             disabled={!text.trim()}
             className="p-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-purple-500 text-white hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 2L11 13" />
               <path d="M22 2L15 22L11 13L2 9L22 2Z" />
             </svg>
           </button>
         </div>
       </div>
-
-      {/* Call Modal */}
-      <CallModal
-        isOpen={isCallModalOpen}
-        onClose={handleEndCall}
-        callType={callType}
-        recipientName={getChatName()}
-        recipientImage={getChatAvatar()}
-        recipientId={chat?.members.find((m) => m.userId !== currentUserId)?.userId}
-        currentUserId={currentUserId}
-        isIncoming={isIncomingCall}
-        incomingCallData={incomingCallData}
-      />
-
-      {/* Incoming Call Modal */}
-      {incomingCallData && (
-        <IncomingCallModal
-          isOpen={isIncomingCall}
-          onClose={handleEndCall}
-          callerName={incomingCallData.callerName || getChatName()}
-          callerImage={incomingCallData.callerImage || getChatAvatar()}
-          callType={incomingCallData.callType || callType}
-          callerId={incomingCallData.callerId}
-          currentUserId={currentUserId}
-          onAccept={handleAcceptIncomingCall}
-        />
-      )}
+      {/* Les modales d'appel (entrant et sortant) sont rendues par CallContext dans providers.tsx */}
     </div>
   );
 }
