@@ -102,6 +102,11 @@ app.prepare().then(async () => {
   io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id);
 
+    // Log all incoming events for debugging
+    socket.onAny((eventName, ...args) => {
+      console.log("Socket event received:", eventName, args);
+    });
+
     // =========================
     // 🔔 REGISTER USER ROOM
     // =========================
