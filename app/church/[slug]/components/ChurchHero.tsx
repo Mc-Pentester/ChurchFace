@@ -13,12 +13,15 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
 
   const handleFollow = async () => {
     try {
-      const res = await fetch(`/api/church/${church.id}/follow`, {
-        method: isFollowing ? "DELETE" : "POST",
+      const res = await fetch(`/api/church/follow`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ churchId: church.id }),
       });
 
       if (res.ok) {
-        setIsFollowing(!isFollowing);
+        const data = await res.json();
+        setIsFollowing(data.following);
       }
     } catch (error) {
       console.error("Error following church:", error);
