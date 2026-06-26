@@ -296,14 +296,17 @@ model Playlist {
   isActive    Boolean         @default(true)
   shuffle     Boolean         @default(false)
   loop        Boolean         @default(false)
+  churchId    String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   items       PlaylistItem[]
   radios      Radio[]
   schedules   RadioSchedule[]
+  church      Church?         @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   @@index([isAutoDJ, isActive])
   @@index([category])
+  @@index([churchId])
 }
 
 model PlaylistItem {
@@ -838,6 +841,7 @@ model Church {
   courses     ChurchCourse[]
   posts       ChurchPost[]
   followers   ChurchFollow[]
+  playlists   Playlist[]
 
   @@index([slug])
   @@index([isVerified])
