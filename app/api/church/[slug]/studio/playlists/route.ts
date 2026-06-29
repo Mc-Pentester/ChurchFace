@@ -38,32 +38,12 @@ export async function GET(
 
     const churchRadio = await prisma.churchRadio.findFirst({
       where: { churchId: church.id },
-      include: {
-        radio: {
-          include: {
-            playlist: {
-              include: {
-                items: {
-                  orderBy: { order: "asc" as const },
-                },
-              },
-            },
-          },
-        },
-      },
     });
-
-    if (!churchRadio?.radio) {
-      return NextResponse.json({ playlists: [] });
-    }
 
     // Récupérer toutes les playlists créées pour cette église
     const playlists = await prisma.playlist.findMany({
       where: {
-        OR: [
-          { id: churchRadio.radio.playlistId },
-          { churchId: church.id },
-        ],
+        churchId: church.id,
       },
       include: {
         items: {

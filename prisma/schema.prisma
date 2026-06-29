@@ -828,6 +828,7 @@ model Church {
   donationEnabled Boolean  @default(false)
   radioEnabled    Boolean  @default(false)
   liveEnabled     Boolean  @default(false)
+  schedule        Json[]   @default([])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

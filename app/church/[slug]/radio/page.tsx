@@ -11,12 +11,11 @@ async function getChurchRadio(slug: string) {
   const church = await prisma.church.findUnique({
     where: { slug },
     include: {
-      churchRadio: {
+      radios: true,
+      playlists: {
         include: {
-          radio: {
-            include: {
-              playlists: true,
-            },
+          items: {
+            orderBy: { order: "asc" },
           },
         },
       },
@@ -42,9 +41,9 @@ export default async function ChurchRadioPage({
     notFound();
   }
 
-  const churchRadio = church.churchRadio?.[0];
-  const radio = churchRadio?.radio;
-  const isLive = radio?.isLive || false;
+  const churchRadio = church.radios?.[0];
+  const isLive = churchRadio?.isActive || false;
+  const playlists = church.playlists || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -56,7 +55,7 @@ export default async function ChurchRadioPage({
           <p className="text-gray-600">Écoutez la radio en direct</p>
         </div>
 
-        {radio ? (
+        {churchRadio ? (
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             {/* Radio Player */}
             <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6 text-white">
@@ -65,9 +64,6 @@ export default async function ChurchRadioPage({
                   <div className={`w-4 h-4 rounded-full ${isLive ? "bg-red-500 animate-pulse" : "bg-gray-400"}`} />
                   <span className="font-semibold">{isLive ? "EN DIRECT" : "HORS LIGNE"}</span>
                 </div>
-                <div className="text-sm opacity-80">
-                  {radio.listenerCount || 0} auditeurs
-                </div>
               </div>
 
               <div className="flex items-center gap-4">
@@ -75,8 +71,8 @@ export default async function ChurchRadioPage({
                   {isLive ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
                 </button>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold">{radio.title || church.name}</h2>
-                  <p className="text-sm opacity-80">{radio.description || "Diffusion en direct"}</p>
+                  <h2 className="text-xl font-bold">{churchRadio.name || church.name}</h2>
+                  <p className="text-sm opacity-80">Diffusion en direct</p>
                 </div>
                 <button className="p-2 hover:bg-white/20 rounded-full transition">
                   <Volume2 size={20} />
@@ -87,15 +83,14 @@ export default async function ChurchRadioPage({
             {/* Playlists */}
             <div className="p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Playlists</h3>
-              {radio.playlists && radio.playlists.length > 0 ? (
+              {playlists && playlists.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {radio.playlists.map((playlist: any) => (
+                  {playlists.map((playlist: any) => (
                     <div key={playlist.id} className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer">
                       <h4 className="font-semibold text-gray-900">{playlist.title}</h4>
                       <p className="text-sm text-gray-600 mt-1">{playlist.description}</p>
                       <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
                         <span>{playlist.isActive ? "Active" : "Inactive"}</span>
-                        {playlist.isAutoDJ && <span>• AutoDJ</span>}
                       </div>
                     </div>
                   ))}

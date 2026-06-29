@@ -37,9 +37,11 @@ export async function GET(
     }
 
     // Récupérer les tracks associés à cette église
-    const tracks = await prisma.track.findMany({
+    const tracks = await prisma.playlistItem.findMany({
       where: {
-        churchId: church.id,
+        playlist: {
+          churchId: church.id,
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -83,14 +85,13 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const track = await prisma.track.create({
+    const track = await prisma.playlistItem.create({
       data: {
         title: body.title || "Sans titre",
         url: body.url,
         duration: body.duration || 0,
-        category: body.category || "GENERAL",
-        type: body.type || "MUSIC",
-        churchId: church.id,
+        type: body.type || "AUDIO",
+        playlistId: body.playlistId,
       },
     });
 
