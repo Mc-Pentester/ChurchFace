@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import StudioHeader from "@/components/radio/studio/StudioHeader";
-import StudioSidebar from "@/components/radio/studio/StudioSidebar";
+import LiveSidebar from "@/components/live/studio/LiveSidebar";
 import ChurchStudioLive from "@/components/radio/studio/ChurchStudioLive";
 import StudioRightPanel from "@/components/radio/studio/StudioRightPanel";
 import StudioSchedulePanel from "@/components/radio/studio/StudioSchedulePanel";
@@ -109,9 +109,9 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
 
   return (
     <div className="h-screen bg-[#0a0a0f] text-white flex flex-col overflow-hidden">
-      <StudioHeader radio={activeLive} isLive={isLive} elapsed={elapsed} />
+      <StudioHeader radio={activeLive} isLive={isLive} elapsed={elapsed} studioType="live" churchSlug={slug} />
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <StudioSidebar activeView={activeView} setActiveView={setActiveView} />
+        <LiveSidebar activeView={activeView} setActiveView={setActiveView} />
         {activeView === "schedule" ? (
           <div className="flex-1 min-w-0 bg-[#0a0a0f] overflow-y-auto p-4">
             <div className="max-w-4xl mx-auto">

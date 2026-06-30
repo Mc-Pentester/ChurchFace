@@ -12,18 +12,11 @@ export async function GET(
   try {
     const church = await prisma.church.findUnique({
       where: { slug },
-      select: { id: true, liveEnabled: true },
+      select: { id: true },
     });
 
     if (!church) {
       return NextResponse.json({ error: "Church not found" }, { status: 404 });
-    }
-
-    if (!church.liveEnabled) {
-      return NextResponse.json(
-        { error: "Live is not enabled for this church" },
-        { status: 403 }
-      );
     }
 
     const live = await prisma.churchLive.findFirst({
@@ -35,21 +28,18 @@ export async function GET(
     });
 
     if (!live) {
-      // Check for scheduled lives
-      const scheduled = await prisma.churchLive.findFirst({
+      // Return the most recent live regardless of status
+      const recentLive = await prisma.churchLive.findFirst({
         where: { 
           churchId: church.id,
-          status: "SCHEDULED",
-          scheduledAt: {
-            gte: new Date(),
-          },
         },
-        orderBy: { scheduledAt: "asc" },
+        orderBy: { createdAt: "desc" },
+        take: 1,
       });
 
       return NextResponse.json({
         isLive: false,
-        scheduled: scheduled || null,
+        live: recentLive || null,
       });
     }
 

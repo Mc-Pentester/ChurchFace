@@ -50,31 +50,26 @@ export default function ChurchSidebar({ church }: ChurchSidebarProps) {
       </div>
 
       {/* Horaires */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <ClockIcon className="w-5 h-5 text-gray-400" />
-          Horaires
-        </h3>
-        
-        <div className="space-y-3 text-sm text-gray-600">
-          <div className="flex justify-between">
-            <span>Culte dominical</span>
-            <span className="font-medium">09:00</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Étude biblique</span>
-            <span className="font-medium">18:00</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Réunion de prière</span>
-            <span className="font-medium">19:00</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Jeunesse</span>
-            <span className="font-medium">Samedi 16:00</span>
+      {church.schedule && church.schedule.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <ClockIcon className="w-5 h-5 text-gray-400" />
+            Horaires
+          </h3>
+          
+          <div className="space-y-3 text-sm text-gray-600">
+            {church.schedule.map((item: any, index: number) => (
+              <div key={index} className="flex justify-between">
+                <span>{item.day}</span>
+                <span className="font-medium">
+                  {item.startTime} - {item.endTime}
+                  {item.activity && ` (${item.activity})`}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Responsables */}
       {church.admins && church.admins.length > 0 && (

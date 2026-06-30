@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, Settings, ChevronDown, Wifi } from "lucide-react";
+import { Bell, Settings, ChevronDown, Wifi, ExternalLink } from "lucide-react";
 
-export default function StudioHeader({ radio, isLive, elapsed }: { radio: any; isLive: boolean; elapsed: number }) {
+export default function StudioHeader({ radio, isLive, elapsed, studioType = "radio", churchSlug }: { radio: any; isLive: boolean; elapsed: number; studioType?: "radio" | "live"; churchSlug?: string }) {
   const listeners = radio?.listenerCount ?? 0;
   const waveformRef = useRef<HTMLDivElement>(null);
 
@@ -18,7 +18,7 @@ export default function StudioHeader({ radio, isLive, elapsed }: { radio: any; i
       <div className="flex items-center gap-3 min-w-[200px]">
         <div className="flex flex-col">
           <span className="text-sm font-bold text-violet-400 leading-none">ChurchFace</span>
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider leading-none mt-0.5">Radio Studio</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wider leading-none mt-0.5">{studioType === "live" ? "Live Studio" : "Radio Studio"}</span>
         </div>
       </div>
 
@@ -48,6 +48,19 @@ export default function StudioHeader({ radio, isLive, elapsed }: { radio: any; i
 
       {/* Right side */}
       <div className="flex items-center gap-5">
+        {/* View Public Page (only for live studio) */}
+        {studioType === "live" && churchSlug && (
+          <a
+            href={`/church/${churchSlug}/live`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 rounded-lg text-xs font-medium transition"
+          >
+            <ExternalLink size={14} />
+            <span>Voir page public</span>
+          </a>
+        )}
+
         {/* Listeners */}
         <div className="hidden lg:flex items-center gap-3">
           <div className="flex flex-col items-end">

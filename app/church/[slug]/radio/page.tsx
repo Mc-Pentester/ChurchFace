@@ -98,6 +98,16 @@ export default async function ChurchRadioPage({
               ) : (
                 <p className="text-gray-500">Aucune playlist disponible</p>
               )}
+
+              <div className="mt-6">
+                <a
+                  href={`/church/${slug}/studio`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition"
+                >
+                  <Radio size={16} />
+                  Accéder au Studio Radio
+                </a>
+              </div>
             </div>
           </div>
         ) : (

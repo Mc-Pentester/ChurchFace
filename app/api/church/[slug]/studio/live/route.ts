@@ -102,6 +102,12 @@ export async function PATCH(
       where: { id: body.id },
       data: {
         status: body.status,
+        ...(body.streamUrl !== undefined && { streamUrl: body.streamUrl }),
+        ...(body.playUrl !== undefined && { playUrl: body.playUrl }),
+        ...(body.streamMode !== undefined && { streamMode: body.streamMode }),
+        ...(body.startedAt !== undefined && { startedAt: body.startedAt }),
+        ...(body.endedAt !== undefined && { endedAt: body.endedAt }),
+        ...(body.viewerCount !== undefined && { viewerCount: body.viewerCount }),
       },
     });
 

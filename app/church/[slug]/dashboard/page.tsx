@@ -177,17 +177,31 @@ export default async function ChurchDashboard({ params }: { params: Promise<{ sl
           </a>
 
           {/* Radio */}
-          <a href={`/church/${slug}/dashboard/radio`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
+          <a href={`/church/${slug}/radio`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
             <div className="flex items-center gap-4 mb-4">
               <div className="bg-purple-100 text-purple-600 p-4 rounded-xl">
                 🎙
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Radio</h3>
-                <p className="text-sm text-gray-500">Gérer la radio de l'église</p>
+                <p className="text-sm text-gray-500">Écouter la radio de l'église</p>
               </div>
             </div>
-            <p className="text-sm text-gray-500">Configurer la radio</p>
+            <p className="text-sm text-gray-500">Page publique radio</p>
+          </a>
+
+          {/* Live */}
+          <a href={`/church/${slug}/live`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-red-100 text-red-600 p-4 rounded-xl">
+                📺
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">Live</h3>
+                <p className="text-sm text-gray-500">Regarder le live de l'église</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500">Page publique live</p>
           </a>
 
           {/* Formations */}

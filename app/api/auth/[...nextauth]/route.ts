@@ -6,4 +6,4 @@ export const runtime = "nodejs";
 // Single source of truth for NextAuth configuration.
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST, handler as PUT, handler as DELETE };

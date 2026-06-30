@@ -8,70 +8,64 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  password    String
-  createdAt   DateTime  @default(now())
-  image       String?
-  name        String?
-  bio         String?
-  church      String?
-  city        String?
-  role        String    @default("USER")
-  isSuspended Boolean   @default(false)
-  isBanned    Boolean   @default(false)
-  suspendedAt DateTime?
-  bannedAt    DateTime?
-
-  pushSubscriptions PushSubscription[]
-
-  accounts               Account[]
-  chats                  ChatMember[]
-  comments               Comment[]
-  likes                  Like[]
-  messages               Message[]
-  messagesSeen           MessageSeen[]
-  sentNotifications      Notification[]          @relation("Sender")
-  notifications          Notification[]          @relation("Receiver")
-  posts                  Post[]
-  prayerRequests         PrayerRequest[]
-  prayerResponses        PrayerResponse[]
-  prayerReactions        PrayerReaction[]
-  prayerVerses           PrayerVerse[]
-  prayerTestimonies      PrayerTestimony[]
-  prayerChainLinks       PrayerChainLink[]
-  prayerRoomParticipants PrayerRoomParticipant[]
-  radios                 Radio[]
-  sessions               Session[]
-  shares                 Share[]
-  stories                Story[]
-  storyViews             StoryView[]
-  streams                Stream[]
-  friendshipsSent        Friendship[]            @relation("SentFriendships")
-  friendshipsReceived    Friendship[]            @relation("ReceivedFriendships")
-  reports                Report[]                @relation("ReportedItems")
-  adminLogs              AdminLog[]
-  following              UserFollow[]            @relation("Following")
-  followers              UserFollow[]            @relation("Followers")
-  
-  // Preaching System
-  preachings          Preaching[] @relation("Preachings")
-  preachingSeries     PreachingSeries[] @relation("PreachingSeries")
-  preachingViews      PreachingView[] @relation("PreachingViews")
-  preachingLikes      PreachingLike[] @relation("PreachingLikes")
-  preachingComments   PreachingComment[] @relation("PreachingComments")
-  preachingBookmarks  PreachingBookmark[] @relation("PreachingBookmarks")
-  preachingNotes      PreachingNote[] @relation("PreachingNotes")
-  liveBroadcasts      LiveBroadcast[] @relation("LiveBroadcasts")
-  
-  // Church System
-  churchMembers       ChurchMember[]
-  churchAdmins        ChurchAdmin[]
-  churchEventAttendees ChurchEventAttendee[]
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  password                String
+  createdAt               DateTime                 @default(now())
+  image                   String?
+  name                    String?
+  bio                     String?
+  role                    String                   @default("USER")
+  church                  String?
+  city                    String?
+  bannedAt                DateTime?
+  isBanned                Boolean                  @default(false)
+  isSuspended             Boolean                  @default(false)
+  suspendedAt             DateTime?
+  accounts                Account[]
+  adminLogs               AdminLog[]
+  chats                   ChatMember[]
+  churchAdmins            ChurchAdmin[]
   churchCourseEnrollments ChurchCourseEnrollment[]
-  churchPostLikes     ChurchPostLike[]
-  churchPostComments  ChurchPostComment[]
-  churchFollows       ChurchFollow[]
+  churchEventAttendees    ChurchEventAttendee[]
+  churchFollows           ChurchFollow[]
+  churchMembers           ChurchMember[]
+  churchPostComments      ChurchPostComment[]
+  churchPostLikes         ChurchPostLike[]
+  comments                Comment[]
+  friendshipsReceived     Friendship[]             @relation("ReceivedFriendships")
+  friendshipsSent         Friendship[]             @relation("SentFriendships")
+  likes                   Like[]
+  liveBroadcasts          LiveBroadcast[]          @relation("LiveBroadcasts")
+  messages                Message[]
+  messagesSeen            MessageSeen[]
+  sentNotifications       Notification[]           @relation("Sender")
+  notifications           Notification[]           @relation("Receiver")
+  posts                   Post[]
+  prayerChainLinks        PrayerChainLink[]
+  prayerReactions         PrayerReaction[]
+  prayerRequests          PrayerRequest[]
+  prayerResponses         PrayerResponse[]
+  prayerRoomParticipants  PrayerRoomParticipant[]
+  prayerTestimonies       PrayerTestimony[]
+  prayerVerses            PrayerVerse[]
+  preachings              Preaching[]              @relation("Preachings")
+  preachingBookmarks      PreachingBookmark[]      @relation("PreachingBookmarks")
+  preachingComments       PreachingComment[]       @relation("PreachingComments")
+  preachingLikes          PreachingLike[]          @relation("PreachingLikes")
+  preachingNotes          PreachingNote[]          @relation("PreachingNotes")
+  preachingSeries         PreachingSeries[]        @relation("PreachingSeries")
+  preachingViews          PreachingView[]          @relation("PreachingViews")
+  pushSubscriptions       PushSubscription[]
+  radios                  Radio[]
+  reports                 Report[]                 @relation("ReportedItems")
+  sessions                Session[]
+  shares                  Share[]
+  stories                 Story[]
+  storyViews              StoryView[]
+  streams                 Stream[]
+  followers               UserFollow[]             @relation("Followers")
+  following               UserFollow[]             @relation("Following")
 }
 
 model Chat {
@@ -208,19 +202,18 @@ model StoryView {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  type      String
-  message   String
-  isRead    Boolean  @default(false)
-  userId    String
-  createdAt DateTime @default(now())
-  senderId  String?
-  sender    User?    @relation("Sender", fields: [senderId], references: [id])
-  user      User     @relation("Receiver", fields: [userId], references: [id])
-
-  entityId   String? // postId, commentId, etc.
-  entityType String? // "post", "comment", "follow"
-  data       Json? // flexible payload
+  id         String   @id @default(cuid())
+  type       String
+  message    String
+  isRead     Boolean  @default(false)
+  userId     String
+  createdAt  DateTime @default(now())
+  senderId   String?
+  data       Json?
+  entityId   String?
+  entityType String?
+  sender     User?    @relation("Sender", fields: [senderId], references: [id])
+  user       User     @relation("Receiver", fields: [userId], references: [id])
 
   @@index([userId, isRead])
   @@index([createdAt])
@@ -234,8 +227,7 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -296,13 +288,13 @@ model Playlist {
   isActive    Boolean         @default(true)
   shuffle     Boolean         @default(false)
   loop        Boolean         @default(false)
-  churchId    String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  churchId    String?
+  church      Church?         @relation(fields: [churchId], references: [id], onDelete: Cascade)
   items       PlaylistItem[]
   radios      Radio[]
   schedules   RadioSchedule[]
-  church      Church?         @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   @@index([isAutoDJ, isActive])
   @@index([category])
@@ -357,8 +349,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ─── ESPACE DE PRIÈRE ───
-
 model PrayerRequest {
   id          String           @id @default(cuid())
   userId      String
@@ -369,12 +359,12 @@ model PrayerRequest {
   isAnswered  Boolean          @default(false)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  prayerChain PrayerChain?
+  reactions   PrayerReaction[]
   user        User             @relation(fields: [userId], references: [id])
   responses   PrayerResponse[]
-  reactions   PrayerReaction[]
-  verses      PrayerVerse[]
   testimony   PrayerTestimony?
-  prayerChain PrayerChain?
+  verses      PrayerVerse[]
 
   @@index([userId, createdAt])
   @@index([category, createdAt])
@@ -445,8 +435,8 @@ model PrayerChain {
   isActive        Boolean           @default(true)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  links           PrayerChainLink[]
   prayerRequest   PrayerRequest?    @relation(fields: [prayerRequestId], references: [id])
+  links           PrayerChainLink[]
 
   @@index([isActive, createdAt])
 }
@@ -494,8 +484,6 @@ model PrayerRoomParticipant {
   @@index([roomId, joinedAt])
 }
 
-// ─── STUDIO RADIO ───
-
 model AudioTrack {
   id         String   @id @default(cuid())
   title      String
@@ -533,8 +521,8 @@ model RadioSchedule {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  radio       Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
   playlist    Playlist? @relation(fields: [playlistId], references: [id])
+  radio       Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
 
   @@index([radioId, startTime])
   @@index([isActive, startTime])
@@ -556,16 +544,13 @@ model RadioChatMessage {
   @@index([isPinned])
 }
 
-// ─── SYSTÈME D'AMIS ───
-
 model UserFollow {
-  id        String   @id @default(cuid())
-  followerId String
+  id          String   @id @default(cuid())
+  followerId  String
   followingId String
-  createdAt DateTime @default(now())
-
-  follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
-  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
   @@index([followerId])
@@ -576,12 +561,11 @@ model Friendship {
   id         String   @id @default(cuid())
   senderId   String
   receiverId String
-  status     String   @default("PENDING") // PENDING, ACCEPTED, DECLINED, BLOCKED
+  status     String   @default("PENDING")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  sender   User @relation("SentFriendships", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("ReceivedFriendships", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedFriendships", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("SentFriendships", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
   @@index([senderId, status])
@@ -589,21 +573,18 @@ model Friendship {
   @@index([status, createdAt])
 }
 
-// ─── SYSTÈME DE MODÉRATION ───
-
 model Report {
   id          String    @id @default(cuid())
   reporterId  String
   targetId    String
-  targetType  String // "post", "comment", "story", "user"
-  reason      String // "spam", "harassment", "fake_account", "offensive", "inappropriate", "other"
+  targetType  String
+  reason      String
   description String?
-  status      String    @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  status      String    @default("PENDING")
   createdAt   DateTime  @default(now())
   resolvedAt  DateTime?
   resolvedBy  String?
-
-  reporter User @relation("ReportedItems", fields: [reporterId], references: [id])
+  reporter    User      @relation("ReportedItems", fields: [reporterId], references: [id])
 
   @@index([targetType, status])
   @@index([status, createdAt])
@@ -613,75 +594,69 @@ model Report {
 model AdminLog {
   id         String   @id @default(cuid())
   adminId    String
-  action     String // "approve_post", "hide_post", "delete_post", "restore_post", "pin_post", "suspend_user", "ban_user", "reactivate_user", "resolve_report", "dismiss_report"
+  action     String
   targetId   String?
-  targetType String? // "post", "comment", "story", "user", "report"
+  targetType String?
   details    Json?
   createdAt  DateTime @default(now())
-
-  admin User @relation(fields: [adminId], references: [id])
+  admin      User     @relation(fields: [adminId], references: [id])
 
   @@index([adminId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, createdAt])
 }
 
-// ─── ESPACE DE DIFFUSION (PRÉDICATIONS) ───
-
 model PreachingCategory {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  slug        String     @unique
+  id          String      @id @default(cuid())
+  name        String      @unique
+  slug        String      @unique
   description String?
-  icon        String?    // emoji or icon name
-  order       Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  preachings Preaching[]
+  icon        String?
+  order       Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  preachings  Preaching[]
 
   @@index([order])
 }
 
 model PreachingSeries {
-  id          String     @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String?
   thumbnail   String?
   authorId    String
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  author     User       @relation("PreachingSeries", fields: [authorId], references: [id], onDelete: Cascade)
-  preachings Preaching[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  preachings  Preaching[]
+  author      User        @relation("PreachingSeries", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([authorId, createdAt])
 }
 
 model Preaching {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  thumbnail   String
-  videoUrl    String
-  duration    Int      // in seconds
-  views       Int      @default(0)
-  authorId    String
-  categoryId  String
-  seriesId    String?
-  publishedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  author     User              @relation("Preachings", fields: [authorId], references: [id], onDelete: Cascade)
-  category   PreachingCategory @relation(fields: [categoryId], references: [id])
-  series     PreachingSeries?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  id             String              @id @default(cuid())
+  title          String
+  description    String
+  thumbnail      String
+  videoUrl       String
+  duration       Int
+  views          Int                 @default(0)
+  authorId       String
+  categoryId     String
+  seriesId       String?
+  publishedAt    DateTime            @default(now())
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  author         User                @relation("Preachings", fields: [authorId], references: [id], onDelete: Cascade)
+  category       PreachingCategory   @relation(fields: [categoryId], references: [id])
+  series         PreachingSeries?    @relation(fields: [seriesId], references: [id])
+  bookmarks      PreachingBookmark[]
+  comments       PreachingComment[]
+  likes          PreachingLike[]
+  notes          PreachingNote[]
+  verses         PreachingVerse[]
   preachingViews PreachingView[]
-  likes      PreachingLike[]
-  comments   PreachingComment[]
-  bookmarks  PreachingBookmark[]
-  notes      PreachingNote[]
-  verses     PreachingVerse[]
 
   @@index([authorId, publishedAt])
   @@index([categoryId, publishedAt])
@@ -691,14 +666,13 @@ model Preaching {
 }
 
 model PreachingView {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
-  watchedAt   DateTime @default(now())
-  duration    Int?     // how much of the video was watched in seconds
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User       @relation("PreachingViews", fields: [userId], references: [id], onDelete: Cascade)
+  watchedAt   DateTime  @default(now())
+  duration    Int?
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation("PreachingViews", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
   @@index([preachingId, watchedAt])
@@ -706,13 +680,12 @@ model PreachingView {
 }
 
 model PreachingLike {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
-  createdAt   DateTime @default(now())
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User       @relation("PreachingLikes", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation("PreachingLikes", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
   @@index([preachingId])
@@ -720,18 +693,17 @@ model PreachingLike {
 }
 
 model PreachingComment {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   preachingId String
   userId      String
   content     String
   parentId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  preaching Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User               @relation("PreachingComments", fields: [userId], references: [id], onDelete: Cascade)
-  parent    PreachingComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   PreachingComment[] @relation("CommentReplies")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  parent      PreachingComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     PreachingComment[] @relation("CommentReplies")
+  preaching   Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User               @relation("PreachingComments", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([preachingId, createdAt])
   @@index([userId, createdAt])
@@ -739,13 +711,12 @@ model PreachingComment {
 }
 
 model PreachingBookmark {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
-  createdAt   DateTime @default(now())
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User       @relation("PreachingBookmarks", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation("PreachingBookmarks", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
   @@index([preachingId])
@@ -753,63 +724,58 @@ model PreachingBookmark {
 }
 
 model PreachingNote {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
   content     String
-  timestamp   Int?       // timestamp in the video where the note was taken
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User       @relation("PreachingNotes", fields: [userId], references: [id], onDelete: Cascade)
+  timestamp   Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation("PreachingNotes", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([preachingId, userId])
   @@index([userId, createdAt])
 }
 
 model PreachingVerse {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
-  book        String    // e.g., "Jean", "Romains", "Psaume"
+  book        String
   chapter     Int
-  verse       String    // e.g., "16", "28", "1-6"
+  verse       String
   text        String
   createdAt   DateTime  @default(now())
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
 
   @@index([preachingId])
   @@index([book, chapter])
 }
 
 model LiveBroadcast {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
   thumbnail   String?
   streamUrl   String
   authorId    String
-  viewerCount Int      @default(0)
-  status      String   @default("SCHEDULED") // SCHEDULED, LIVE, ENDED
+  viewerCount Int       @default(0)
+  status      String    @default("SCHEDULED")
   scheduledAt DateTime?
   startedAt   DateTime?
   endedAt     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  author User @relation("LiveBroadcasts", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation("LiveBroadcasts", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([authorId, status])
   @@index([status, scheduledAt])
   @@index([status, startedAt])
 }
 
-// ─── SYSTÈME D'ÉGLISE ───
-
 model Church {
-  id              String   @id @default(cuid())
-  slug            String   @unique
+  id              String         @id @default(cuid())
+  slug            String         @unique
   name            String
   description     String?
   slogan          String?
@@ -821,28 +787,26 @@ model Church {
   address         String?
   city            String?
   country         String?
-  isVerified      Boolean  @default(false)
-  memberCount     Int      @default(0)
-  followerCount   Int      @default(0)
-  viewCount       Int      @default(0)
-  donationEnabled Boolean  @default(false)
-  radioEnabled    Boolean  @default(false)
-  liveEnabled     Boolean  @default(false)
-  schedule        Json[]   @default([])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  // Relations
-  members     ChurchMember[]
-  admins      ChurchAdmin[]
-  events      ChurchEvent[]
-  media       ChurchMedia[]
-  radios      ChurchRadio[]
-  lives       ChurchLive[]
-  courses     ChurchCourse[]
-  posts       ChurchPost[]
-  followers   ChurchFollow[]
-  playlists   Playlist[]
+  isVerified      Boolean        @default(false)
+  memberCount     Int            @default(0)
+  followerCount   Int            @default(0)
+  viewCount       Int            @default(0)
+  donationEnabled Boolean        @default(false)
+  radioEnabled    Boolean        @default(false)
+  liveEnabled     Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  schedule        Json[]         @default([])
+  admins          ChurchAdmin[]
+  courses         ChurchCourse[]
+  events          ChurchEvent[]
+  followers       ChurchFollow[]
+  lives           ChurchLive[]
+  media           ChurchMedia[]
+  members         ChurchMember[]
+  posts           ChurchPost[]
+  radios          ChurchRadio[]
+  playlists       Playlist[]
 
   @@index([slug])
   @@index([isVerified])
@@ -851,15 +815,14 @@ model Church {
 }
 
 model ChurchMember {
-  id        String   @id @default(cuid())
-  churchId  String
-  userId    String
-  role      String   @default("MEMBER") // MEMBER, ELDER, DEACON, YOUTH_LEADER, MUSICIAN
-  joinedAt  DateTime @default(now())
-  isActive  Boolean  @default(true)
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  churchId String
+  userId   String
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+  isActive Boolean  @default(true)
+  church   Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchId, userId])
   @@index([churchId, role])
@@ -867,14 +830,13 @@ model ChurchMember {
 }
 
 model ChurchAdmin {
-  id        String   @id @default(cuid())
-  churchId  String
-  userId    String
-  role      String   @default("CHURCH_ADMIN") // CHURCH_OWNER, CHURCH_ADMIN, CHURCH_MODERATOR, PASTOR, ASSOCIATE_PASTOR, RADIO_MANAGER, LIVE_MANAGER, COURSE_MANAGER
+  id          String   @id @default(cuid())
+  churchId    String
+  userId      String
+  role        String   @default("CHURCH_ADMIN")
   appointedAt DateTime @default(now())
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church      Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchId, userId])
   @@index([churchId, role])
@@ -882,21 +844,20 @@ model ChurchAdmin {
 }
 
 model ChurchEvent {
-  id          String   @id @default(cuid())
-  churchId    String
-  title       String
-  description String?
-  imageUrl    String?
-  startDate   DateTime
-  endDate     DateTime?
-  location    String?
-  isPublic    Boolean  @default(true)
-  attendeeCount Int    @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  church   Church           @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  attendees ChurchEventAttendee[]
+  id            String                @id @default(cuid())
+  churchId      String
+  title         String
+  description   String?
+  imageUrl      String?
+  startDate     DateTime
+  endDate       DateTime?
+  location      String?
+  isPublic      Boolean               @default(true)
+  attendeeCount Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  church        Church                @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  attendees     ChurchEventAttendee[]
 
   @@index([churchId, startDate])
   @@index([startDate])
@@ -904,13 +865,12 @@ model ChurchEvent {
 }
 
 model ChurchEventAttendee {
-  id        String   @id @default(cuid())
-  eventId   String
-  userId    String
-  joinedAt  DateTime @default(now())
-
-  event ChurchEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String      @id @default(cuid())
+  eventId  String
+  userId   String
+  joinedAt DateTime    @default(now())
+  event    ChurchEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -920,14 +880,13 @@ model ChurchEventAttendee {
 model ChurchMedia {
   id        String   @id @default(cuid())
   churchId  String
-  type      String   @default("IMAGE") // IMAGE, VIDEO, ALBUM
+  type      String   @default("IMAGE")
   title     String?
   url       String
   thumbnail String?
   order     Int      @default(0)
   createdAt DateTime @default(now())
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   @@index([churchId, type])
   @@index([churchId, order])
@@ -936,56 +895,55 @@ model ChurchMedia {
 model ChurchRadio {
   id        String   @id @default(cuid())
   churchId  String
-  radioId   String?  // Link to existing Radio model
+  radioId   String?
   name      String
   streamUrl String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   @@index([churchId])
   @@index([isActive])
 }
 
 model ChurchLive {
-  id           String   @id @default(cuid())
-  churchId     String
-  liveBroadcastId String? // Link to existing LiveBroadcast model
-  title        String
-  streamUrl    String?
-  thumbnail    String?
-  status       String   @default("OFFLINE") // OFFLINE, SCHEDULED, LIVE
-  viewerCount  Int      @default(0)
-  scheduledAt  DateTime?
-  startedAt    DateTime?
-  endedAt      DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  churchId        String
+  liveBroadcastId String?
+  title           String
+  streamUrl       String?   // RTMP URL pour envoi via OBS
+  playUrl         String?   // URL de lecture pour iframe (YouTube embed, Twitch player, etc.)
+  streamMode      String    @default("RTMP") // "RTMP" ou "WEBRTC"
+  thumbnail       String?
+  status          String    @default("OFFLINE")
+  viewerCount     Int       @default(0)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  church          Church    @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   @@index([churchId, status])
   @@index([status])
 }
 
 model ChurchCourse {
-  id          String   @id @default(cuid())
+  id          String                   @id @default(cuid())
   churchId    String
   title       String
   description String?
   instructor  String?
   thumbnail   String?
-  duration    Int?     // in minutes
-  level       String   @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
+  duration    Int?
+  level       String                   @default("BEGINNER")
   category    String?
-  isPublished Boolean  @default(false)
-  enrollCount Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  church     Church           @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  isPublished Boolean                  @default(false)
+  enrollCount Int                      @default(0)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  church      Church                   @relation(fields: [churchId], references: [id], onDelete: Cascade)
   enrollments ChurchCourseEnrollment[]
 
   @@index([churchId, isPublished])
@@ -994,16 +952,15 @@ model ChurchCourse {
 }
 
 model ChurchCourseEnrollment {
-  id        String   @id @default(cuid())
-  courseId  String
-  userId    String
-  progress  Int      @default(0) // percentage
-  completed Boolean  @default(false)
-  enrolledAt DateTime @default(now())
+  id          String       @id @default(cuid())
+  courseId    String
+  userId      String
+  progress    Int          @default(0)
+  completed   Boolean      @default(false)
+  enrolledAt  DateTime     @default(now())
   completedAt DateTime?
-
-  course ChurchCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      ChurchCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, userId])
   @@index([courseId])
@@ -1011,31 +968,29 @@ model ChurchCourseEnrollment {
 }
 
 model ChurchPost {
-  id        String   @id @default(cuid())
+  id        String              @id @default(cuid())
   churchId  String
   content   String?
   imageUrl  String?
   videoUrl  String?
-  isPinned  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  church   Church          @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  likes    ChurchPostLike[]
-  comments ChurchPostComment[]
+  isPinned  Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  church    Church              @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  comments  ChurchPostComment[]
+  likes     ChurchPostLike[]
 
   @@index([churchId, createdAt])
   @@index([isPinned])
 }
 
 model ChurchPostLike {
-  id         String     @id @default(cuid())
+  id           String     @id @default(cuid())
   churchPostId String
-  userId     String
-  createdAt  DateTime @default(now())
-
-  churchPost ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  createdAt    DateTime   @default(now())
+  churchPost   ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchPostId, userId])
   @@index([churchPostId])
@@ -1043,17 +998,16 @@ model ChurchPostLike {
 }
 
 model ChurchPostComment {
-  id          String     @id @default(cuid())
+  id           String              @id @default(cuid())
   churchPostId String
-  userId      String
-  content     String
-  parentId    String?
-  createdAt   DateTime @default(now())
-
-  churchPost ChurchPost           @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
-  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent     ChurchPostComment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies    ChurchPostComment[]  @relation("CommentReplies")
+  userId       String
+  content      String
+  parentId     String?
+  createdAt    DateTime            @default(now())
+  churchPost   ChurchPost          @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  parent       ChurchPostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      ChurchPostComment[] @relation("CommentReplies")
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([churchPostId, createdAt])
   @@index([userId, createdAt])
@@ -1065,9 +1019,8 @@ model ChurchFollow {
   churchId  String
   userId    String
   createdAt DateTime @default(now())
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchId, userId])
   @@index([churchId])

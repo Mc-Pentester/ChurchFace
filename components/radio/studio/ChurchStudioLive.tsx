@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Video, Mic, MicOff, VideoOff, Settings, Users, Share2, MessageSquare, MonitorUp, Radio, StopCircle, Play, Square } from "lucide-react";
+import LiveKitRoom from "@/components/livekit/LiveKitRoom";
 
 interface ChurchStudioLiveProps {
   live: any;
@@ -26,10 +27,14 @@ export default function ChurchStudioLive({
   const [elapsed, setElapsed] = useState(0);
   const [showGoLiveConfirm, setShowGoLiveConfirm] = useState(false);
   const [streamUrl, setStreamUrl] = useState(live?.streamUrl || "");
+  const [playUrl, setPlayUrl] = useState(live?.playUrl || "");
+  const [streamMode, setStreamMode] = useState(live?.streamMode || "RTMP");
   const [title, setTitle] = useState(live?.title || "");
   const [description, setDescription] = useState(live?.description || "");
   const [thumbnail, setThumbnail] = useState(live?.thumbnail || "");
   const [showSettings, setShowSettings] = useState(false);
+  const [livekitToken, setLivekitToken] = useState<string | null>(null);
+  const [isLiveKitConnected, setIsLiveKitConnected] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -38,6 +43,8 @@ export default function ChurchStudioLive({
   useEffect(() => {
     setViewerCount(live?.viewerCount || 0);
     setStreamUrl(live?.streamUrl || "");
+    setPlayUrl(live?.playUrl || "");
+    setStreamMode(live?.streamMode || "RTMP");
     setTitle(live?.title || "");
     setDescription(live?.description || "");
     setThumbnail(live?.thumbnail || "");
@@ -134,9 +141,40 @@ export default function ChurchStudioLive({
       description,
       thumbnail,
       streamUrl,
+      playUrl,
+      streamMode,
     });
     setShowSettings(false);
   }
+
+  async function generateLiveKitToken() {
+    if (!live?.id) return;
+    
+    try {
+      const response = await fetch("/api/livekit/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomName: `church-${live.id}`,
+          participantName: `host-${live.id}`,
+          isPublisher: true,
+        }),
+      });
+      
+      const data = await response.json();
+      if (data.token) {
+        setLivekitToken(data.token);
+      }
+    } catch (error) {
+      console.error("Error generating LiveKit token:", error);
+    }
+  }
+
+  useEffect(() => {
+    if (streamMode === "WEBRTC" && isLive) {
+      generateLiveKitToken();
+    }
+  }, [streamMode, isLive, live?.id]);
 
   function toggleVideo() {
     setIsVideoEnabled(!isVideoEnabled);
@@ -158,7 +196,15 @@ export default function ChurchStudioLive({
           {/* Main Video Area */}
           <div className="xl:col-span-2 bg-[#16161f] rounded-xl overflow-hidden">
             <div className="relative aspect-video bg-black">
-              {isVideoEnabled ? (
+              {streamMode === "WEBRTC" && livekitToken ? (
+                <LiveKitRoom
+                  token={livekitToken}
+                  serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || ""}
+                  roomName={`church-${live?.id}`}
+                  onConnected={() => setIsLiveKitConnected(true)}
+                  onDisconnected={() => setIsLiveKitConnected(false)}
+                />
+              ) : isVideoEnabled ? (
                 <video
                   ref={videoRef}
                   autoPlay
@@ -228,6 +274,33 @@ export default function ChurchStudioLive({
             <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Informations du stream</h3>
             
             <div className="space-y-3">
+              {/* Stream Mode Selection */}
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Mode de diffusion</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStreamMode("RTMP")}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                      streamMode === "RTMP"
+                        ? "bg-violet-600 text-white"
+                        : "bg-[#1e1e2d] text-gray-400 hover:bg-[#2a2a3d]"
+                    }`}
+                  >
+                    RTMP (OBS)
+                  </button>
+                  <button
+                    onClick={() => setStreamMode("WEBRTC")}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                      streamMode === "WEBRTC"
+                        ? "bg-violet-600 text-white"
+                        : "bg-[#1e1e2d] text-gray-400 hover:bg-[#2a2a3d]"
+                    }`}
+                  >
+                    WebRTC (Navigateur)
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Titre</label>
                 <input
@@ -249,16 +322,37 @@ export default function ChurchStudioLive({
                 />
               </div>
 
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">URL du stream (RTMP/RTMPS)</label>
-                <input
-                  type="text"
-                  value={streamUrl}
-                  onChange={(e) => setStreamUrl(e.target.value)}
-                  className="w-full bg-[#1e1e2d] rounded-lg px-3 py-2 text-sm text-white"
-                  placeholder="rtmp://..."
-                />
-              </div>
+              {streamMode === "RTMP" ? (
+                <>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">URL du stream (RTMP/RTMPS)</label>
+                    <input
+                      type="text"
+                      value={streamUrl}
+                      onChange={(e) => setStreamUrl(e.target.value)}
+                      className="w-full bg-[#1e1e2d] rounded-lg px-3 py-2 text-sm text-white"
+                      placeholder="rtmp://..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">URL de lecture (YouTube embed, Twitch player)</label>
+                    <input
+                      type="text"
+                      value={playUrl}
+                      onChange={(e) => setPlayUrl(e.target.value)}
+                      className="w-full bg-[#1e1e2d] rounded-lg px-3 py-2 text-sm text-white"
+                      placeholder="https://www.youtube.com/embed/..."
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="bg-emerald-900/30 border border-emerald-700 rounded-lg p-3">
+                  <p className="text-xs text-emerald-400">
+                    WebRTC : Diffusion directe depuis le navigateur. Pas besoin de logiciel externe.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Miniature (URL)</label>

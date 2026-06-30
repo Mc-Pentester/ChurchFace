@@ -35,6 +35,10 @@ async function getChurch(slug: string) {
           },
         },
       },
+      lives: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
     },
   });
 
@@ -79,7 +83,7 @@ export default async function ChurchPage({ params }: { params: Promise<{ slug: s
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Feed */}
           <div className="flex-1">
-            <ChurchFeed churchId={church.id} />
+            <ChurchFeed churchId={church.id} churchSlug={slug} />
           </div>
           
           {/* Sidebar */}

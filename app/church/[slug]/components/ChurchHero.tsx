@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { CheckBadgeIcon } from "@heroicons/react/24/solid";
+import { CheckBadgeIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
+import LiveVideoPlayer from "../live/components/LiveVideoPlayer";
 
 interface ChurchHeroProps {
   church: any;
@@ -10,6 +11,13 @@ interface ChurchHeroProps {
 
 export default function ChurchHero({ church }: ChurchHeroProps) {
   const [isFollowing, setIsFollowing] = useState(church.isFollowing || false);
+  const [showCoverModal, setShowCoverModal] = useState(false);
+  const activeLive = church.lives?.[0];
+  const isLive = activeLive?.status === "LIVE";
+
+  console.log("ChurchHero - church.lives:", church.lives);
+  console.log("ChurchHero - activeLive:", activeLive);
+  console.log("ChurchHero - isLive:", isLive);
 
   const handleFollow = async () => {
     try {
@@ -31,20 +39,102 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
   return (
     <div className="relative">
       {/* Cover Image */}
-      <div className="h-64 sm:h-80 bg-gradient-to-r from-emerald-600 to-emerald-800 relative">
+      <div 
+        className="h-64 sm:h-80 bg-gradient-to-r from-emerald-600 to-emerald-800 relative cursor-pointer"
+        onClick={() => church.coverImage && setShowCoverModal(true)}
+      >
         {church.coverImage && (
           <Image
             src={church.coverImage}
             alt={`${church.name} cover`}
             fill
-            className="object-cover"
+            className="object-cover hover:opacity-90 transition"
             priority
           />
         )}
       </div>
 
+      {/* Cover Modal */}
+      {showCoverModal && church.coverImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowCoverModal(false)}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowCoverModal(false);
+            }}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition"
+          >
+            <XMarkIcon className="w-8 h-8" />
+          </button>
+          <img
+            src={church.coverImage}
+            alt={`${church.name} cover`}
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
       {/* Hero Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 sm:-mt-16">
+        {/* Live Hero Section - Affiché si live actif ou récent */}
+        {activeLive && (
+          <div className="mb-6 bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="relative h-80 sm:h-96 bg-black">
+              {/* Live Video Player */}
+              <LiveVideoPlayer
+                live={activeLive}
+                churchSlug={church.slug}
+                isLive={isLive}
+              />
+              
+              {/* Live Badge */}
+              {isLive && (
+                <div className="absolute top-4 left-4 bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg z-10">
+                  <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+                  🔴 En direct maintenant
+                </div>
+              )}
+              
+              {!isLive && (
+                <div className="absolute top-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg z-10">
+                  ▶ Replay disponible
+                </div>
+              )}
+
+              {/* Live Info Overlay */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 z-10">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  {activeLive.title || "Diffusion"}
+                </h3>
+                {activeLive.description && (
+                  <p className="text-white/90 text-sm mb-4 line-clamp-2">
+                    {activeLive.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-4 text-white/80 text-sm">
+                  <span className="flex items-center gap-1">
+                    👁 {activeLive.viewerCount || 0} spectateurs
+                  </span>
+                  {activeLive.startedAt && (
+                    <span>
+                      • {new Date(activeLive.startedAt).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
           {/* Logo */}
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-white shadow-xl border-4 border-white">
@@ -94,6 +184,15 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-2">
+            {isLive && (
+              <a
+                href={`/church/${church.slug}/live`}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition flex items-center gap-2"
+              >
+                <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                En direct
+              </a>
+            )}
             <button
               onClick={handleFollow}
               className={`px-4 py-2 rounded-lg font-medium transition ${

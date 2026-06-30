@@ -6,15 +6,18 @@ import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 
 interface ChurchFeedProps {
   churchId: string;
+  churchSlug: string;
 }
 
-export default function ChurchFeed({ churchId }: ChurchFeedProps) {
+export default function ChurchFeed({ churchId, churchSlug }: ChurchFeedProps) {
   const [posts, setPosts] = useState<any[]>([]);
+  const [live, setLive] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState("home");
 
   useEffect(() => {
     fetchPosts();
+    fetchLive();
   }, [churchId]);
 
   const fetchPosts = async () => {
@@ -26,6 +29,17 @@ export default function ChurchFeed({ churchId }: ChurchFeedProps) {
       console.error("Error fetching posts:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLive = async () => {
+    try {
+      const response = await fetch(`/api/church/${churchSlug}/live`);
+      const data = await response.json();
+      console.log("Live data from API:", data);
+      setLive(data.live || null);
+    } catch (error) {
+      console.error("Error fetching live:", error);
     }
   };
 
@@ -75,24 +89,34 @@ export default function ChurchFeed({ churchId }: ChurchFeedProps) {
       {/* Feed Content */}
       {activeTab === "home" && (
         <div className="space-y-6">
-          {/* Live Event */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="relative h-48 bg-gradient-to-r from-red-600 to-red-800">
-              <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                🔴 En direct
+          {/* Live Event - Affiché en priorité si live */}
+          {live && (live.status === "LIVE" || live.isLive) ? (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border-2 border-red-500">
+              <div className="relative h-64 bg-gradient-to-r from-red-600 to-red-800">
+                <div className="absolute top-4 left-4 bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
+                  <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+                  🔴 En direct maintenant
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                  <h3 className="text-2xl font-bold text-white mb-2">{live.title || "Diffusion en direct"}</h3>
+                  <p className="text-white/90 text-sm mb-4">Rejoignez la diffusion en cours</p>
+                  <div className="flex items-center gap-4 text-white/80 text-sm">
+                    <span className="flex items-center gap-1">
+                      👁 {live.viewerCount || 0} spectateurs
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="absolute bottom-4 left-4 text-white">
-                <h3 className="text-xl font-bold mb-1">Culte du Dimanche</h3>
-                <p className="text-sm opacity-90">En direct maintenant</p>
+              <div className="p-4">
+                <a
+                  href={`/church/${churchSlug}/live`}
+                  className="block w-full bg-red-600 text-white py-4 rounded-lg font-bold hover:bg-red-700 transition text-center text-lg"
+                >
+                  Regarder le direct
+                </a>
               </div>
             </div>
-            <div className="p-4">
-              <button className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition">
-                Regarder le direct
-              </button>
-            </div>
-          </div>
+          ) : null}
 
           {/* Next Event */}
           <div className="bg-white rounded-xl shadow-sm p-6">
