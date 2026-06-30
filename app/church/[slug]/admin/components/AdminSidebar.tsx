@@ -17,17 +17,17 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ church }: AdminSidebarProps) {
   const menuItems = [
-    { id: "dashboard", label: "Tableau de bord", icon: HomeIcon, href: "" },
-    { id: "members", label: "Membres", icon: UsersIcon, href: "members" },
-    { id: "posts", label: "Publications", icon: DocumentTextIcon, href: "posts" },
-    { id: "events", label: "Événements", icon: CalendarIcon, href: "events" },
-    { id: "media", label: "Médias", icon: PhotoIcon, href: "media" },
-    { id: "radio", label: "Radio", icon: RadioIcon, href: "radio" },
-    { id: "studio", label: "Studio Radio", icon: RadioIcon, href: "studio" },
-    { id: "live", label: "Live", icon: VideoCameraIcon, href: "live" },
-    { id: "studio-live", label: "Studio Live", icon: VideoCameraIcon, href: "studio/live" },
-    { id: "courses", label: "Formations", icon: AcademicCapIcon, href: "courses" },
-    { id: "settings", label: "Paramètres", icon: CogIcon, href: "settings" },
+    { id: "dashboard", label: "Tableau de bord", icon: HomeIcon, href: `/church/${church.slug}/admin` },
+    { id: "members", label: "Membres", icon: UsersIcon, href: `/church/${church.slug}/admin/members` },
+    { id: "posts", label: "Publications", icon: DocumentTextIcon, href: `/church/${church.slug}/admin/posts` },
+    { id: "events", label: "Événements", icon: CalendarIcon, href: `/church/${church.slug}/admin/events` },
+    { id: "media", label: "Médias", icon: PhotoIcon, href: `/church/${church.slug}/admin/media` },
+    { id: "radio", label: "Radio", icon: RadioIcon, href: `/church/${church.slug}/admin/radio` },
+    { id: "studio", label: "Studio Radio", icon: RadioIcon, href: `/church/${church.slug}/admin/studio` },
+    { id: "live", label: "Live", icon: VideoCameraIcon, href: `/church/${church.slug}/admin/live` },
+    { id: "studio-live", label: "Studio Live", icon: VideoCameraIcon, href: `/church/${church.slug}/admin/studio/live` },
+    { id: "courses", label: "Formations", icon: AcademicCapIcon, href: `/church/${church.slug}/admin/courses` },
+    { id: "settings", label: "Paramètres", icon: CogIcon, href: `/church/${church.slug}/admin/settings` },
   ];
 
   return (
@@ -44,7 +44,7 @@ export default function AdminSidebar({ church }: AdminSidebarProps) {
           return (
             <Link
               key={item.id}
-              href={item.href ? item.href : "#"}
+              href={item.href}
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
             >
               <Icon className="w-5 h-5" />

@@ -2,9 +2,10 @@ import { prisma } from "@/lib/prisma";
 
 interface AdminMembersProps {
   churchId: string;
+  churchSlug: string;
 }
 
-export default async function AdminMembers({ churchId }: AdminMembersProps) {
+export default async function AdminMembers({ churchId, churchSlug }: AdminMembersProps) {
   const members = await prisma.churchMember.findMany({
     where: { churchId },
     take: 10,
@@ -25,9 +26,12 @@ export default async function AdminMembers({ churchId }: AdminMembersProps) {
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Membres</h2>
-        <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium">
+        <a
+          href={`/church/${churchSlug}/admin/members/create`}
+          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium"
+        >
           Ajouter un membre
-        </button>
+        </a>
       </div>
 
       <div className="space-y-4">

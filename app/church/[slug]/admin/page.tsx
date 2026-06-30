@@ -82,9 +82,9 @@ export default async function AdminDashboard({ params }: { params: Promise<{ slu
 
           <div className="space-y-8">
             <AdminStats churchId={church.id} />
-            <AdminMembers churchId={church.id} />
-            <AdminPosts churchId={church.id} />
-            <AdminEvents churchId={church.id} />
+            <AdminMembers churchId={church.id} churchSlug={church.slug} />
+            <AdminPosts churchId={church.id} churchSlug={church.slug} />
+            <AdminEvents churchId={church.id} churchSlug={church.slug} />
           </div>
         </div>
       </div>

@@ -121,42 +121,42 @@ export default async function ChurchDashboard({ params }: { params: Promise<{ sl
         {/* Dashboard Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Membres */}
-          <a href={`/church/${slug}/dashboard/members`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
+          <a href={`/church/${slug}/admin/members/create`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
             <div className="flex items-center gap-4 mb-4">
               <div className="bg-emerald-100 text-emerald-600 p-4 rounded-xl">
                 👥
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Membres</h3>
-                <p className="text-sm text-gray-500">Gérer les membres de l'église</p>
+                <p className="text-sm text-gray-500">Ajouter un nouveau membre</p>
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-900">{church._count.members} membres</p>
           </a>
 
           {/* Publications */}
-          <a href={`/church/${slug}/dashboard/posts`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
+          <a href={`/church/${slug}/admin/posts/create`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
             <div className="flex items-center gap-4 mb-4">
               <div className="bg-blue-100 text-blue-600 p-4 rounded-xl">
                 📝
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Publications</h3>
-                <p className="text-sm text-gray-500">Créer et gérer les publications</p>
+                <p className="text-sm text-gray-500">Créer une nouvelle publication</p>
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-900">{church._count.posts} publications</p>
           </a>
 
           {/* Événements */}
-          <a href={`/church/${slug}/dashboard/events`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
+          <a href={`/church/${slug}/admin/events/create`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
             <div className="flex items-center gap-4 mb-4">
               <div className="bg-purple-100 text-purple-600 p-4 rounded-xl">
                 📅
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Événements</h3>
-                <p className="text-sm text-gray-500">Créer et gérer les événements</p>
+                <p className="text-sm text-gray-500">Créer un nouvel événement</p>
               </div>
             </div>
             <p className="text-2xl font-bold text-gray-900">{church._count.events} événements</p>

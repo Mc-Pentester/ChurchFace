@@ -2,9 +2,10 @@ import { prisma } from "@/lib/prisma";
 
 interface AdminEventsProps {
   churchId: string;
+  churchSlug: string;
 }
 
-export default async function AdminEvents({ churchId }: AdminEventsProps) {
+export default async function AdminEvents({ churchId, churchSlug }: AdminEventsProps) {
   const events = await prisma.churchEvent.findMany({
     where: { churchId },
     take: 10,
@@ -22,9 +23,12 @@ export default async function AdminEvents({ churchId }: AdminEventsProps) {
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Événements</h2>
-        <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium">
+        <a
+          href={`/church/${churchSlug}/admin/events/create`}
+          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium"
+        >
           Créer un événement
-        </button>
+        </a>
       </div>
 
       <div className="space-y-4">
