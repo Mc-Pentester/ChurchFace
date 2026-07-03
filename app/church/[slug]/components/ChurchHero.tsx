@@ -12,27 +12,35 @@ interface ChurchHeroProps {
 export default function ChurchHero({ church }: ChurchHeroProps) {
   const [isFollowing, setIsFollowing] = useState(church.isFollowing || false);
   const [showCoverModal, setShowCoverModal] = useState(false);
+  const [isProcessingFollow, setIsProcessingFollow] = useState(false);
   const activeLive = church.lives?.[0];
   const isLive = activeLive?.status === "LIVE";
 
-  console.log("ChurchHero - church.lives:", church.lives);
-  console.log("ChurchHero - activeLive:", activeLive);
-  console.log("ChurchHero - isLive:", isLive);
-
   const handleFollow = async () => {
+    if (isProcessingFollow) return;
+    setIsProcessingFollow(true);
+
     try {
       const res = await fetch(`/api/church/follow`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ churchId: church.id }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setIsFollowing(data.following);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("Follow error:", errText);
+        setIsProcessingFollow(false);
+        return;
       }
+
+      const data = await res.json();
+      setIsFollowing(!!data.following);
     } catch (error) {
       console.error("Error following church:", error);
+    } finally {
+      setIsProcessingFollow(false);
     }
   };
 
@@ -195,13 +203,15 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
             )}
             <button
               onClick={handleFollow}
+              disabled={isProcessingFollow}
+              aria-busy={isProcessingFollow}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 isFollowing
                   ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   : "bg-emerald-600 text-white hover:bg-emerald-700"
               }`}
             >
-              {isFollowing ? "Abonné" : "Suivre"}
+              {isProcessingFollow ? "Traitement…" : isFollowing ? "Abonné" : "Suivre"}
             </button>
             <button className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
               Message
