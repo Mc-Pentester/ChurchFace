@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import ReportButton from "@/components/moderation/ReportButton";
 
 export default function StoryViewer() {
   const { id } = useParams();
@@ -40,14 +41,18 @@ export default function StoryViewer() {
   return (
     <div className="fixed inset-0 bg-black z-50">
 
-      <div className="absolute top-4 left-4 right-4">
+      <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
 
-        <div className="h-1 bg-white/20 rounded">
+        <div className="flex-1">
+          <div className="h-1 bg-white/20 rounded">
+            <div
+              className="h-1 bg-white animate-[grow_5s_linear]"
+            />
+          </div>
+        </div>
 
-          <div
-            className="h-1 bg-white animate-[grow_5s_linear]"
-          />
-
+        <div className="ml-4">
+          <ReportButton targetId={id} targetType="story" />
         </div>
 
       </div>

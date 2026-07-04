@@ -92,10 +92,6 @@ export default function StoriesBar() {
             <span className="text-xs truncate w-16 text-center mt-1">
               {story.author.name}
             </span>
-            
-            <div className="absolute -top-1 -right-1">
-              <ReportButton targetId={story.id} targetType="story" />
-            </div>
           </Link>
         ))}
       </div>
