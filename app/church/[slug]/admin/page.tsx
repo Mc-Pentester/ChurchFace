@@ -8,6 +8,7 @@ import AdminStats from "./components/AdminStats";
 import AdminMembers from "./components/AdminMembers";
 import AdminPosts from "./components/AdminPosts";
 import AdminEvents from "./components/AdminEvents";
+import { userHasChurchRole } from "@/lib/church-perms";
 
 export const runtime = "nodejs";
 
@@ -23,24 +24,8 @@ async function getChurch(slug: string) {
 }
 
 async function checkAdminAccess(churchId: string, userId: string) {
-  const admin = await prisma.churchAdmin.findUnique({
-    where: {
-      churchId_userId: {
-        churchId,
-        userId,
-      },
-    },
-  });
-
-  if (admin) return true;
-
-  // Also check if user is SUPER_ADMIN or ADMIN
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
-  });
-
-  return user?.role === "SUPER_ADMIN" || user?.role === "ADMIN";
+  const ok = await userHasChurchRole(churchId, userId, ["CHURCH_OWNER", "CHURCH_ADMIN", "ADMIN"]);
+  return ok;
 }
 
 export default async function AdminDashboard({ params }: { params: Promise<{ slug: string }> }) {
