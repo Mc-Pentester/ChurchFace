@@ -128,53 +128,56 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Mettre à jour ChurchRadio
-    const churchRadio = await prisma.churchRadio.update({
-      where: { id: body.id },
-      data: {
-        ...(body.name !== undefined && { name: body.name }),
-        ...(body.streamUrl !== undefined && { streamUrl: body.streamUrl }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
-      },
-    });
-
-    // Si radioId est fourni, mettre à jour aussi la Radio
-    let radio = null;
-    if (body.radioId) {
-      radio = await prisma.radio.update({
-        where: { id: body.radioId },
+    // Use transaction to update radio and create post when starting
+    const result = await prisma.$transaction(async (tx) => {
+      const churchRadio = await tx.churchRadio.update({
+        where: { id: body.id },
         data: {
-          ...(body.title !== undefined && { title: body.title }),
-          ...(body.description !== undefined && { description: body.description }),
-          ...(body.playlistId !== undefined && { playlistId: body.playlistId }),
-          ...(body.isLive !== undefined && { isLive: body.isLive }),
-          ...(body.isAutoDJ !== undefined && { isAutoDJ: body.isAutoDJ }),
-          ...(body.currentTrackId !== undefined && { currentTrackId: body.currentTrackId }),
-          ...(body.startedAt !== undefined && { startedAt: body.startedAt }),
-          ...(body.endedAt !== undefined && { endedAt: body.endedAt }),
+          ...(body.name !== undefined && { name: body.name }),
+          ...(body.streamUrl !== undefined && { streamUrl: body.streamUrl }),
+          ...(body.isActive !== undefined && { isActive: body.isActive }),
         },
-        include: radioInclude,
       });
 
-      // If the radio has just started broadcasting, create a post
-      try {
-        if (body.isLive) {
-          await createPostForEntity({
-            churchId: church.id,
-            type: "radio",
-            entityId: radio.id,
-            title: `📻 Radio en direct : ${radio.title}`,
-            summary: radio.description || null,
-            // radio may have streamUrl or playUrl
-            videoUrl: (radio as any).streamUrl || null,
-          });
-        }
-      } catch (err) {
-        console.error("Failed to create post for radio:", err);
-      }
-    }
+      let radio = null;
+      if (body.radioId) {
+        radio = await tx.radio.update({
+          where: { id: body.radioId },
+          data: {
+            ...(body.title !== undefined && { title: body.title }),
+            ...(body.description !== undefined && { description: body.description }),
+            ...(body.playlistId !== undefined && { playlistId: body.playlistId }),
+            ...(body.isLive !== undefined && { isLive: body.isLive }),
+            ...(body.isAutoDJ !== undefined && { isAutoDJ: body.isAutoDJ }),
+            ...(body.currentTrackId !== undefined && { currentTrackId: body.currentTrackId }),
+            ...(body.startedAt !== undefined && { startedAt: body.startedAt }),
+            ...(body.endedAt !== undefined && { endedAt: body.endedAt }),
+          },
+          include: radioInclude,
+        });
 
-    return NextResponse.json({ churchRadio, radio });
+        // If the radio has just started broadcasting, create a post
+        try {
+          if (body.isLive) {
+            await createPostForEntity({
+              churchId: church.id,
+              type: "radio",
+              entityId: radio.id,
+              title: `📻 Radio en direct : ${radio.title}`,
+              summary: radio.description || null,
+              videoUrl: (radio as any).streamUrl || null,
+              tx,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to create post for radio:", err);
+        }
+      }
+
+      return { churchRadio, radio };
+    });
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error updating church studio radio:", error);
     return NextResponse.json({ error: "Failed to update church radio" }, { status: 500 });

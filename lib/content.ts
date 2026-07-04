@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { PrismaClient } from "@prisma/client";
 
 export async function createPostForEntity({
   churchId,
@@ -8,6 +9,7 @@ export async function createPostForEntity({
   summary,
   imageUrl,
   videoUrl,
+  tx,
 }: {
   churchId: string;
   type: string;
@@ -16,29 +18,32 @@ export async function createPostForEntity({
   summary?: string | null;
   imageUrl?: string | null;
   videoUrl?: string | null;
+  tx?: PrismaClient; // optional transaction client
 }) {
-  // marker used to detect existing generated post for the same entity
-  const marker = `__${type}:${entityId}__`;
+  const client = tx || prisma;
 
-  const existing = await prisma.churchPost.findFirst({
+  // Check existing by generatedType/generatedId
+  const existing = await client.churchPost.findFirst({
     where: {
       churchId,
-      content: {
-        contains: marker,
-      },
+      generatedType: type,
+      generatedId: entityId,
     },
   });
 
   if (existing) return existing;
 
-  const content = `${title}${summary ? `\n\n${summary}` : ""}\n\n${marker}`;
+  const content = `${title}${summary ? `\n\n${summary}` : ""}`;
 
-  const post = await prisma.churchPost.create({
+  const post = await client.churchPost.create({
     data: {
       churchId,
       content,
       imageUrl: imageUrl || null,
       videoUrl: videoUrl || null,
+      generated: true,
+      generatedType: type,
+      generatedId: entityId,
     },
   });
 

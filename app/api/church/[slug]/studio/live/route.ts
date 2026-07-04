@@ -98,37 +98,42 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Mettre à jour ChurchLive
-    const churchLive = await prisma.churchLive.update({
-      where: { id: body.id },
-      data: {
-        status: body.status,
-        ...(body.streamUrl !== undefined && { streamUrl: body.streamUrl }),
-        ...(body.playUrl !== undefined && { playUrl: body.playUrl }),
-        ...(body.streamMode !== undefined && { streamMode: body.streamMode }),
-        ...(body.startedAt !== undefined && { startedAt: body.startedAt }),
-        ...(body.endedAt !== undefined && { endedAt: body.endedAt }),
-        ...(body.viewerCount !== undefined && { viewerCount: body.viewerCount }),
-      },
+    // Use transaction to update ChurchLive and create post atomically
+    const result = await prisma.$transaction(async (tx) => {
+      const churchLive = await tx.churchLive.update({
+        where: { id: body.id },
+        data: {
+          status: body.status,
+          ...(body.streamUrl !== undefined && { streamUrl: body.streamUrl }),
+          ...(body.playUrl !== undefined && { playUrl: body.playUrl }),
+          ...(body.streamMode !== undefined && { streamMode: body.streamMode }),
+          ...(body.startedAt !== undefined && { startedAt: body.startedAt }),
+          ...(body.endedAt !== undefined && { endedAt: body.endedAt }),
+          ...(body.viewerCount !== undefined && { viewerCount: body.viewerCount }),
+        },
+      });
+
+      // If the live has just started, create a post for it (idempotent)
+      try {
+        if (body.status === "LIVE") {
+          await createPostForEntity({
+            churchId: church.id,
+            type: "live",
+            entityId: churchLive.id,
+            title: `🔴 En direct : ${churchLive.title}`,
+            summary: churchLive.title || null,
+            videoUrl: churchLive.playUrl || churchLive.streamUrl || null,
+            tx,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to create post for live:", err);
+      }
+
+      return churchLive;
     });
 
-    // If the live has just started, create a post for it (idempotent)
-    try {
-      if (body.status === "LIVE") {
-        await createPostForEntity({
-          churchId: church.id,
-          type: "live",
-          entityId: churchLive.id,
-          title: `🔴 En direct : ${churchLive.title}`,
-          summary: churchLive.title || null,
-          videoUrl: churchLive.playUrl || churchLive.streamUrl || null,
-        });
-      }
-    } catch (err) {
-      console.error("Failed to create post for live:", err);
-    }
-
-    return NextResponse.json({ churchLive, liveBroadcast: null });
+    return NextResponse.json({ churchLive: result, liveBroadcast: null });
   } catch (error) {
     console.error("Error updating church studio live:", error);
     return NextResponse.json({ error: "Failed to update church live" }, { status: 500 });
