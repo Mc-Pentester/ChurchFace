@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -14,6 +13,7 @@ export async function GET(
   const { slug } = await params;
 
   try {
+    // Fetch church with minimal admin info first (no emails)
     const church = await prisma.church.findUnique({
       where: { slug },
       include: {
@@ -31,17 +31,54 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                email: true,
                 image: true,
               },
             },
           },
+        },
+        lives: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
         },
       },
     });
 
     if (!church) {
       return NextResponse.json({ error: "Church not found" }, { status: 404 });
+    }
+
+    // If the requester is an admin of the church (or global admin), include email addresses
+    let isAdmin = false;
+    if (session?.user) {
+      const adminRecord = await prisma.churchAdmin.findUnique({
+        where: {
+          churchId_userId: {
+            churchId: church.id,
+            userId: session.user.id,
+          },
+        },
+      });
+
+      if (adminRecord) isAdmin = true;
+
+      if (!isAdmin) {
+        const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+        if (user?.role === "SUPER_ADMIN" || user?.role === "ADMIN") isAdmin = true;
+      }
+    }
+
+    if (isAdmin) {
+      // fetch admins again including email
+      const adminsWithEmail = await prisma.churchAdmin.findMany({
+        where: { churchId: church.id },
+        include: {
+          user: { select: { id: true, name: true, email: true, image: true } },
+        },
+        orderBy: { appointedAt: "asc" },
+      });
+
+      // replace the admins field with the enriched version
+      (church as any).admins = adminsWithEmail;
     }
 
     // Check if user is following this church
@@ -58,10 +95,7 @@ export async function GET(
       isFollowing = !!follow;
     }
 
-    return NextResponse.json({
-      ...church,
-      isFollowing,
-    });
+    return NextResponse.json({ ...church, isFollowing });
   } catch (error) {
     console.error("Error fetching church:", error);
     return NextResponse.json(
@@ -169,22 +203,19 @@ export async function PATCH(
         ...(slogan !== undefined && { slogan }),
         ...(logoUrl !== undefined && { logo: logoUrl }),
         ...(coverUrl !== undefined && { coverImage: coverUrl }),
-        ...(website !== undefined && { website }),
         ...(email !== undefined && { email }),
         ...(phone !== undefined && { phone }),
         ...(address !== undefined && { address }),
         ...(city !== undefined && { city }),
         ...(country !== undefined && { country }),
-        ...(schedule !== undefined && { schedule: schedule as any }),
+        ...(website !== undefined && { website }),
+        ...(schedule !== undefined && { schedule }),
       },
     });
 
-    return NextResponse.json({ success: true, church: updatedChurch });
+    return NextResponse.json(updatedChurch);
   } catch (error) {
     console.error("Error updating church:", error);
-    return NextResponse.json(
-      { error: "Failed to update church" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update church" }, { status: 500 });
   }
 }
