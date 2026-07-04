@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { createPostForEntity } from "@/lib/content";
 
 export const runtime = "nodejs";
 
@@ -110,6 +111,22 @@ export async function PATCH(
         ...(body.viewerCount !== undefined && { viewerCount: body.viewerCount }),
       },
     });
+
+    // If the live has just started, create a post for it (idempotent)
+    try {
+      if (body.status === "LIVE") {
+        await createPostForEntity({
+          churchId: church.id,
+          type: "live",
+          entityId: churchLive.id,
+          title: `🔴 En direct : ${churchLive.title}`,
+          summary: churchLive.title || null,
+          videoUrl: churchLive.playUrl || churchLive.streamUrl || null,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to create post for live:", err);
+    }
 
     return NextResponse.json({ churchLive, liveBroadcast: null });
   } catch (error) {

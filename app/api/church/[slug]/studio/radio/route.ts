@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { createPostForEntity } from "@/lib/content";
 
 export const runtime = "nodejs";
 
@@ -154,6 +155,23 @@ export async function PATCH(
         },
         include: radioInclude,
       });
+
+      // If the radio has just started broadcasting, create a post
+      try {
+        if (body.isLive) {
+          await createPostForEntity({
+            churchId: church.id,
+            type: "radio",
+            entityId: radio.id,
+            title: `📻 Radio en direct : ${radio.title}`,
+            summary: radio.description || null,
+            // radio may have streamUrl or playUrl
+            videoUrl: (radio as any).streamUrl || null,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to create post for radio:", err);
+      }
     }
 
     return NextResponse.json({ churchRadio, radio });

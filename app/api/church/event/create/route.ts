@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { createPostForEntity } from "@/lib/content";
 
 export async function POST(req: Request) {
   try {
@@ -62,6 +63,19 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Create a ChurchPost for this event (idempotent)
+    try {
+      await createPostForEntity({
+        churchId,
+        type: "event",
+        entityId: event.id,
+        title: `📅 Événement : ${event.title}`,
+        summary: event.description || null,
+      });
+    } catch (err) {
+      console.error("Failed to create post for event:", err);
+    }
 
     return NextResponse.json(event, { status: 201 });
   } catch (error) {
