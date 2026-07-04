@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getSocketServer } from "@/lib/io";
 import type { PrismaClient } from "@prisma/client";
 
 export async function createPostForEntity({
@@ -46,6 +47,19 @@ export async function createPostForEntity({
       generatedId: entityId,
     },
   });
+
+  // Emit socket event if socket server is available
+  try {
+    const io = getSocketServer();
+    if (io) {
+      // Emit to church-specific room and a global channel
+      io.to(`church:${churchId}`).emit("post:created", post);
+      io.emit("post:created", post);
+    }
+  } catch (err) {
+    // Do not block flow on socket errors
+    console.error("Socket emit error for post:created:", err);
+  }
 
   return post;
 }
