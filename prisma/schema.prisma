@@ -1,20 +1,13 @@
-model ChurchPost {
-  id            String              @id @default(cuid())
-  churchId      String
-  content       String?
-  imageUrl      String?
-  videoUrl      String?
-  isPinned      Boolean             @default(false)
-  generated     Boolean             @default(false)
-  generatedType String?
-  generatedId   String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  church        Church              @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  comments      ChurchPostComment[]
-  likes         ChurchPostLike[]
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  deviceInfo String?
+  revoked    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
 
-  @@index([churchId, createdAt])
-  @@index([isPinned])
-  @@index([generatedType, generatedId])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
