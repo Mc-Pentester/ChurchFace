@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { UploadButton } from "@/lib/uploadthing";
 
 export default function Page() {
   const router = useRouter();
@@ -53,12 +54,38 @@ export default function Page() {
         className="w-full border p-3 rounded mb-3"
       />
 
-      <input
-        value={imageUrl}
-        onChange={(e) => setImageUrl(e.target.value)}
-        placeholder="Image URL (optionnel)"
-        className="w-full border p-3 rounded mb-3"
-      />
+      <div className="mb-3">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Image (optionnel)
+        </label>
+        <UploadButton
+          endpoint="mediaUploader"
+          onClientUploadComplete={(res) => {
+            if (res && res[0]) {
+              setImageUrl(res[0].url);
+            }
+          }}
+          onUploadError={(error: Error) => {
+            alert(`Erreur: ${error.message}`);
+          }}
+        />
+        {imageUrl && (
+          <div className="mt-4">
+            <img
+              src={imageUrl}
+              alt="Preview"
+              className="w-full max-w-md rounded-lg"
+            />
+            <button
+              type="button"
+              onClick={() => setImageUrl("")}
+              className="mt-2 text-sm text-red-600 hover:text-red-700"
+            >
+              Supprimer l'image
+            </button>
+          </div>
+        )}
+      </div>
 
       <button
         onClick={handleSubmit}

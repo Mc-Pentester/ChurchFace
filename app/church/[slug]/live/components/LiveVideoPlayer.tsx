@@ -14,7 +14,7 @@ export default function LiveVideoPlayer({ churchLive, isLive }: LiveVideoPlayerP
 
   useEffect(() => {
     async function generateToken() {
-      if (churchLive.streamMode === "WEBRTC" && churchLive.id) {
+      if (churchLive?.streamMode === "WEBRTC" && churchLive?.id) {
         try {
           const response = await fetch("/api/livekit/token", {
             method: "POST",
@@ -25,7 +25,7 @@ export default function LiveVideoPlayer({ churchLive, isLive }: LiveVideoPlayerP
               isPublisher: false,
             }),
           });
-          
+
           const data = await response.json();
           if (data.token) {
             setLivekitToken(data.token);
@@ -37,22 +37,22 @@ export default function LiveVideoPlayer({ churchLive, isLive }: LiveVideoPlayerP
     }
 
     generateToken();
-  }, [churchLive.streamMode, churchLive.id]);
+  }, [churchLive?.streamMode, churchLive?.id]);
 
   return (
     <div className="aspect-video bg-black/50 rounded-lg flex items-center justify-center relative">
-      {churchLive.streamMode === "WEBRTC" && livekitToken ? (
+      {churchLive?.streamMode === "WEBRTC" && livekitToken ? (
         <LiveKitPlayer
           token={livekitToken}
           serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || ""}
-          roomName={`church-${churchLive.id}`}
+          roomName={`church-${churchLive?.id}`}
         />
-      ) : churchLive.streamMode === "WEBRTC" && !livekitToken ? (
+      ) : churchLive?.streamMode === "WEBRTC" && !livekitToken ? (
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
           <p className="text-white text-sm">Chargement du lecteur WebRTC...</p>
         </div>
-      ) : churchLive.playUrl ? (
+      ) : churchLive?.playUrl ? (
         <iframe
           src={churchLive.playUrl}
           className="w-full h-full rounded-lg"
@@ -65,7 +65,7 @@ export default function LiveVideoPlayer({ churchLive, isLive }: LiveVideoPlayerP
             {isLive ? <Pause size={32} /> : <Play size={32} className="ml-1" />}
           </button>
           <p className="text-sm opacity-80">
-            {isLive ? "Diffusion en cours" : churchLive.status === "OFFLINE" ? "Diffusion terminée" : "En attente de diffusion"}
+            {isLive ? "Diffusion en cours" : churchLive?.status === "OFFLINE" ? "Diffusion terminée" : "En attente de diffusion"}
           </p>
         </div>
       )}
