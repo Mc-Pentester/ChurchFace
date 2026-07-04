@@ -52,14 +52,30 @@ export async function POST(req: Request) {
       },
     });
 
-    // Add user as admin
+    // Make the creator the owner of the church
     await prisma.churchAdmin.create({
       data: {
         churchId: church.id,
         userId: session.user.id,
-        role: "PASTOR",
+        role: "CHURCH_OWNER",
+        appointedAt: new Date(),
       },
     });
+
+    // Also ensure the creator is a member with admin privileges (for member-based checks)
+    try {
+      await prisma.churchMember.create({
+        data: {
+          churchId: church.id,
+          userId: session.user.id,
+          role: "ADMIN",
+          isActive: true,
+        },
+      });
+    } catch (err) {
+      // ignore unique constraint / race errors
+      console.warn("Failed to create church member for owner:", err);
+    }
 
     return NextResponse.json({ success: true, church });
   } catch (error) {

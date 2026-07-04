@@ -29,7 +29,6 @@ async function getChurch(slug: string) {
             select: {
               id: true,
               name: true,
-              email: true,
               image: true,
             },
           },

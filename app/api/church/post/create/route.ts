@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { userHasChurchRole } from "@/lib/church-perms";
 
 export async function POST(req: Request) {
   try {
@@ -17,29 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Check if user is member of the church
-    const churchMember = await prisma.churchMember.findFirst({
-      where: {
-        churchId,
-        userId: session.user.id,
-      },
-    });
-
-    const churchAdmin = await prisma.churchAdmin.findUnique({
-      where: {
-        churchId_userId: {
-          churchId,
-          userId: session.user.id,
-        },
-      },
-    });
-
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    const hasAccess = churchMember || churchAdmin || currentUser?.role === "SUPER_ADMIN" || currentUser?.role === "ADMIN";
+    const hasAccess = await userHasChurchRole(churchId, session.user.id, ["CHURCH_OWNER", "CHURCH_ADMIN", "ADMIN"]);
 
     if (!hasAccess) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
