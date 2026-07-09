@@ -159,7 +159,12 @@ export async function requireAdmin() {
     select: { id: true, email: true, name: true, image: true, role: true },
   });
 
-  if (!dbUser || dbUser.role !== "ADMIN") return null;
+  if (
+  !dbUser ||
+  !["ADMIN", "SUPER_ADMIN"].includes(dbUser.role)
+) {
+  return null;
+}
 
   return {
     ...session!.user,
