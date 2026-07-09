@@ -186,7 +186,7 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
               <span>•</span>
               <span>{church._count.members} membres</span>
               <span>•</span>
-              <span>{church._count.followers} abonnés</span>
+              <span>{church._count.follows} abonnés</span>
             </div>
           </div>
 

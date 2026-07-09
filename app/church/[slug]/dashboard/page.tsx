@@ -24,7 +24,7 @@ async function getChurch(slug: string) {
       _count: {
         select: {
           members: true,
-          followers: true,
+          follows: true,
           events: true,
           posts: true,
           lives: true,

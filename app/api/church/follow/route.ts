@@ -18,6 +18,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid churchId" }, { status: 400 });
     }
 
+    // Check if user exists in database
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found in database. Please re-login." }, { status: 401 });
+    }
+
+    // Check if church exists
+    const church = await prisma.church.findUnique({
+      where: { id: churchId },
+    });
+
+    if (!church) {
+      return NextResponse.json({ error: "Church not found" }, { status: 404 });
+    }
+
     const existing = await prisma.churchFollow.findUnique({
       where: {
         churchId_userId: {

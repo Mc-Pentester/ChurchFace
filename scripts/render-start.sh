@@ -14,8 +14,9 @@ while [ "$attempt" -lt "$max" ]; do
     break
   fi
   if [ "$attempt" -eq "$max" ]; then
-    echo "==> migrate deploy failed, trying db push..."
-    npx prisma db push --skip-generate || echo "==> db push failed — starting server anyway"
+    echo "==> ERROR: migrate deploy failed after $max attempts"
+    echo "==> Please check your database connection and migration files"
+    exit 1
   else
     echo "==> Database not ready ($attempt/$max), retry in 5s..."
     sleep 5

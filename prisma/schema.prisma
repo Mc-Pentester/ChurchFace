@@ -1,3 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  name              String?
+  image             String?
+  bio               String?
+  role              String    @default("USER")
+  createdAt         DateTime  @default(now())
+  suspendedAt       DateTime?
+
+  refreshTokens     RefreshToken[]
+  accounts          Account[]
+  sessions          Session[]
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  shares            Share[]
+  stories           Story[]
+  storyViews        StoryView[]
+  chatMemberships   ChatMember[]
+  sentMessages      Message[] @relation("MessageSender")
+  messageSeen       MessageSeen[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+  friendships1      Friendship[] @relation("FriendshipSender")
+  friendships2      Friendship[] @relation("FriendshipReceiver")
+  followers         UserFollow[] @relation("UserFollowFollower")
+  following         UserFollow[] @relation("UserFollowFollowing")
+  reports           Report[] @relation("ReportReporter")
+  adminLogs         AdminLog[]
+  prayerRequests    PrayerRequest[]
+  preachings        Preaching[]
+  preachingViews    PreachingView[]
+  preachingLikes    PreachingLike[]
+  preachingComments PreachingComment[]
+  preachingBookmarks PreachingBookmark[]
+  preachingNotes    PreachingNote[]
+  preachingVerses   PreachingVerse[]
+  churchMemberships ChurchMember[]
+  churchAdmins      ChurchAdmin[]
+  churchEventAttendees ChurchEventAttendee[]
+  churchCourseEnrollments ChurchCourseEnrollment[]
+  churchPostLikes   ChurchPostLike[]
+  churchPostComments ChurchPostComment[]
+  churchFollows     ChurchFollow[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
 model RefreshToken {
   id         String   @id @default(cuid())
   userId     String
@@ -10,4 +103,615 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String?
+  imageUrl  String?
+  videoUrl  String?
+  hashtags  String[] @default([])
+  likes     Int      @default(0)
+  authorId  String
+  createdAt DateTime @default(now())
+
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  likeRelations Like[] @relation("PostLikes")
+  shares    Share[]
+
+  @@index([createdAt])
+  @@index([authorId, createdAt])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  postId    String
+  userId    String
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([userId, createdAt])
+  @@index([parentId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model Share {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+}
+
+model Story {
+  id        String   @id @default(cuid())
+  imageUrl  String?
+  videoUrl  String?
+  content   String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  authorId  String
+
+  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views      StoryView[]
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId])
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  isGroup   Boolean  @default(false)
+  name      String?
+  createdAt DateTime @default(now())
+
+  members ChatMember[]
+  messages Message[]
+}
+
+model ChatMember {
+  id        String    @id @default(cuid())
+  userId    String
+  chatId    String
+  isTyping  Boolean   @default(false)
+  lastSeen  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  chatId    String
+  senderId  String
+
+  chat   Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User            @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  seen   MessageSeen[]
+}
+
+model MessageSeen {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  seenAt    DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String
+  message    String
+  entityType String?
+  entityId   String?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  keys      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Friendship {
+  id         String    @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     String    @default("PENDING")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  sender   User @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+}
+
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  targetId   String
+  targetType String
+  reason     String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+}
+
+model PreachingCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  series PreachingSeries[]
+}
+
+model PreachingSeries {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  categoryId  String
+  createdAt   DateTime @default(now())
+
+  category  PreachingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  preachings Preaching[]
+}
+
+model Preaching {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  videoUrl    String
+  audioUrl    String?
+  thumbnail   String?
+  seriesId    String?
+  createdAt   DateTime @default(now())
+
+  series    PreachingSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  views     PreachingView[]
+  likes     PreachingLike[]
+  comments  PreachingComment[]
+  bookmarks PreachingBookmark[]
+  notes     PreachingNote[]
+  verses    PreachingVerse[]
+  authorId String
+  author    User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model PreachingView {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PreachingLike {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([preachingId, userId])
+}
+
+model PreachingComment {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  content     String
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PreachingBookmark {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([preachingId, userId])
+}
+
+model PreachingNote {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  content     String
+  timestamp   Int?
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PreachingVerse {
+  id          String   @id @default(cuid())
+  preachingId String
+  userId      String
+  book        String
+  chapter     Int
+  verse       Int
+  text        String
+  createdAt   DateTime @default(now())
+
+  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LiveBroadcast {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  streamUrl   String?
+  streamMode  String   @default("RTMP")
+  rtmpUrl     String?
+  webrtcUrl   String?
+  status      String   @default("OFFLINE")
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime @default(now())
+
+  churchLives ChurchLive[]
+}
+
+model Church {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  slogan      String?
+  logo        String?
+  coverImage  String?
+  website     String?
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  country     String?
+  createdAt   DateTime @default(now())
+
+  members  ChurchMember[]
+  admins   ChurchAdmin[]
+  events   ChurchEvent[]
+  media    ChurchMedia[]
+  radios   ChurchRadio[]
+  lives    ChurchLive[]
+  courses  ChurchCourse[]
+  posts    ChurchPost[]
+  follows  ChurchFollow[]
+}
+
+model ChurchMember {
+  id        String   @id @default(cuid())
+  churchId  String
+  userId    String
+  role      String   @default("MEMBER")
+  isActive  Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, userId])
+}
+
+model ChurchAdmin {
+  id          String   @id @default(cuid())
+  churchId    String
+  userId      String
+  role        String   @default("CHURCH_ADMIN")
+  appointedAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, userId])
+}
+
+model ChurchEvent {
+  id          String   @id @default(cuid())
+  churchId    String
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  location    String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  church     Church               @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  attendees  ChurchEventAttendee[]
+}
+
+model ChurchEventAttendee {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  status    String   @default("GOING")
+  createdAt DateTime @default(now())
+
+  event ChurchEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model ChurchMedia {
+  id        String   @id @default(cuid())
+  churchId  String
+  type      String   @default("IMAGE")
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+}
+
+model ChurchRadio {
+  id        String   @id @default(cuid())
+  churchId  String
+  radioId   String?
+  title     String?
+  schedule  String?
+  createdAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+}
+
+model ChurchLive {
+  id                String   @id @default(cuid())
+  churchId          String
+  liveBroadcastId   String?
+  title             String?
+  description       String?
+  thumbnail         String?
+  scheduledStart    DateTime?
+  scheduledEnd      DateTime?
+  createdAt         DateTime @default(now())
+
+  church   Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  broadcast LiveBroadcast? @relation(fields: [liveBroadcastId], references: [id], onDelete: SetNull)
+}
+
+model ChurchCourse {
+  id          String   @id @default(cuid())
+  churchId    String
+  title       String
+  description String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  church      Church                  @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  enrollments ChurchCourseEnrollment[]
+}
+
+model ChurchCourseEnrollment {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  progress  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  course ChurchCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+}
+
+model ChurchPost {
+  id           String   @id @default(cuid())
+  churchId     String
+  content      String?
+  imageUrl     String?
+  videoUrl     String?
+  generated    Boolean  @default(false)
+  generatedType String?
+  generatedId  String?
+  createdAt    DateTime @default(now())
+
+  church   Church            @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  likes    ChurchPostLike[]
+  comments ChurchPostComment[]
+
+  @@index([generatedType, generatedId])
+}
+
+model ChurchPostLike {
+  id           String   @id @default(cuid())
+  churchPostId String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  post ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchPostId, userId])
+}
+
+model ChurchPostComment {
+  id           String   @id @default(cuid())
+  churchPostId String
+  userId       String
+  content      String
+  createdAt    DateTime @default(now())
+
+  post ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChurchFollow {
+  id        String   @id @default(cuid())
+  churchId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, userId])
+}
+
+model Stream {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  streamUrl   String?
+  status      String   @default("OFFLINE")
+  createdAt   DateTime @default(now())
+}
+
+model Radio {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  streamUrl   String?
+  status      String   @default("OFFLINE")
+  createdAt   DateTime @default(now())
+
+  schedules  RadioSchedule[]
+  chatMessages RadioChatMessage[]
+}
+
+model Playlist {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  items PlaylistItem[]
+}
+
+model PlaylistItem {
+  id         String   @id @default(cuid())
+  title      String
+  url        String
+  duration   Int?
+  playlistId String?
+  createdAt  DateTime @default(now())
+
+  playlist Playlist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+}
+
+model PrayerRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String
+  isAnswered Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AudioTrack {
+  id        String   @id @default(cuid())
+  title     String
+  artist    String?
+  album     String?
+  duration  Int?
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model RadioSchedule {
+  id        String   @id @default(cuid())
+  radioId   String
+  playlistId String?
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+
+  radio    Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
+}
+
+model RadioChatMessage {
+  id        String   @id @default(cuid())
+  radioId   String
+  userId    String?
+  content   String
+  createdAt DateTime @default(now())
+
+  radio Radio @relation(fields: [radioId], references: [id], onDelete: Cascade)
 }

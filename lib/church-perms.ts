@@ -12,6 +12,11 @@ export async function userHasChurchRole(churchId: string, userId: string, allowe
   const role = await getChurchAdminRole(churchId, userId);
   if (role && allowedRoles.includes(role)) return true;
 
+  // CHURCH_OWNER has all admin privileges
+  if (role === "CHURCH_OWNER" && (allowedRoles.includes("CHURCH_ADMIN") || allowedRoles.includes("ADMIN"))) {
+    return true;
+  }
+
   // allow member-based ADMIN role if requested
   if (allowedRoles.includes("ADMIN")) {
     const member = await prisma.churchMember.findFirst({

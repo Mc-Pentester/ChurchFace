@@ -20,7 +20,7 @@ export async function GET(
         _count: {
           select: {
             members: true,
-            followers: true,
+            follows: true,
             events: true,
             posts: true,
           },
