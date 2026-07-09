@@ -22,7 +22,7 @@ type Notification = {
   id: string;
   type: string;
   message: string;
-  isRead: boolean;
+  read: boolean;
   createdAt: string;
   sender?: {
     id: string;
@@ -313,7 +313,7 @@ export default function Navbar() {
                     <div
                       key={notif.id}
                       className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
-                        !notif.isRead ? "bg-emerald-50/50" : ""
+                        !notif.read ? "bg-emerald-50/50" : ""
                       }`}
                       onClick={() => markAsRead([notif.id])}
                     >
@@ -340,7 +340,7 @@ export default function Navbar() {
                           </p>
                         </div>
 
-                        {!notif.isRead && (
+                        {!notif.read && (
                           <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
                         )}
                       </div>

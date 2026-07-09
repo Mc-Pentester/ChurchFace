@@ -16,16 +16,7 @@ export async function GET(request: Request) {
   const notifications = await prisma.notification.findMany({
     where: {
       userId: session.user.id,
-      ...(unreadOnly ? { isRead: false } : {}),
-    },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
-        },
-      },
+      ...(unreadOnly ? { read: false } : {}),
     },
     orderBy: {
       createdAt: "desc",
@@ -36,7 +27,7 @@ export async function GET(request: Request) {
   const unreadCount = await prisma.notification.count({
     where: {
       userId: session.user.id,
-      isRead: false,
+      read: false,
     },
   });
 
@@ -56,10 +47,10 @@ export async function PATCH(request: Request) {
     await prisma.notification.updateMany({
       where: {
         userId: session.user.id,
-        isRead: false,
+        read: false,
       },
       data: {
-        isRead: true,
+        read: true,
       },
     });
   } else if (notificationIds && Array.isArray(notificationIds)) {
@@ -69,7 +60,7 @@ export async function PATCH(request: Request) {
         userId: session.user.id,
       },
       data: {
-        isRead: true,
+        read: true,
       },
     });
   }

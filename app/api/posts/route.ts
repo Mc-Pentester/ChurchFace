@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        likes: {
+        likeRelations: {
           select: {
             userId: true,
           },

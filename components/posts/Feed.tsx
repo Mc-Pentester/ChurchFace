@@ -25,7 +25,7 @@ type Post = {
   };
 
   comments?: Comment[];
-  likes?: { userId: string }[];
+  likeRelations?: { userId: string }[];
   shares?: { userId: string }[];
 };
 
@@ -98,7 +98,7 @@ export default function Feed() {
           next.push({
             ...item,
             shares: item.shares || [],
-            likes: item.likes || [],
+            likeRelations: item.likeRelations || [],
           });
         }
       }
@@ -141,7 +141,7 @@ export default function Feed() {
       const safePosts = postsArray.map((p) => ({
         ...p,
         shares: p.shares || [],
-        likes: p.likes || [],
+        likeRelations: p.likeRelations || [],
         comments: p.comments || [],
       }));
 
@@ -204,7 +204,7 @@ export default function Feed() {
           {
             ...post,
             shares: post.shares || [],
-            likes: post.likes || [],
+            likeRelations: post.likeRelations || [],
           },
           ...prev,
         ]);
@@ -355,9 +355,9 @@ export default function Feed() {
           p.id === postId
             ? {
                 ...p,
-                likes: data.liked
-                  ? [...(p.likes || []), { userId: session?.user?.id || "" }]
-                  : (p.likes || []).filter((l) => l.userId !== session?.user?.id),
+                likeRelations: data.liked
+                  ? [...(p.likeRelations || []), { userId: session?.user?.id || "" }]
+                  : (p.likeRelations || []).filter((l) => l.userId !== session?.user?.id),
               }
             : p
         )
@@ -546,7 +546,7 @@ export default function Feed() {
               onClick={() => handleLike(p.id)}
               className="text-gray-600 hover:text-red-600 transition"
             >
-              {p.likes?.some((l) => l.userId === session?.user?.id) ? "❤️" : "🤍"} ({p.likes?.length || 0})
+              {p.likeRelations?.some((l) => l.userId === session?.user?.id) ? "❤️" : "🤍"} ({p.likeRelations?.length || 0})
             </button>
 
             <ShareMenu
