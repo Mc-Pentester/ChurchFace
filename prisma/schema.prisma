@@ -274,6 +274,8 @@ model Friendship {
 
   sender   User @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
 }
 
 model UserFollow {
