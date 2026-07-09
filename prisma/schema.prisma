@@ -15,6 +15,8 @@ model User {
   image             String?
   bio               String?
   role              String    @default("USER")
+  city              String?
+  churchId          String?
   createdAt         DateTime  @default(now())
   suspendedAt       DateTime?
 
@@ -53,6 +55,7 @@ model User {
   churchPostLikes   ChurchPostLike[]
   churchPostComments ChurchPostComment[]
   churchFollows     ChurchFollow[]
+  church            Church?  @relation("UserChurch", fields: [churchId], references: [id])
 }
 
 model Account {
@@ -461,6 +464,7 @@ model Church {
   courses  ChurchCourse[]
   posts    ChurchPost[]
   follows  ChurchFollow[]
+  users    User[] @relation("UserChurch")
 }
 
 model ChurchMember {

@@ -113,7 +113,9 @@ export default function FriendSuggestions() {
 
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 truncate">{suggestion.name || "Anonyme"}</p>
-                  <p className="text-sm text-gray-500 truncate mb-1">{suggestion.email}</p>
+                  <p className="text-sm text-gray-500 truncate mb-1">
+                    {(suggestion as any).church?.name || suggestion.city || suggestion.email}
+                  </p>
                   {(suggestion.mutualFriends ?? 0) > 0 && (
                     <p className="text-xs text-gray-400 mb-3">{suggestion.mutualFriends} amis communs</p>
                   )}

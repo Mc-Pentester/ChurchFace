@@ -33,6 +33,14 @@ export async function GET(request: Request) {
             email: true,
             image: true,
             bio: true,
+            city: true,
+            churchId: true,
+            church: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         receiver: {
@@ -42,6 +50,14 @@ export async function GET(request: Request) {
             email: true,
             image: true,
             bio: true,
+            city: true,
+            churchId: true,
+            church: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -50,7 +66,7 @@ export async function GET(request: Request) {
       },
     });
 
-    const users = friendships.map((f) => {
+    const users = friendships.map((f: any) => {
       const friend = f.senderId === session.user.id ? f.receiver : f.sender;
       return {
         ...friend,
