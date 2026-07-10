@@ -59,10 +59,7 @@ export async function PATCH(
         email: true,
         name: true,
         image: true,
-        isSuspended: true,
-        isBanned: true,
         suspendedAt: true,
-        bannedAt: true,
       },
     });
 
@@ -71,12 +68,12 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: adminAction,
-        targetId: id,
-        targetType: "user",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "user",
           userId: id,
           email: user.email,
-        },
+        }),
       },
     });
 

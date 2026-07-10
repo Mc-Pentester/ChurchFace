@@ -71,12 +71,12 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: adminAction,
-        targetId: id,
-        targetType: "post",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "post",
           postId: id,
           authorId: post.authorId,
-        },
+        }),
       },
     });
 
@@ -115,12 +115,12 @@ export async function DELETE(
       data: {
         adminId: session.user.id,
         action: "delete_post",
-        targetId: id,
-        targetType: "post",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "post",
           postId: id,
           authorId: post.authorId,
-        },
+        }),
       },
     });
 

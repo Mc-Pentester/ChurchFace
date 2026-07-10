@@ -63,13 +63,13 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: adminAction,
-        targetId: id,
-        targetType: "comment",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "comment",
           commentId: id,
           userId: comment.userId,
           postId: comment.postId,
-        },
+        }),
       },
     });
 
@@ -108,13 +108,13 @@ export async function DELETE(
       data: {
         adminId: session.user.id,
         action: "delete_comment",
-        targetId: id,
-        targetType: "comment",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "comment",
           commentId: id,
           userId: comment.userId,
           postId: comment.postId,
-        },
+        }),
       },
     });
 

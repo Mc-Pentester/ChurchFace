@@ -63,12 +63,12 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: adminAction,
-        targetId: id,
-        targetType: "story",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "story",
           storyId: id,
           authorId: story.authorId,
-        },
+        }),
       },
     });
 
@@ -107,12 +107,12 @@ export async function DELETE(
       data: {
         adminId: session.user.id,
         action: "delete_story",
-        targetId: id,
-        targetType: "story",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "story",
           storyId: id,
           authorId: story.authorId,
-        },
+        }),
       },
     });
 

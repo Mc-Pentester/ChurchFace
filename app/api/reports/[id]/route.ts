@@ -34,8 +34,6 @@ export async function PATCH(
       where: { id },
       data: {
         status,
-        resolvedAt: new Date(),
-        resolvedBy: session.user.id,
       },
       include: {
         reporter: {
@@ -54,13 +52,13 @@ export async function PATCH(
       data: {
         adminId: session.user.id,
         action: action || (status === "RESOLVED" ? "resolve_report" : "dismiss_report"),
-        targetId: id,
-        targetType: "report",
-        details: {
+        details: JSON.stringify({
+          targetId: id,
+          targetType: "report",
           reportId: id,
-          targetType: report.targetType,
+          reportTargetType: report.targetType,
           reason: report.reason,
-        },
+        }),
       },
     });
 
