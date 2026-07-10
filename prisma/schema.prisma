@@ -651,6 +651,7 @@ model Stream {
   description String?
   streamUrl   String?
   status      String   @default("OFFLINE")
+  startedAt   DateTime?
   createdAt   DateTime @default(now())
 }
 
@@ -660,6 +661,7 @@ model Radio {
   description String?
   streamUrl   String?
   status      String   @default("OFFLINE")
+  startedAt   DateTime?
   createdAt   DateTime @default(now())
 
   schedules  RadioSchedule[]
