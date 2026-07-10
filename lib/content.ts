@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getSocketServer } from "@/lib/io";
 import type { PrismaClient } from "@prisma/client";
 
+type PrismaTransactionClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
 export async function createPostForEntity({
   churchId,
   type,
@@ -19,7 +21,7 @@ export async function createPostForEntity({
   summary?: string | null;
   imageUrl?: string | null;
   videoUrl?: string | null;
-  tx?: PrismaClient; // optional transaction client
+  tx?: PrismaTransactionClient; // optional transaction client
 }) {
   const client = tx || prisma;
 

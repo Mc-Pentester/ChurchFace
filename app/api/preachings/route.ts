@@ -130,7 +130,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { title, description, thumbnail, videoUrl, audioUrl, categoryId, seriesId, verses } = await req.json();
+    const { title, description, thumbnail, videoUrl, audioUrl, duration, categoryId, seriesId, verses } = await req.json();
 
     if (!title || !description || !videoUrl) {
       return NextResponse.json(
@@ -146,6 +146,8 @@ export async function POST(req: Request) {
         thumbnail,
         videoUrl,
         audioUrl,
+        duration,
+        categoryId,
         authorId: session.user.id,
         seriesId,
         verses: verses ? {

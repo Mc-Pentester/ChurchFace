@@ -58,6 +58,14 @@ model User {
   churchPostComments ChurchPostComment[]
   radios            Radio[]
   streams           Stream[]
+  audioTracks       AudioTrack[]
+  prayerLiveRoomMembers PrayerLiveRoomMember[]
+  prayerLiveRoomParticipants PrayerLiveRoomParticipant[]
+  prayerChainLinks  PrayerChainLink[]
+  prayerReactions  PrayerReaction[]
+  prayerResponses  PrayerResponse[]
+  prayerVerses     PrayerVerse[]
+  prayerTestimonies PrayerTestimony[]
   churchFollows     ChurchFollow[]
   church            Church?  @relation("UserChurch", fields: [churchId], references: [id])
 }
@@ -468,6 +476,8 @@ model Church {
   address     String?
   city        String?
   country     String?
+  schedule    String?
+  radioEnabled Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   members  ChurchMember[]
@@ -518,6 +528,7 @@ model ChurchEvent {
   endDate     DateTime?
   location    String?
   imageUrl    String?
+  isPublic    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   church     Church               @relation(fields: [churchId], references: [id], onDelete: Cascade)
@@ -543,6 +554,7 @@ model ChurchMedia {
   type      String   @default("IMAGE")
   url       String
   caption   String?
+  order     Int      @default(0)
   createdAt DateTime @default(now())
 
   church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
@@ -554,6 +566,7 @@ model ChurchRadio {
   radioId   String?
   title     String?
   schedule  String?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
   church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
@@ -566,8 +579,13 @@ model ChurchLive {
   title             String?
   description       String?
   thumbnail         String?
+  status            String   @default("SCHEDULED")
+  startedAt         DateTime?
+  endedAt           DateTime?
   scheduledStart    DateTime?
   scheduledEnd      DateTime?
+  playUrl           String?
+  streamUrl         String?
   createdAt         DateTime @default(now())
 
   church   Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
@@ -580,6 +598,8 @@ model ChurchCourse {
   title       String
   description String?
   imageUrl    String?
+  isPublished Boolean  @default(false)
+  enrollCount Int      @default(0)
   createdAt   DateTime @default(now())
 
   church      Church                  @relation(fields: [churchId], references: [id], onDelete: Cascade)
@@ -667,17 +687,20 @@ model Stream {
 }
 
 model Radio {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  streamUrl   String?
-  status      String   @default("OFFLINE")
-  isLive      Boolean  @default(false)
-  startedAt   DateTime?
-  endedAt     DateTime?
-  userId      String?
-  playlistId  String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  streamUrl     String?
+  status        String   @default("OFFLINE")
+  isLive        Boolean  @default(false)
+  isAutoDJ      Boolean  @default(false)
+  listenerCount Int      @default(0)
+  peakListeners Int      @default(0)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  userId        String?
+  playlistId    String?
+  createdAt     DateTime @default(now())
 
   schedules  RadioSchedule[]
   chatMessages RadioChatMessage[]
@@ -689,6 +712,7 @@ model Playlist {
   id          String   @id @default(cuid())
   title       String
   description String?
+  category    String   @default("GENERAL")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -713,22 +737,143 @@ model PrayerRequest {
   userId    String
   title     String
   content   String
+  category  String?
+  isUrgent  Boolean  @default(false)
   isAnswered Boolean @default(false)
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions  PrayerReaction[]
+  responses  PrayerResponse[]
+  verses     PrayerVerse[]
+  testimony  PrayerTestimony?
+  prayerChain PrayerChain?     @relation(fields: [prayerChainId], references: [id], onDelete: SetNull)
+  prayerChainId String?
+}
+
+model PrayerLiveRoom {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  members      PrayerLiveRoomMember[]
+  participants PrayerLiveRoomParticipant[]
+}
+
+model PrayerLiveRoomMember {
+  id     String @id @default(cuid())
+  roomId String
+  userId String
+  joinedAt DateTime @default(now())
+
+  room PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model PrayerLiveRoomParticipant {
+  id     String @id @default(cuid())
+  roomId String
+  userId String
+  joinedAt DateTime @default(now())
+
+  room PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model PrayerChain {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  isActive        Boolean  @default(true)
+  prayerRequestId String?
+  createdAt       DateTime @default(now())
+
+  links       PrayerChainLink[]
+  prayerRequests PrayerRequest[]
+}
+
+model PrayerChainLink {
+  id        String   @id @default(cuid())
+  chainId   String
+  userId    String
+  message   String?
+  joinedAt  DateTime @default(now())
+
+  chain PrayerChain @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chainId, userId])
+}
+
+model PrayerReaction {
+  id        String   @id @default(cuid())
+  prayerId  String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  prayer PrayerRequest @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([prayerId, userId])
+}
+
+model PrayerResponse {
+  id        String   @id @default(cuid())
+  prayerId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  prayer PrayerRequest @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PrayerVerse {
+  id        String   @id @default(cuid())
+  prayerId  String
+  userId    String
+  reference String
+  text      String?
+  createdAt DateTime @default(now())
+
+  prayer PrayerRequest @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PrayerTestimony {
+  id        String   @id @default(cuid())
+  prayerId  String   @unique
+  userId    String
+  content   String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+
+  prayer PrayerRequest @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AudioTrack {
-  id        String   @id @default(cuid())
-  title     String
-  artist    String?
-  album     String?
-  category  String?
-  duration  Int?
-  url       String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  title      String
+  artist     String?
+  album      String?
+  category   String?
+  duration   Int?
+  url        String
+  type       String   @default("MUSIC")
+  coverUrl   String?
+  uploadedBy String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  uploader User? @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
 }
 
 model RadioSchedule {
