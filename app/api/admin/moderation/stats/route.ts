@@ -19,10 +19,16 @@ export async function GET() {
   try {
     const [
       pendingReports,
+      hiddenPosts,
+      hiddenComments,
       suspendedUsers,
+      bannedUsers,
     ] = await Promise.all([
       prisma.report.count({ where: { status: "PENDING" } }),
-      prisma.user.count({ where: { suspendedAt: { not: null } } }),
+      prisma.post.count({ where: { isHidden: true } }),
+      prisma.comment.count({ where: { isHidden: true } }),
+      prisma.user.count({ where: { isSuspended: true } }),
+      prisma.user.count({ where: { isBanned: true } }),
     ]);
 
     const reportedPosts = await prisma.report.count({
@@ -47,7 +53,10 @@ export async function GET() {
       reportedComments,
       reportedStories,
       reportedUsers,
+      hiddenPosts,
+      hiddenComments,
       suspendedUsers,
+      bannedUsers,
     };
 
     return NextResponse.json(stats);
