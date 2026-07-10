@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 
     // Sorting
     let orderBy: any = { publishedAt: "desc" };
-    if (sort === "views") orderBy = { views: "desc" };
+    if (sort === "views") orderBy = { viewCount: "desc" };
     if (sort === "rating") orderBy = { likes: "desc" };
 
     const [preachings, total] = await Promise.all([
@@ -58,21 +58,20 @@ export async function GET(req: Request) {
               image: true,
             },
           },
-          category: true,
           series: {
             include: {
-              author: {
+              category: {
                 select: {
                   id: true,
                   name: true,
-                  image: true,
+                  slug: true,
                 },
               },
             },
           },
           _count: {
             select: {
-              preachingViews: true,
+              views: true,
               likes: true,
               comments: true,
               bookmarks: true,
@@ -131,9 +130,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { title, description, thumbnail, videoUrl, duration, categoryId, seriesId, verses } = await req.json();
+    const { title, description, thumbnail, videoUrl, audioUrl, categoryId, seriesId, verses } = await req.json();
 
-    if (!title || !description || !videoUrl || !duration || !categoryId) {
+    if (!title || !description || !videoUrl) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -146,9 +145,8 @@ export async function POST(req: Request) {
         description,
         thumbnail,
         videoUrl,
-        duration,
+        audioUrl,
         authorId: session.user.id,
-        categoryId,
         seriesId,
         verses: verses ? {
           create: verses.map((verse: any) => ({
@@ -168,8 +166,11 @@ export async function POST(req: Request) {
             image: true,
           },
         },
-        category: true,
-        series: true,
+        series: {
+          include: {
+            category: true,
+          },
+        },
         verses: true,
       },
     });

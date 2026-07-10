@@ -347,6 +347,8 @@ model Preaching {
   audioUrl    String?
   thumbnail   String?
   seriesId    String?
+  publishedAt DateTime?
+  viewCount   Int      @default(0)
   createdAt   DateTime @default(now())
 
   series    PreachingSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
@@ -364,6 +366,7 @@ model PreachingView {
   id          String   @id @default(cuid())
   preachingId String
   userId      String
+  watchedAt   DateTime @default(now())
   createdAt   DateTime @default(now())
 
   preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
