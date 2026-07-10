@@ -56,6 +56,7 @@ model User {
   churchCourseEnrollments ChurchCourseEnrollment[]
   churchPostLikes   ChurchPostLike[]
   churchPostComments ChurchPostComment[]
+  radios            Radio[]
   churchFollows     ChurchFollow[]
   church            Church?  @relation("UserChurch", fields: [churchId], references: [id])
 }
@@ -347,6 +348,8 @@ model Preaching {
   audioUrl    String?
   thumbnail   String?
   seriesId    String?
+  categoryId  String?
+  duration    Int?
   publishedAt DateTime?
   viewCount   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -665,10 +668,12 @@ model Radio {
   streamUrl   String?
   status      String   @default("OFFLINE")
   startedAt   DateTime?
+  userId      String?
   createdAt   DateTime @default(now())
 
   schedules  RadioSchedule[]
   chatMessages RadioChatMessage[]
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Playlist {
