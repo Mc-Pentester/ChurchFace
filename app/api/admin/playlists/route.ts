@@ -18,7 +18,7 @@ export async function GET() {
       orderBy: { updatedAt: "desc" },
       include: {
         items: { orderBy: { order: "asc" } },
-        _count: { select: { items: true, radios: true } },
+        _count: { select: { items: true } },
       },
     });
 
