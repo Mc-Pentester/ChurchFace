@@ -57,6 +57,7 @@ model User {
   churchPostLikes   ChurchPostLike[]
   churchPostComments ChurchPostComment[]
   radios            Radio[]
+  streams           Stream[]
   churchFollows     ChurchFollow[]
   church            Church?  @relation("UserChurch", fields: [churchId], references: [id])
 }
@@ -657,8 +658,12 @@ model Stream {
   description String?
   streamUrl   String?
   status      String   @default("OFFLINE")
+  isLive      Boolean  @default(false)
   startedAt   DateTime?
+  userId      String?
   createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Radio {
@@ -667,13 +672,17 @@ model Radio {
   description String?
   streamUrl   String?
   status      String   @default("OFFLINE")
+  isLive      Boolean  @default(false)
   startedAt   DateTime?
+  endedAt     DateTime?
   userId      String?
+  playlistId  String?
   createdAt   DateTime @default(now())
 
   schedules  RadioSchedule[]
   chatMessages RadioChatMessage[]
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  playlist   Playlist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
 }
 
 model Playlist {
@@ -683,7 +692,8 @@ model Playlist {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  items PlaylistItem[]
+  items  PlaylistItem[]
+  radios Radio[]
 }
 
 model PlaylistItem {
@@ -714,8 +724,10 @@ model AudioTrack {
   title     String
   artist    String?
   album     String?
+  category  String?
   duration  Int?
   url       String
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 }
 
