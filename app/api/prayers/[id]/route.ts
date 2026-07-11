@@ -30,7 +30,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           _count: { select: { links: true } },
           links: {
             include: { user: { select: { id: true, name: true, image: true } } },
-            orderBy: { createdAt: "asc" },
+            orderBy: { joinedAt: "asc" },
           },
         },
       },

@@ -14,16 +14,6 @@ export async function GET(
   try {
     const broadcast = await prisma.liveBroadcast.findUnique({
       where: { id },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-      },
     });
 
     if (!broadcast) {
@@ -54,15 +44,10 @@ export async function PATCH(
   try {
     const broadcast = await prisma.liveBroadcast.findUnique({
       where: { id },
-      select: { authorId: true },
     });
 
     if (!broadcast) {
       return NextResponse.json({ error: "Broadcast not found" }, { status: 404 });
-    }
-
-    if (broadcast.authorId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { status, viewerCount } = await req.json();
@@ -103,15 +88,10 @@ export async function DELETE(
   try {
     const broadcast = await prisma.liveBroadcast.findUnique({
       where: { id },
-      select: { authorId: true },
     });
 
     if (!broadcast) {
       return NextResponse.json({ error: "Broadcast not found" }, { status: 404 });
-    }
-
-    if (broadcast.authorId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await prisma.liveBroadcast.delete({

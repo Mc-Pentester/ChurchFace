@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         OR: [
           { name: { contains: query, mode: "insensitive" } },
           { email: { contains: query, mode: "insensitive" } },
-          { church: { contains: query, mode: "insensitive" } },
+          { church: { name: { contains: query, mode: "insensitive" } } },
           { city: { contains: query, mode: "insensitive" } },
         ],
       },
@@ -37,7 +37,11 @@ export async function GET(request: Request) {
         email: true,
         image: true,
         bio: true,
-        church: true,
+        church: {
+          select: {
+            name: true,
+          },
+        },
         city: true,
       },
       skip: (page - 1) * limit,
@@ -50,7 +54,7 @@ export async function GET(request: Request) {
         OR: [
           { name: { contains: query, mode: "insensitive" } },
           { email: { contains: query, mode: "insensitive" } },
-          { church: { contains: query, mode: "insensitive" } },
+          { church: { name: { contains: query, mode: "insensitive" } } },
           { city: { contains: query, mode: "insensitive" } },
         ],
       },

@@ -48,7 +48,7 @@ export async function GET(
                 image: true,
               },
             },
-            seenBy: {
+            seen: {
               include: {
                 user: {
                   select: {

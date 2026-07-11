@@ -16,19 +16,9 @@ export async function GET(req: Request) {
         status: status as any,
       },
       orderBy: {
-        scheduledAt: "asc",
+        createdAt: "desc",
       },
       take: limit,
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-      },
     });
 
     return NextResponse.json(broadcasts);
@@ -49,7 +39,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { title, description, thumbnail, streamUrl, scheduledAt } = await req.json();
+    const { title, description, streamUrl } = await req.json();
 
     if (!title || !streamUrl) {
       return NextResponse.json(
@@ -62,21 +52,8 @@ export async function POST(req: Request) {
       data: {
         title,
         description,
-        thumbnail,
         streamUrl,
-        authorId: session.user.id,
-        status: "SCHEDULED",
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
+        status: "OFFLINE",
       },
     });
 

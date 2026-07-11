@@ -476,20 +476,22 @@ model Church {
   address     String?
   city        String?
   country     String?
-  schedule    String?
-  radioEnabled Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  schedule        String?
+  radioEnabled    Boolean  @default(false)
+  donationEnabled Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-  members  ChurchMember[]
-  admins   ChurchAdmin[]
-  events   ChurchEvent[]
-  media    ChurchMedia[]
-  radios   ChurchRadio[]
-  lives    ChurchLive[]
-  courses  ChurchCourse[]
-  posts    ChurchPost[]
-  follows  ChurchFollow[]
-  users    User[] @relation("UserChurch")
+  members   ChurchMember[]
+  admins    ChurchAdmin[]
+  events    ChurchEvent[]
+  media     ChurchMedia[]
+  radios    ChurchRadio[]
+  lives     ChurchLive[]
+  courses   ChurchCourse[]
+  posts     ChurchPost[]
+  follows   ChurchFollow[]
+  playlists churchPlaylist[]
+  users     User[] @relation("UserChurch")
 }
 
 model ChurchMember {
@@ -520,16 +522,17 @@ model ChurchAdmin {
 }
 
 model ChurchEvent {
-  id          String   @id @default(cuid())
-  churchId    String
-  title       String
-  description String?
-  startDate   DateTime
-  endDate     DateTime?
-  location    String?
-  imageUrl    String?
-  isPublic    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  churchId      String
+  title         String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime?
+  location      String?
+  imageUrl      String?
+  isPublic      Boolean  @default(true)
+  attendeeCount Int      @default(0)
+  createdAt     DateTime @default(now())
 
   church     Church               @relation(fields: [churchId], references: [id], onDelete: Cascade)
   attendees  ChurchEventAttendee[]
@@ -564,8 +567,10 @@ model ChurchRadio {
   id        String   @id @default(cuid())
   churchId  String
   radioId   String?
+  name      String?
   title     String?
   schedule  String?
+  streamUrl String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
@@ -586,6 +591,8 @@ model ChurchLive {
   scheduledEnd      DateTime?
   playUrl           String?
   streamUrl         String?
+  streamMode        String?
+  viewerCount       Int      @default(0)
   createdAt         DateTime @default(now())
 
   church   Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
@@ -700,6 +707,7 @@ model Radio {
   endedAt       DateTime?
   userId        String?
   playlistId    String?
+  currentTrackId String?
   createdAt     DateTime @default(now())
 
   schedules  RadioSchedule[]
@@ -710,14 +718,16 @@ model Radio {
 
 model Playlist {
   id          String   @id @default(cuid())
+  churchId    String?
   title       String
   description String?
   category    String   @default("GENERAL")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  items  PlaylistItem[]
-  radios Radio[]
+  items   PlaylistItem[]
+  radios  Radio[]
+  church  Church?       @relation(fields: [churchId], references: [id], onDelete: SetNull)
 }
 
 model PlaylistItem {
@@ -725,6 +735,7 @@ model PlaylistItem {
   title      String
   url        String
   duration   Int?
+  type       String   @default("AUDIO")
   playlistId String?
   order      Int      @default(0)
   createdAt  DateTime @default(now())

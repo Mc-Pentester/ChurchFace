@@ -55,7 +55,7 @@ export async function GET(
             image: true,
           },
         },
-        seenBy: {
+        seen: {
           include: {
             user: {
               select: {
@@ -128,7 +128,7 @@ export async function POST(
             image: true,
           },
         },
-        seenBy: {
+        seen: {
           include: {
             user: {
               select: {

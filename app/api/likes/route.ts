@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
 
     const existingLike = await prisma.like.findUnique({
       where: {
-        userId_postId: {
-          userId,
+        postId_userId: {
           postId,
+          userId,
         },
       },
     });
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
     if (existingLike) {
       await prisma.like.delete({
         where: {
-          userId_postId: {
-            userId,
+          postId_userId: {
             postId,
+            userId,
           },
         },
       });
