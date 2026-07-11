@@ -462,7 +462,7 @@ model LiveBroadcast {
   churchLives ChurchLive[]
 }
 
-     model Church {
+model Church {
   id            String   @id @default(cuid())
   slug          String   @unique
   name          String
