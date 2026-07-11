@@ -462,34 +462,37 @@ model LiveBroadcast {
   churchLives ChurchLive[]
 }
 
-model Church {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  description String?
-  slogan      String?
-  logo        String?
-  coverImage  String?
-  website     String?
-  email       String?
-  phone       String?
-  address     String?
-  city        String?
-  country     String?
-  schedule    String?
-  radioEnabled Boolean  @default(false)
-  createdAt   DateTime @default(now())
+     model Church {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String?
+  slogan        String?
+  logo          String?
+  coverImage    String?
+  website       String?
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  country       String?
+  schedule      String?
+  radioEnabled  Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
-  members  ChurchMember[]
-  admins   ChurchAdmin[]
-  events   ChurchEvent[]
-  media    ChurchMedia[]
-  radios   ChurchRadio[]
-  lives    ChurchLive[]
-  courses  ChurchCourse[]
-  posts    ChurchPost[]
-  follows  ChurchFollow[]
-  users    User[] @relation("UserChurch")
+  members       ChurchMember[]
+  admins        ChurchAdmin[]
+  events        ChurchEvent[]
+  media         ChurchMedia[]
+  radios        ChurchRadio[]
+  lives         ChurchLive[]
+  courses       ChurchCourse[]
+  posts         ChurchPost[]
+  follows       ChurchFollow[]
+  users         User[] @relation("UserChurch")
+
+  // Nouveau : playlists propres à l'église
+  playlists     ChurchPlaylist[]
 }
 
 model ChurchMember {
