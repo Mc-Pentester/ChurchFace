@@ -41,7 +41,7 @@ export async function GET(
     });
 
     // Récupérer toutes les playlists créées pour cette église
-    const playlists = await prisma.churchplaylist.findMany({
+    const playlists = await prisma.churchPlaylist.findMany({
       where: {
         churchId: church.id,
       },
@@ -91,7 +91,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const playlist = await prisma.churchplaylist.create({
+    const playlist = await prisma.churchPlaylist.create({
       data: {
         title: body.title || "Nouvelle playlist",
         description: body.description || "",
@@ -143,7 +143,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const playlist = await prisma.churchplaylist.update({
+    const playlist = await prisma.churchPlaylist.update({
       where: { id: body.id },
       data: {
         ...(body.title !== undefined && { title: body.title }),
