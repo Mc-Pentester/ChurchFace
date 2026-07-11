@@ -14,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const playlists = await prisma.playlist.findMany({
+    const playlists = await prisma.churchPlaylist.findMany({
       orderBy: { updatedAt: "desc" },
       include: {
         items: { orderBy: { order: "asc" } },
@@ -45,8 +45,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Titre requis" }, { status: 400 });
     }
 
-    const playlist = await prisma.playlist.create({
+    const playlist = await prisma.churchPlaylist.create({
       data: {
+        churchId: host.churchId,
         title,
         description: body?.description || null,
         category: body?.category || "GENERAL",
@@ -90,10 +91,10 @@ export async function PATCH(req: Request) {
     }
 
     if (items) {
-      await prisma.playlistItem.deleteMany({ where: { playlistId: id } });
+      await prisma.churchPlaylistItem.deleteMany({ where: { playlistId: id } });
     }
 
-    const playlist = await prisma.playlist.update({
+    const playlist = await prisma.churchPlaylist.update({
       where: { id },
       data: {
         ...(title !== undefined && { title }),
