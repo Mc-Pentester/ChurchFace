@@ -53,11 +53,17 @@ export async function GET(
     if (!churchRadio) {
       // Créer une playlist par défaut
       const playlist = await prisma.churchPlaylist.create({
-        data: {
-          title: `${church.name} — Playlist`,
-          description: "Playlist par défaut du studio de l'église",
-        },
-      });
+  data: {
+    title: `${church.name} — Playlist`,
+    description: "Playlist par défaut du studio de l'église",
+
+    church: {
+      connect: {
+        id: church.id,
+      },
+    },
+  },
+});
 
       // Créer une Radio liée à l'église
       radio = await prisma.radio.create({

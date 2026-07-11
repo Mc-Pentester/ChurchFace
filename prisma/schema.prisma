@@ -50,6 +50,7 @@ model User {
   preachingBookmarks         PreachingBookmark[]
   preachingNotes             PreachingNote[]
   preachingVerses            PreachingVerse[]
+  preachingSeries            PreachingSeries[]
   churchMemberships          ChurchMember[]
   churchAdmins               ChurchAdmin[]
   churchEventAttendees       ChurchEventAttendee[]
@@ -343,14 +344,22 @@ model PreachingCategory {
 }
 
 model PreachingSeries {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   title       String
   description String?
-  categoryId  String
-  createdAt   DateTime @default(now())
 
-  category   PreachingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  authorId String
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
   preachings Preaching[]
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  PreachingCategory   PreachingCategory? @relation(fields: [preachingCategoryId], references: [id])
+  preachingCategoryId String?
+
+  @@index([authorId])
 }
 
 model Preaching {
@@ -367,16 +376,16 @@ model Preaching {
   viewCount   Int       @default(0)
   createdAt   DateTime  @default(now())
 
-  series    PreachingSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-  views     PreachingView[]
-  likes     PreachingLike[]
-  comments  PreachingComment[]
-  bookmarks PreachingBookmark[]
-  notes     PreachingNote[]
-  verses    PreachingVerse[]
-  authorId  String
-  author    User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  category  PreachingCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  series         PreachingSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  preachingViews PreachingView[]
+  likes          PreachingLike[]
+  comments       PreachingComment[]
+  bookmarks      PreachingBookmark[]
+  notes          PreachingNote[]
+  verses         PreachingVerse[]
+  authorId       String
+  author         User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category       PreachingCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 }
 
 model PreachingView {
@@ -388,6 +397,10 @@ model PreachingView {
 
   preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([preachingId, userId])
+  @@index([preachingId])
+  @@index([userId])
 }
 
 model PreachingLike {
@@ -408,9 +421,17 @@ model PreachingComment {
   userId      String
   content     String
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId String?
+
+  preaching Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    PreachingComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   PreachingComment[] @relation("CommentReplies")
+
+  @@index([preachingId])
+  @@index([parentId])
 }
 
 model PreachingBookmark {
@@ -468,38 +489,38 @@ model LiveBroadcast {
 }
 
 model Church {
-  id                String   @id @default(cuid())
-  slug              String   @unique
-  name              String
-  description       String?
-  slogan            String?
-  logo              String?
-  coverImage        String?
-  website           String?
-  email             String?
-  phone             String?
-  address           String?
-  city              String?
-  country           String?
-  schedule          String?
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String?
+  slogan      String?
+  logo        String?
+  coverImage  String?
+  website     String?
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  country     String?
+  schedule    String?
 
-  radioEnabled      Boolean  @default(false)
-  donationEnabled   Boolean  @default(false)
+  radioEnabled    Boolean @default(false)
+  donationEnabled Boolean @default(false)
 
-  createdAt         DateTime @default(now())
+  createdAt DateTime @default(now())
 
   // Relations
-  members           ChurchMember[]
-  admins            ChurchAdmin[]
-  events            ChurchEvent[]
-  media             ChurchMedia[]
-  radios            ChurchRadio[]
-  lives             ChurchLive[]
-  courses           ChurchCourse[]
-  posts             ChurchPost[]
-  follows           ChurchFollow[]
-  playlists         ChurchPlaylist[]
-  users             User[] @relation("UserChurch")
+  members   ChurchMember[]
+  admins    ChurchAdmin[]
+  events    ChurchEvent[]
+  media     ChurchMedia[]
+  radios    ChurchRadio[]
+  lives     ChurchLive[]
+  courses   ChurchCourse[]
+  posts     ChurchPost[]
+  follows   ChurchFollow[]
+  playlists ChurchPlaylist[]
+  users     User[]           @relation("UserChurch")
 }
 
 model ChurchMember {
@@ -610,6 +631,8 @@ model ChurchPlaylist {
   items ChurchPlaylistItem[]
 
   radios ChurchRadio[]
+
+  @@index([churchId])
 }
 
 model ChurchPlaylistItem {
@@ -1016,35 +1039,4 @@ model RadioChatMessage {
   createdAt DateTime @default(now())
 
   radio Radio @relation(fields: [radioId], references: [id], onDelete: Cascade)
-}
-
-model ChurchPlaylist {
-  id          String   @id @default(cuid())
-  churchId    String
-  title       String
-  description String?
-  category    String   @default("GENERAL")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-
-  items ChurchPlaylistItem[]
-  radios ChurchRadioPlaylist[]
-
-  @@index([churchId])
-}
-
-model ChurchPlaylistItem {
-  id          String   @id @default(cuid())
-  playlistId  String
-  title       String
-  url         String
-  duration    Int?
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  playlist ChurchPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-
-  @@index([playlistId])
 }

@@ -86,9 +86,13 @@ export async function GET(
 
     // Increment view count
     await prisma.preaching.update({
-      where: { id },
-      data: { views: { increment: 1 } },
-    });
+  where: { id },
+  data: {
+    viewCount: {
+      increment: 1,
+    },
+  },
+});
 
     // Record view if user is authenticated
     if (session?.user) {
