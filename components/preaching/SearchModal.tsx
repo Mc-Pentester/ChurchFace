@@ -19,7 +19,12 @@ export default function SearchModal({ isOpen, onClose }: Props) {
     if (isOpen) {
       const saved = localStorage.getItem("recentPreachingSearches");
       if (saved) {
-        setRecentSearches(JSON.parse(saved));
+        try {
+          setRecentSearches(JSON.parse(saved));
+        } catch (err) {
+          console.error("Failed to parse recent searches:", err);
+          localStorage.removeItem("recentPreachingSearches");
+        }
       }
     }
   }, [isOpen]);

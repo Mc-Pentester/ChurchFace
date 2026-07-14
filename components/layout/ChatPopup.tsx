@@ -38,7 +38,7 @@ export default function ChatPopup() {
       .then((data) => {
         if (Array.isArray(data)) setMessages(data);
       })
-      .catch(() => {});
+      .catch((err) => console.error("Failed to load messages:", err));
   }, [isOpen]);
 
   // Scroll to bottom

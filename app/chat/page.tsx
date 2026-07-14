@@ -35,7 +35,7 @@ export default function ChatPage() {
       .then((data) => {
         if (Array.isArray(data)) setMessages(data);
       })
-      .catch(() => {});
+      .catch((err) => console.error("Failed to load messages:", err));
   }, []);
 
   // Scroll to bottom on new messages
