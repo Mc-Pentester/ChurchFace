@@ -15,15 +15,11 @@ export async function GET(req: Request) {
     const [users, posts, events] = await Promise.all([
       prisma.user.findMany({
         where: {
-          OR: [
-            { email: { contains: q, mode: "insensitive" } },
-            { name: { contains: q, mode: "insensitive" } },
-          ],
+          name: { contains: q, mode: "insensitive" },
         },
         select: {
           id: true,
           name: true,
-          email: true,
           image: true,
         },
         take: 5,
