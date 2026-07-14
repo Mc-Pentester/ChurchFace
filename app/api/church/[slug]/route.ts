@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { purgeChurchCache } from "@/lib/cdn";
 
 export const runtime = "nodejs";
 
@@ -95,7 +96,18 @@ export async function GET(
       isFollowing = !!follow;
     }
 
-    return NextResponse.json({ ...church, isFollowing });
+    const response = NextResponse.json({ ...church, isFollowing });
+
+    // Public (anonymous) responses carry no personalized data, so allow CDN caching.
+    // Authenticated responses may include admin emails / follow state and must not be cached.
+    if (!session?.user) {
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=60, stale-while-revalidate=300"
+      );
+    }
+
+    return response;
   } catch (error) {
     console.error("Error fetching church:", error);
     return NextResponse.json(
@@ -213,7 +225,14 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json(updatedChurch);
+    // Invalidate any CDN-cached copy of the public church page (best-effort).
+    try {
+      await purgeChurchCache(slug);
+    } catch (err) {
+      console.error("Church cache purge failed:", err);
+    }
+
+    return NextResponse.json({ success: true, church: updatedChurch });
   } catch (error) {
     console.error("Error updating church:", error);
     return NextResponse.json({ error: "Failed to update church" }, { status: 500 });

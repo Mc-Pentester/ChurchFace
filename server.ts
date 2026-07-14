@@ -116,6 +116,17 @@ app.prepare().then(async () => {
     });
 
     // =========================
+    // ⛪ CHURCH FEED ROOMS
+    // =========================
+    socket.on("joinChurch", (churchId: string) => {
+      if (churchId) socket.join(`church:${churchId}`);
+    });
+
+    socket.on("leaveChurch", (churchId: string) => {
+      if (churchId) socket.leave(`church:${churchId}`);
+    });
+
+    // =========================
     // 💬 GLOBAL CHAT
     // =========================
     socket.on("chat:new", async (msg: any) => {
