@@ -91,8 +91,20 @@ async function sendNotification({
 app.prepare().then(async () => {
   const httpServer = createServer(handle);
 
+  const allowedOrigins = (
+    process.env.SOCKET_CORS_ORIGINS ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (dev ? "http://localhost:3000" : "")
+  )
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   io = new Server(httpServer, {
-    cors: { origin: "*" },
+    cors: {
+      origin: allowedOrigins.length > 0 ? allowedOrigins : false,
+      credentials: true,
+    },
     path: "/socket.io",
   });
 

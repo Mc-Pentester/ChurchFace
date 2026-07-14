@@ -1,7 +1,13 @@
 import { sign, verify } from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+const JWT_SECRET: string =
+  process.env.JWT_SECRET ??
+  (() => {
+    throw new Error(
+      "JWT_SECRET environment variable is not set. Refusing to start with an insecure default."
+    );
+  })();
 const ACCESS_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
 const REFRESH_EXPIRES_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || "30", 10);
 

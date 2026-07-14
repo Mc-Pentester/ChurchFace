@@ -36,6 +36,12 @@ yarn-error.log*
 .env.*.local
 !.env.example
 
+# database dumps / backups (may contain PII and credentials)
+*.sql
+*.dump
+*.sql.gz
+!prisma/migrations/**/*.sql
+
 # vercel
 .vercel
 

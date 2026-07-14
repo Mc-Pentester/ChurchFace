@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, createRefreshToken } from "@/lib/jwt";
 
@@ -12,11 +13,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
     }
 
-    // naive auth for example — replace with real password check
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
 
-    // TODO: verify password — this is a placeholder
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
     // Issue tokens
     const accessToken = signAccessToken({ sub: user.id, email: user.email });
     const refreshToken = await createRefreshToken(user.id, deviceInfo);
