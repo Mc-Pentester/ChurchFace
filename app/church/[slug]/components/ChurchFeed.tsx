@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { HeartIcon, ChatBubbleLeftIcon, ShareIcon } from "@heroicons/react/24/outline";
-import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
+import { socket } from "@/lib/socket";
 
 interface ChurchFeedProps {
   churchId: string;
@@ -20,6 +20,26 @@ export default function ChurchFeed({ churchId, churchSlug }: ChurchFeedProps) {
     fetchLive();
   }, [churchId]);
 
+  // Subscribe to realtime church posts scoped to this church's room.
+  useEffect(() => {
+    socket.emit("joinChurch", churchId);
+
+    const handleNewPost = (post: any) => {
+      if (!post || post.churchId !== churchId) return;
+      setPosts((prev) => {
+        if (prev.some((p) => p.id === post.id)) return prev;
+        return [post, ...prev];
+      });
+    };
+
+    socket.on("post:created", handleNewPost);
+
+    return () => {
+      socket.emit("leaveChurch", churchId);
+      socket.off("post:created", handleNewPost);
+    };
+  }, [churchId]);
+
   const fetchPosts = async () => {
     try {
       const response = await fetch(`/api/church/posts?churchId=${churchId}`);
@@ -34,11 +54,14 @@ export default function ChurchFeed({ churchId, churchSlug }: ChurchFeedProps) {
 
   const fetchLive = async () => {
     try {
-      // corrected endpoint: studio/live
-      const response = await fetch(`/api/church/${churchSlug}/studio/live`);
+      // Public endpoint (no auth) — returns { isLive, live }
+      const response = await fetch(`/api/church/${churchSlug}/live`);
+      if (!response.ok) {
+        setLive(null);
+        return;
+      }
       const data = await response.json();
-      // API returns { churchLive, liveBroadcast } — prefer churchLive then liveBroadcast
-      setLive(data.churchLive || data.liveBroadcast || null);
+      setLive(data.live || null);
     } catch (error) {
       console.error("Error fetching live:", error);
     }

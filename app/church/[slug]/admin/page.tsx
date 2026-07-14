@@ -24,7 +24,7 @@ async function getChurch(slug: string) {
 }
 
 async function checkAdminAccess(churchId: string, userId: string) {
-  const ok = await userHasChurchRole(churchId, userId, ["CHURCH_OWNER", "CHURCH_ADMIN", "ADMIN"]);
+  const ok = await userHasChurchRole(churchId, userId, ["CHURCH_OWNER", "CHURCH_ADMIN", "PASTOR", "ADMIN"]);
   return ok;
 }
 

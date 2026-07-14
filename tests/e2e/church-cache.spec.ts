@@ -24,10 +24,10 @@ test.describe('Church page cache & admin privacy', () => {
     }
   });
 
-  test('authenticated admin should receive admin emails and no public cache header', async ({ request }) => {
+  test('authenticated admin should receive admin emails and no public cache header', async ({ playwright }) => {
     test.skip(!ADMIN_COOKIE, 'TEST_ADMIN_COOKIE not provided');
 
-    const authReq = await request.newContext({
+    const authReq = await playwright.request.newContext({
       baseURL: BASE_URL,
       extraHTTPHeaders: {
         cookie: `next-auth.session-token=${ADMIN_COOKIE}`,
