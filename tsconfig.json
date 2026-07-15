@@ -22,13 +22,25 @@
       "@/*": ["./*"]
     }
   },
+
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": ["node_modules", "prisma.config.ts", "**/* copy.ts", "**/* copy.tsx"]
+  "next-env.d.ts",
+  "**/*.ts",
+  "**/*.tsx",
+  "**/*.mts",
+  "types/**/*.d.ts",
+  ".next/types/**/*.ts",
+  ".next/dev/types/**/*.ts"
+],
+
+  "exclude": [
+    "node_modules",
+    "prisma.config.ts",
+    "**/* copy.ts",
+    "**/* copy.tsx",
+    "tests",
+    "playwright.config.ts",
+    "vitest.config.mts"
+]
+  
 }

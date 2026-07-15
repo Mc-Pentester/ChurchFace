@@ -65,7 +65,7 @@ async function sendNotification({
       message,
       entityId,
       entityType,
-      data,
+      metadata: data ?? {},
     },
   });
 

@@ -30,9 +30,8 @@ export async function createNotification({
       senderId: fromUserId,
       type,
       message,
-      entityId,
       entityType,
-      data,
+      entityId: data?.entityId ?? null,
     },
   });
 
