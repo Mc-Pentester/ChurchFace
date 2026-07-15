@@ -1,16 +1,41 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Room, RoomEvent, Track } from "livekit-client";
-import { Video, Mic, MicOff, VideoOff, PhoneOff } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Room,
+  RoomEvent,
+  Track,
+} from "livekit-client";
+
+import {
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  PhoneOff,
+} from "lucide-react";
+
 
 interface LiveKitRoomProps {
+
   token: string;
+
   serverUrl: string;
+
   roomName: string;
+
   onConnected?: () => void;
+
   onDisconnected?: () => void;
+
 }
+
+
 
 export default function LiveKitRoom({
   token,
@@ -19,162 +44,587 @@ export default function LiveKitRoom({
   onConnected,
   onDisconnected,
 }: LiveKitRoomProps) {
-  const [room, setRoom] = useState<Room | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const roomRef = useRef<Room | null>(null);
+
+
+  const roomRef =
+    useRef<Room | null>(null);
+
+
+  const videoRef =
+    useRef<HTMLVideoElement | null>(null);
+
+
+
+  const [
+    isConnected,
+    setIsConnected
+  ] = useState(false);
+
+
+
+  const [
+    isMuted,
+    setIsMuted
+  ] = useState(false);
+
+
+
+  const [
+    isVideoEnabled,
+    setIsVideoEnabled
+  ] = useState(true);
+
+
 
   useEffect(() => {
-    async function connectToRoom() {
+
+
+    let mounted = true;
+
+
+
+    async function start() {
+
+
       try {
-        // Parse STUN/TURN servers from environment
-        const stunServers = process.env.NEXT_PUBLIC_LIVEKIT_STUN_SERVERS?.split(',') || [];
-        const turnServer = process.env.NEXT_PUBLIC_LIVEKIT_TURN_SERVERS;
-        const turnUsername = process.env.NEXT_PUBLIC_LIVEKIT_TURN_USERNAME;
-        const turnCredential = process.env.NEXT_PUBLIC_LIVEKIT_TURN_CREDENTIAL;
 
-        const iceServers: RTCIceServer[] = stunServers.map(server => ({
-          urls: server.trim(),
-        }));
 
-        if (turnServer && turnUsername && turnCredential) {
-          iceServers.push({
-            urls: turnServer,
-            username: turnUsername,
-            credential: turnCredential,
+        /**
+         * LiveKit v2.x
+         *
+         * Pas de iceServers ici.
+         * La configuration ICE/STUN/TURN
+         * est gérée côté serveur LiveKit.
+         */
+
+
+        const room =
+          new Room({
+
+            adaptiveStream: true,
+
+            dynacast: true,
+
           });
-        }
 
-        const newRoom = new Room({
-          adaptiveStream: true,
-          dynacast: true,
-          iceServers: iceServers.length > 0 ? iceServers : undefined,
-        });
 
-        newRoom.on(RoomEvent.Connected, () => {
-          console.log("Connected to LiveKit room");
-          setIsConnected(true);
-          onConnected?.();
-        });
 
-        newRoom.on(RoomEvent.Disconnected, () => {
-          console.log("Disconnected from LiveKit room");
-          setIsConnected(false);
-          onDisconnected?.();
-        });
+        roomRef.current = room;
 
-        newRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-          if (track.kind === Track.Kind.Video) {
-            const videoElement = track.attach();
-            if (videoRef.current) {
-              videoRef.current.srcObject = videoElement as unknown as MediaStream;
-            }
+
+
+        room.on(
+          RoomEvent.Connected,
+          () => {
+
+
+            if(!mounted)
+              return;
+
+
+            console.log(
+              "LiveKit connected:",
+              roomName
+            );
+
+
+            setIsConnected(true);
+
+
+            onConnected?.();
+
+
           }
-        });
+        );
 
-        await newRoom.connect(serverUrl, token);
-        await newRoom.localParticipant.enableCameraAndMicrophone();
 
-        setRoom(newRoom);
-        roomRef.current = newRoom;
-      } catch (error) {
-        console.error("Error connecting to LiveKit room:", error);
+
+        room.on(
+          RoomEvent.Disconnected,
+          () => {
+
+
+            if(!mounted)
+              return;
+
+
+            setIsConnected(false);
+
+
+            onDisconnected?.();
+
+
+          }
+        );
+
+
+
+
+        room.on(
+          RoomEvent.TrackSubscribed,
+          (
+            track
+          ) => {
+
+
+            if(
+              track.kind === Track.Kind.Video
+            ){
+
+
+              const element =
+                track.attach();
+
+
+
+              if(
+                videoRef.current
+              ){
+
+
+                videoRef.current.srcObject =
+                  element as unknown as MediaStream;
+
+
+              }
+
+
+            }
+
+
+          }
+        );
+
+
+
+
+
+        await room.connect(
+          serverUrl,
+          token
+        );
+
+
+
+
+        /**
+         * Mode studio :
+         * publication caméra + micro
+         */
+
+
+        await room.localParticipant
+          .setCameraEnabled(true);
+
+
+
+        await room.localParticipant
+          .setMicrophoneEnabled(true);
+
+
+
+        setIsVideoEnabled(true);
+
+        setIsMuted(false);
+
+
+
+      } catch(error) {
+
+
+        console.error(
+          "LiveKit connection error:",
+          error
+        );
+
+
       }
+
+
     }
 
-    connectToRoom();
+
+
+
+    start();
+
+
+
 
     return () => {
-      if (roomRef.current) {
+
+
+      mounted = false;
+
+
+      if(roomRef.current){
+
+
         roomRef.current.disconnect();
+
+
+        roomRef.current = null;
+
+
       }
+
+
     };
-  }, [token, serverUrl, onConnected, onDisconnected]);
 
-  const toggleMute = async () => {
-    if (room) {
-      if (isMuted) {
-        await room.localParticipant.unmuteMicrophone();
-        setIsMuted(false);
-      } else {
-        await room.localParticipant.muteMicrophone();
-        setIsMuted(true);
-      }
+
+
+  }, [
+    token,
+    serverUrl,
+    roomName,
+    onConnected,
+    onDisconnected,
+  ]);
+
+
+
+
+
+  async function toggleMute(){
+
+
+    const room =
+      roomRef.current;
+
+
+    if(!room)
+      return;
+
+
+
+    try {
+
+
+      await room.localParticipant
+        .setMicrophoneEnabled(
+          isMuted
+        );
+
+
+
+      setIsMuted(
+        !isMuted
+      );
+
+
+    } catch(error){
+
+
+      console.error(
+        "Microphone error:",
+        error
+      );
+
+
     }
-  };
 
-  const toggleVideo = async () => {
-    if (room) {
-      if (isVideoEnabled) {
-        await room.localParticipant.disableCamera();
-        setIsVideoEnabled(false);
-      } else {
-        await room.localParticipant.enableCamera();
-        setIsVideoEnabled(true);
-      }
+
+  }
+
+
+
+
+
+  async function toggleCamera(){
+
+
+    const room =
+      roomRef.current;
+
+
+    if(!room)
+      return;
+
+
+
+    try {
+
+
+      await room.localParticipant
+        .setCameraEnabled(
+          !isVideoEnabled
+        );
+
+
+
+      setIsVideoEnabled(
+        !isVideoEnabled
+      );
+
+
+
+    } catch(error){
+
+
+      console.error(
+        "Camera error:",
+        error
+      );
+
+
     }
-  };
 
-  const disconnect = async () => {
-    if (room) {
+
+  }
+
+
+
+
+
+  async function disconnect(){
+
+
+    const room =
+      roomRef.current;
+
+
+
+    if(room){
+
+
       await room.disconnect();
+
+
+      setIsConnected(false);
+
+
     }
-  };
+
+
+  }
+
+
+
+
 
   return (
-    <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
-      {!isConnected ? (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-            <p className="text-white text-sm">Connexion au serveur...</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Controls */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-black/70 rounded-full px-4 py-2">
-            <button
-              onClick={toggleMute}
-              className={`p-2 rounded-full ${
-                isMuted ? "bg-red-600" : "bg-gray-700 hover:bg-gray-600"
-              }`}
+
+    <div
+      className="
+      relative
+      w-full
+      h-full
+      bg-black
+      rounded-lg
+      overflow-hidden
+      "
+    >
+
+
+      {
+        !isConnected ?
+
+        (
+
+          <div
+            className="
+            absolute
+            inset-0
+            flex
+            items-center
+            justify-center
+            "
+          >
+
+            <div
+              className="
+              text-center
+              text-white
+              "
             >
-              {isMuted ? <MicOff size={16} className="text-white" /> : <Mic size={16} className="text-white" />}
-            </button>
-            <button
-              onClick={toggleVideo}
-              className={`p-2 rounded-full ${
-                !isVideoEnabled ? "bg-red-600" : "bg-gray-700 hover:bg-gray-600"
-              }`}
-            >
-              {isVideoEnabled ? <Video size={16} className="text-white" /> : <VideoOff size={16} className="text-white" />}
-            </button>
-            <button
-              onClick={disconnect}
-              className="p-2 rounded-full bg-red-600 hover:bg-red-700"
-            >
-              <PhoneOff size={16} className="text-white" />
-            </button>
+
+              <div
+                className="
+                animate-spin
+                rounded-full
+                h-8
+                w-8
+                border-b-2
+                border-white
+                mx-auto
+                mb-3
+                "
+              />
+
+              Connexion LiveKit...
+
+
+            </div>
+
+
           </div>
 
-          {/* Live indicator */}
-          <div className="absolute top-4 left-4 bg-red-600 px-3 py-1 rounded-full flex items-center gap-2">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-white text-xs font-bold">LIVE</span>
-          </div>
-        </>
-      )}
+
+        )
+
+        :
+
+        (
+
+          <>
+
+
+            <video
+
+              ref={videoRef}
+
+              autoPlay
+
+              playsInline
+
+              muted
+
+              className="
+              w-full
+              h-full
+              object-cover
+              "
+
+            />
+
+
+
+
+            <div
+              className="
+              absolute
+              bottom-4
+              left-1/2
+              -translate-x-1/2
+              flex
+              gap-3
+              bg-black/70
+              px-4
+              py-2
+              rounded-full
+              "
+            >
+
+
+
+              <button
+                onClick={toggleMute}
+                className="
+                p-2
+                rounded-full
+                bg-gray-700
+                "
+              >
+
+                {
+                  isMuted ?
+
+                  <MicOff
+                    size={18}
+                    className="text-white"
+                  />
+
+                  :
+
+                  <Mic
+                    size={18}
+                    className="text-white"
+                  />
+                }
+
+
+              </button>
+
+
+
+
+              <button
+                onClick={toggleCamera}
+                className="
+                p-2
+                rounded-full
+                bg-gray-700
+                "
+              >
+
+                {
+                  isVideoEnabled ?
+
+                  <Video
+                    size={18}
+                    className="text-white"
+                  />
+
+                  :
+
+                  <VideoOff
+                    size={18}
+                    className="text-white"
+                  />
+
+                }
+
+
+              </button>
+
+
+
+
+              <button
+                onClick={disconnect}
+                className="
+                p-2
+                rounded-full
+                bg-red-600
+                "
+              >
+
+                <PhoneOff
+                  size={18}
+                  className="text-white"
+                />
+
+              </button>
+
+
+            </div>
+
+
+
+
+
+            <div
+              className="
+              absolute
+              top-4
+              left-4
+              bg-red-600
+              text-white
+              text-xs
+              font-bold
+              px-3
+              py-1
+              rounded-full
+              "
+            >
+
+              ● LIVE
+
+            </div>
+
+
+
+          </>
+
+
+        )
+
+      }
+
+
     </div>
+
   );
+
+
 }

@@ -6,24 +6,27 @@ import PostCard from "@/components/posts/PostCard";
 
 async function getPost(postId: string) {
   const post = await prisma.post.findUnique({
-    where: { id: postId },
-    include: {
-      author: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
-        },
-      },
-      _count: {
-        select: {
-          likes: true,
-          comments: true,
-        },
+  where: {
+    id: postId,
+  },
+
+  include: {
+    author: {
+      select: {
+        id: true,
+        name: true,
+        image: true,
       },
     },
-  });
 
+    _count: {
+      select: {
+        comments: true,
+        likeRelations: true,
+      },
+    },
+  },
+});
   return post;
 }
 

@@ -5,8 +5,9 @@ import bcrypt from "bcrypt";
 import { getServerSession } from "next-auth";
 import type { NextAuthOptions } from "next-auth";
 
+
 /**
- * 🔐 Rôles autorisés pour le studio
+ * Rôles autorisés pour Radio Studio
  */
 const STUDIO_ROLES = [
   "ADMIN",
@@ -15,185 +16,269 @@ const STUDIO_ROLES = [
   "CHURCH_ADMIN",
 ];
 
-/**
- * 🔐 Configuration NextAuth
- */
+
+
 export const authOptions: NextAuthOptions = {
+
   adapter: PrismaAdapter(prisma),
+
 
   session: {
     strategy: "jwt",
   },
 
+
   providers: [
+
     CredentialsProvider({
+
       name: "credentials",
 
+
       credentials: {
+
         email: {
           label: "Email",
           type: "text",
         },
+
         password: {
           label: "Password",
           type: "password",
         },
+
       },
+
+
 
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
+
+
+        if(
+          !credentials?.email ||
+          !credentials.password
+        ){
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
 
-        if (!user) {
+
+        const user =
+          await prisma.user.findUnique({
+
+            where:{
+              email: credentials.email,
+            },
+
+          });
+
+
+
+        if(!user){
           return null;
         }
 
-        const validPassword = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
 
-        if (!validPassword) {
+
+        const passwordValid =
+          await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
+
+
+        if(!passwordValid){
           return null;
         }
+
+
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-          role: user.role,
-          churchId: user.churchId,
+
+          id:user.id,
+
+          email:user.email,
+
+          name:user.name,
+
+          image:user.image,
+
+          role:user.role,
+
+          churchId:user.churchId,
+
         };
+
       },
+
     }),
+
   ],
 
-  callbacks: {
+
+
+
+  callbacks:{
+
+
+
     /**
-     * JWT STORAGE
+     * JWT
      */
-    async jwt({ token, user }) {
-
-      if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-        token.churchId = (user as any).churchId ?? null;
-        token.roleCheckedAt = Date.now();
-
-        return token;
-      }
+    async jwt({
+      token,
+      user,
+    }) {
 
 
       /**
-       * Refresh rôle depuis Prisma
+       * Première connexion
+       */
+      if(user){
+
+        token.id = user.id;
+
+        token.role =
+          user.role;
+
+        token.churchId =
+          user.churchId ?? null;
+
+
+        token.roleCheckedAt =
+          Date.now();
+
+
+        return token;
+
+      }
+
+
+
+      /**
+       * Synchronisation périodique
        */
       const lastCheck =
-        (token.roleCheckedAt as number) || 0;
+        token.roleCheckedAt ?? 0;
 
-      const REFRESH_TIME =
+
+
+      const REFRESH_INTERVAL =
         5 * 60 * 1000;
 
 
-      if (
+
+      if(
         token.id &&
-        Date.now() - lastCheck > REFRESH_TIME
-      ) {
+        Date.now() - lastCheck > REFRESH_INTERVAL
+      ){
+
 
         const dbUser =
           await prisma.user.findUnique({
+
             where:{
-              id: token.id as string,
+              id:token.id,
             },
+
+
             select:{
+
               role:true,
+
               churchId:true,
+
             },
+
           });
+
 
 
         if(dbUser){
 
-          token.role = dbUser.role;
-          token.churchId = dbUser.churchId;
+          token.role =
+            dbUser.role;
+
+
+          token.churchId =
+            dbUser.churchId;
 
         }
 
 
-        token.roleCheckedAt = Date.now();
+
+        token.roleCheckedAt =
+          Date.now();
+
       }
+
 
 
       return token;
+
     },
+
+
 
 
     /**
-     * SESSION FRONTEND
+     * Session frontend
      */
-    async session({ session, token }) {
+    async session({
+      session,
+      token,
+    }) {
+
 
       if(session.user){
 
-        (session.user as any).id =
-          token.id;
 
-        (session.user as any).role =
+        session.user.id =
+          token.id as string;
+
+
+        session.user.role =
           token.role ?? "USER";
 
-        (session.user as any).churchId =
+
+        session.user.churchId =
           token.churchId ?? null;
 
       }
-
-
       return session;
-    },
-  },
 
+    },
+
+  },
 
   pages:{
-    signIn:"/login",
-  },
 
+    signIn:"/login",
+
+  },
 
   secret:
     process.env.NEXTAUTH_SECRET,
+
 };
 
-
-
 /**
- * 🎙️ Accès Studio Radio
- *
- * Retourne :
- * utilisateur +
- * rôle +
- * église associée
+ * Vérifie accès Radio Studio
  */
 export async function requireStudioAccess(){
 
   const session =
     await getServerSession(authOptions);
 
-
   const userId =
-    (session?.user as any)?.id;
-
+    session?.user?.id;
 
   if(!userId){
     return null;
   }
 
-
-  const dbUser =
+  const user =
     await prisma.user.findUnique({
 
       where:{
@@ -201,70 +286,55 @@ export async function requireStudioAccess(){
       },
 
       select:{
+
         id:true,
         email:true,
         name:true,
         image:true,
         role:true,
         churchId:true,
-
         churchAdmins:{
           select:{
             churchId:true,
           },
         },
+
       },
+
     });
 
-
-
-  if(!dbUser){
+  if(!user){
     return null;
   }
-
-
 
   if(
-    !STUDIO_ROLES.includes(dbUser.role)
+    !STUDIO_ROLES.includes(user.role)
   ){
+
     return null;
+
   }
 
-
-
-  /**
-   * Priorité :
-   * 1 User.churchId
-   * 2 ChurchAdmin
-   */
   const churchId =
-    dbUser.churchId ??
-    dbUser.churchAdmins[0]?.churchId ??
+    user.churchId ??
+    user.churchAdmins[0]?.churchId ??
     null;
-
-
 
   return {
 
-    id:dbUser.id,
-
-    email:dbUser.email,
-
-    name:dbUser.name,
-
-    image:dbUser.image,
-
-    role:dbUser.role,
-
+    id:user.id,
+    email:user.email,
+    name:user.name,
+    image:user.image,
+    role:user.role,
     churchId,
 
   };
+
 }
 
-
-
 /**
- * 📻 Vérifie gestion d'une radio
+ * Vérifie gestion radio
  */
 export async function canManageRadio(
   radioId:string,
@@ -284,19 +354,17 @@ export async function canManageRadio(
 
     });
 
-
-
   if(!radio){
     return false;
   }
 
+  if(
+    radio.userId === userId
+  ){
 
-
-  if(radio.userId === userId){
     return true;
+
   }
-
-
 
   const user =
     await prisma.user.findUnique({
@@ -311,38 +379,33 @@ export async function canManageRadio(
 
     });
 
-
-
   return (
     user?.role === "ADMIN" ||
     user?.role === "SUPER_ADMIN"
   );
+
 }
 
 
 
+
+
 /**
- * 👑 Vérification admin globale
+ * Vérification admin globale
  */
 export async function requireAdmin(){
 
   const session =
     await getServerSession(authOptions);
 
-
-
   const userId =
-    (session?.user as any)?.id;
-
-
+    session?.user?.id;
 
   if(!userId){
     return null;
   }
 
-
-
-  const dbUser =
+  const user =
     await prisma.user.findUnique({
 
       where:{
@@ -355,6 +418,7 @@ export async function requireAdmin(){
         name:true,
         image:true,
         role:true,
+
       },
 
     });
@@ -362,16 +426,17 @@ export async function requireAdmin(){
 
 
   if(
-    !dbUser ||
+    !user ||
     ![
       "ADMIN",
       "SUPER_ADMIN",
-    ].includes(dbUser.role)
+    ].includes(user.role)
   ){
+
     return null;
+
   }
 
+  return user;
 
-
-  return dbUser;
 }

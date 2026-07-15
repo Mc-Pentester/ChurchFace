@@ -43,7 +43,7 @@ export async function GET(req: Request) {
         take: 5,
         orderBy: { createdAt: "desc" },
       }),
-      prisma.event.findMany({
+      prisma.churchEvent.findMany({
         where: {
           title: { contains: q, mode: "insensitive" },
         },

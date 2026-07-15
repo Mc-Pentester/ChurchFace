@@ -6,131 +6,347 @@ import { authOptions } from "@/lib/auth";
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  const { searchParams } = new URL(req.url);
-  const limit = parseInt(searchParams.get("limit") || "10");
-
   try {
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    // Get user's viewing history
-    const viewedPreachings = await prisma.preachingView.findMany({
-      where: { userId: session.user.id },
-      select: { preachingId: true },
-      take: 50,
-      orderBy: { watchedAt: "desc" },
-    });
+    const userId = session.user.id;
 
-    const viewedIds = viewedPreachings.map((v) => v.preachingId);
+    const { searchParams } = new URL(req.url);
 
-    // Get user's liked preachings
-    const likedPreachings = await prisma.preachingLike.findMany({
-      where: { userId: session.user.id },
-      select: { preachingId: true },
-      take: 50,
-    });
+    const limit = Math.min(
+      Number(searchParams.get("limit") || 10),
+      50
+    );
 
-    const likedIds = likedPreachings.map((l) => l.preachingId);
 
-    // Get user's bookmarked preachings
-    const bookmarkedPreachings = await prisma.preachingBookmark.findMany({
-      where: { userId: session.user.id },
-      select: { preachingId: true },
-      take: 50,
-    });
+    ////////////////////////////////////////////////////////////
+    // USER HISTORY
+    ////////////////////////////////////////////////////////////
 
-    const bookmarkedIds = bookmarkedPreachings.map((b) => b.preachingId);
+    const viewedPreachings =
+      await prisma.preachingView.findMany({
+        where: {
+          userId,
+        },
+        select: {
+          preachingId: true,
+        },
+        orderBy: {
+          watchedAt: "desc",
+        },
+        take: 50,
+      });
 
-    // Get categories from viewed/liked/bookmarked preachings
-    const preachingsWithCategories = await prisma.preaching.findMany({
-      where: {
-        id: { in: [...viewedIds, ...likedIds, ...bookmarkedIds] },
-      },
-      select: { categoryId: true, authorId: true },
-    });
 
-    const categoryIds = [...new Set(preachingsWithCategories.map((p) => p.categoryId))];
-    const authorIds = [...new Set(preachingsWithCategories.map((p) => p.authorId))];
+    const viewedIds = viewedPreachings.map(
+      (item) => item.preachingId
+    );
 
-    // Get recommendations based on:
-    // 1. Same categories
-    // 2. Same authors
-    // 3. High views
-    // 4. Recent
-    const recommendations = await prisma.preaching.findMany({
-      where: {
-        AND: [
-          { id: { notIn: [...viewedIds, ...likedIds, ...bookmarkedIds] } },
+
+    const likedPreachings =
+      await prisma.preachingLike.findMany({
+        where: {
+          userId,
+        },
+        select: {
+          preachingId: true,
+        },
+        take: 50,
+      });
+
+
+    const likedIds = likedPreachings.map(
+      (item) => item.preachingId
+    );
+
+
+    const bookmarkedPreachings =
+      await prisma.preachingBookmark.findMany({
+        where: {
+          userId,
+        },
+        select: {
+          preachingId: true,
+        },
+        take: 50,
+      });
+
+
+    const bookmarkedIds =
+      bookmarkedPreachings.map(
+        (item) => item.preachingId
+      );
+
+
+    const historyIds = [
+      ...viewedIds,
+      ...likedIds,
+      ...bookmarkedIds,
+    ];
+
+
+    ////////////////////////////////////////////////////////////
+    // USER PREFERENCES
+    ////////////////////////////////////////////////////////////
+
+    const historyPreachings =
+      await prisma.preaching.findMany({
+        where: {
+          id: {
+            in: historyIds,
+          },
+        },
+        select: {
+          categoryId: true,
+          authorId: true,
+        },
+      });
+
+
+    const categoryIds = [
+      ...new Set(
+        historyPreachings
+          .map((item) => item.categoryId)
+          .filter(
+            (id): id is string =>
+              id !== null
+          )
+      ),
+    ];
+
+
+    const authorIds = [
+      ...new Set(
+        historyPreachings.map(
+          (item) => item.authorId
+        )
+      ),
+    ];
+
+
+    ////////////////////////////////////////////////////////////
+    // RECOMMENDATIONS
+    ////////////////////////////////////////////////////////////
+
+    const recommendations =
+      await prisma.preaching.findMany({
+        where: {
+          AND: [
+
+            {
+              id: {
+                notIn: historyIds,
+              },
+            },
+
+
+            ...(categoryIds.length ||
+            authorIds.length
+              ? [
+                  {
+                    OR: [
+
+                      ...(categoryIds.length
+                        ? [
+                            {
+                              categoryId: {
+                                in: categoryIds,
+                              },
+                            },
+                          ]
+                        : []),
+
+
+                      ...(authorIds.length
+                        ? [
+                            {
+                              authorId: {
+                                in: authorIds,
+                              },
+                            },
+                          ]
+                        : []),
+
+                    ],
+                  },
+                ]
+              : []),
+
+          ],
+        },
+
+
+        orderBy: [
+
           {
-            OR: [
-              { categoryId: { in: categoryIds } },
-              { authorId: { in: authorIds } },
-            ],
+            likeCount: "desc",
           },
-        ],
-      },
-      orderBy: [
-        { views: "desc" },
-        { publishedAt: "desc" },
-      ],
-      take: limit,
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-        category: true,
-        series: true,
-        _count: {
-          select: {
-            preachingViews: true,
-            likes: true,
-            comments: true,
-            bookmarks: true,
-          },
-        },
-      },
-    });
 
-    // Add isLiked and isBookmarked
-    const [likedSet, bookmarkedSet] = await Promise.all([
+          {
+            viewCount: "desc",
+          },
+
+          {
+            bookmarkCount: "desc",
+          },
+
+          {
+            publishedAt: "desc",
+          },
+
+        ],
+
+
+        take: limit,
+
+
+        include: {
+
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+
+
+          category: true,
+
+
+          series: true,
+
+
+          _count: {
+            select: {
+              preachingViews: true,
+              likes: true,
+              comments: true,
+              bookmarks: true,
+            },
+          },
+
+        },
+
+      });
+
+
+
+    ////////////////////////////////////////////////////////////
+    // USER FLAGS
+    ////////////////////////////////////////////////////////////
+
+    const recommendationIds =
+      recommendations.map(
+        (item) => item.id
+      );
+
+
+    const [
+      userLikes,
+      userBookmarks,
+    ] = await Promise.all([
+
+
       prisma.preachingLike.findMany({
         where: {
-          userId: session.user.id,
-          preachingId: { in: recommendations.map((r) => r.id) },
+          userId,
+
+          preachingId: {
+            in: recommendationIds,
+          },
         },
-        select: { preachingId: true },
+
+        select: {
+          preachingId: true,
+        },
       }),
+
+
       prisma.preachingBookmark.findMany({
         where: {
-          userId: session.user.id,
-          preachingId: { in: recommendations.map((r) => r.id) },
+          userId,
+
+          preachingId: {
+            in: recommendationIds,
+          },
         },
-        select: { preachingId: true },
+
+        select: {
+          preachingId: true,
+        },
       }),
+
+
     ]);
 
-    const likedIdsSet = new Set(likedSet.map((l) => l.preachingId));
-    const bookmarkedIdsSet = new Set(bookmarkedSet.map((b) => b.preachingId));
 
-    const recommendationsWithFlags = recommendations.map((rec) => ({
-      ...rec,
-      isLiked: likedIdsSet.has(rec.id),
-      isBookmarked: bookmarkedIdsSet.has(rec.id),
-    }));
 
-    return NextResponse.json({ preachings: recommendationsWithFlags });
-  } catch (error) {
-    console.error("Error fetching recommendations:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch recommendations" },
-      { status: 500 }
+    const likedSet = new Set(
+      userLikes.map(
+        (item) => item.preachingId
+      )
     );
+
+
+    const bookmarkedSet = new Set(
+      userBookmarks.map(
+        (item) => item.preachingId
+      )
+    );
+
+
+
+    ////////////////////////////////////////////////////////////
+    // RESPONSE
+    ////////////////////////////////////////////////////////////
+
+    const result =
+      recommendations.map(
+        (preaching) => ({
+          ...preaching,
+
+          isLiked:
+            likedSet.has(preaching.id),
+
+          isBookmarked:
+            bookmarkedSet.has(preaching.id),
+        })
+      );
+
+
+
+    return NextResponse.json({
+      preachings: result,
+    });
+
+
+
+  } catch (error) {
+
+    console.error(
+      "Error fetching recommendations:",
+      error
+    );
+
+
+    return NextResponse.json(
+      {
+        error:
+          "Failed to fetch recommendations",
+      },
+      {
+        status: 500,
+      }
+    );
+
   }
 }

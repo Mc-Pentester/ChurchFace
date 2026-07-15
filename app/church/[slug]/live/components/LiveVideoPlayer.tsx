@@ -7,10 +7,16 @@ import LiveKitPlayer from "@/components/livekit/LiveKitPlayer";
 interface LiveVideoPlayerProps {
   churchLive?: any;
   live?: any;
+  churchSlug?: string;
   isLive: boolean;
 }
 
-export default function LiveVideoPlayer({ churchLive, live, isLive }: LiveVideoPlayerProps) {
+export default function LiveVideoPlayer({
+  churchLive,
+  live,
+  churchSlug,
+  isLive
+}: LiveVideoPlayerProps) {
   const resolved = churchLive ?? live;
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
@@ -23,14 +29,15 @@ export default function LiveVideoPlayer({ churchLive, live, isLive }: LiveVideoP
           setTokenError(null);
           const response = await fetch("/api/livekit/token", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+            },
             body: JSON.stringify({
-              roomName: `church-${resolved.id}`,
+              roomName: `church-${churchSlug ?? "default"}-${resolved.id}`,
               participantName: `viewer-${resolved.id}`,
               isPublisher: false,
             }),
           });
-
           if (!response.ok) {
             const text = await response.text();
             setTokenError(`Erreur génération token: ${text}`);

@@ -40,7 +40,6 @@ model User {
   friendships2               Friendship[]                @relation("FriendshipReceiver")
   followers                  UserFollow[]                @relation("UserFollowFollower")
   following                  UserFollow[]                @relation("UserFollowFollowing")
-  reports                    Report[]                    @relation("ReportReporter")
   adminLogs                  AdminLog[]
   prayerRequests             PrayerRequest[]
   preachings                 Preaching[]
@@ -70,8 +69,15 @@ model User {
   churchFollows              ChurchFollow[]
   church                     Church?                     @relation("UserChurch", fields: [churchId], references: [id])
   PrayerLiveRoom             PrayerLiveRoom[]
+  prayerLiveParticipants     PrayerLiveParticipant[]
+  RadioChatMessage           RadioChatMessage[]
+  reportsCreated             Report[]                    @relation("ReportReporter")
+  reportsResolved            Report[]                    @relation("ReportResolver")
+  notificationsReceived      Notification[]              @relation("NotificationReceiver")
 
-  prayerLiveParticipants PrayerLiveParticipant[]
+
+notificationsSent Notification[]
+  @relation("NotificationSender")
 }
 
 model Account {
@@ -142,6 +148,8 @@ model Post {
 
   @@index([createdAt])
   @@index([authorId, createdAt])
+  @@index([isHidden])
+  @@index([likes])
 }
 
 model Comment {
@@ -262,6 +270,7 @@ model MessageSeen {
 model Notification {
   id         String   @id @default(cuid())
   userId     String
+  senderId   String
   type       String
   message    String
   entityType String?
@@ -270,6 +279,10 @@ model Notification {
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([senderId])
+  @@index([createdAt])
 }
 
 model PushSubscription {
@@ -309,17 +322,36 @@ model UserFollow {
 }
 
 model Report {
-  id         String    @id @default(cuid())
+  id         String @id @default(cuid())
+  // Auteur du signalement
   reporterId String
+
+  // Élément signalé
   targetId   String
   targetType String
-  reason     String
+
+  // Motif court
+  reason String
+
+  // Explication libre
+  description String?
+
+  // Workflow modération
   status     String    @default("PENDING")
   resolvedAt DateTime?
   resolvedBy String?
   createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  reporter User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter User  @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolver User? @relation("ReportResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([targetId])
+  @@index([targetType])
+  @@index([status])
+  @@index([createdAt])
+  @@index([targetType, targetId])
 }
 
 model AdminLog {
@@ -332,75 +364,238 @@ model AdminLog {
   admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
 }
 
-model PreachingCategory {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
+//////////////////////////////////////////////////////////////
+// PREACHING CATEGORY
+//////////////////////////////////////////////////////////////
 
-  series    PreachingSeries[]
-  Preaching Preaching[]
+model PreachingCategory {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  // Affichage
+  icon   String?
+  color  String?
+  banner String?
+
+  // Organisation
+  order Int @default(0)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  preachings Preaching[]
+  series     PreachingSeries[]
+
+  @@index([order])
+  @@index([isActive])
+  @@index([name])
+  @@index([slug])
 }
 
+//////////////////////////////////////////////////////////////
+// PREACHING SERIES
+//////////////////////////////////////////////////////////////
+
 model PreachingSeries {
-  id          String  @id @default(cuid())
-  title       String
+  id String @id @default(cuid())
+
+  title String
+  slug  String @unique
+
   description String?
+
+  thumbnail String?
+  banner    String?
 
   authorId String
 
+  categoryId String?
+
+  order Int @default(0)
+
+  isFeatured Boolean @default(false)
+
+  isPublished Boolean @default(false)
+
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ////////////////////////////////////////////////////////////
+
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  category PreachingCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   preachings Preaching[]
 
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  PreachingCategory   PreachingCategory? @relation(fields: [preachingCategoryId], references: [id])
-  preachingCategoryId String?
+  ////////////////////////////////////////////////////////////
 
   @@index([authorId])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([order])
+  @@index([isFeatured])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@index([categoryId, order])
+  @@index([categoryId, isPublished])
 }
 
-model Preaching {
-  id          String    @id @default(cuid())
-  title       String
-  description String
-  videoUrl    String
-  audioUrl    String?
-  thumbnail   String?
-  seriesId    String?
-  categoryId  String?
-  duration    Int?
-  publishedAt DateTime?
-  viewCount   Int       @default(0)
-  createdAt   DateTime  @default(now())
+//////////////////////////////////////////////////////////////
+// PREACHING
+//////////////////////////////////////////////////////////////
 
-  series         PreachingSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+model Preaching {
+  ////////////////////////////////////////////////////////////
+  // IDENTITE
+  ////////////////////////////////////////////////////////////
+
+  id          String @id @default(cuid())
+  title       String
+  slug        String @unique
+  description String
+
+  ////////////////////////////////////////////////////////////
+  // MEDIA
+  ////////////////////////////////////////////////////////////
+
+  videoUrl  String
+  audioUrl  String?
+  thumbnail String?
+  banner    String?
+  duration  Int?
+
+  ////////////////////////////////////////////////////////////
+  // ORGANISATION
+  ////////////////////////////////////////////////////////////
+
+  authorId   String
+  categoryId String?
+  seriesId   String?
+
+  ////////////////////////////////////////////////////////////
+  // PUBLICATION
+  ////////////////////////////////////////////////////////////
+
+  isPublished Boolean   @default(false)
+  isFeatured  Boolean   @default(false)
+  isPinned    Boolean   @default(false)
+  publishedAt DateTime?
+
+  ////////////////////////////////////////////////////////////
+  // VISIBILITE
+  ////////////////////////////////////////////////////////////
+
+  visibility String @default("PUBLIC")
+  language   String @default("fr")
+
+  ////////////////////////////////////////////////////////////
+  // INTERACTIONS
+  ////////////////////////////////////////////////////////////
+
+  allowComments Boolean @default(true)
+  allowDownload Boolean @default(false)
+  allowSharing  Boolean @default(true)
+
+  ////////////////////////////////////////////////////////////
+  // SEO
+  ////////////////////////////////////////////////////////////
+
+  seoTitle       String?
+  seoDescription String?
+
+  ////////////////////////////////////////////////////////////
+  // RECHERCHE
+  ////////////////////////////////////////////////////////////
+
+  tags String[] @default([])
+
+  ////////////////////////////////////////////////////////////
+  // STATISTIQUES
+  ////////////////////////////////////////////////////////////
+
+  viewCount     Int @default(0)
+  likeCount     Int @default(0)
+  commentCount  Int @default(0)
+  bookmarkCount Int @default(0)
+  shareCount    Int @default(0)
+
+  ////////////////////////////////////////////////////////////
+  // AUDIT
+  ////////////////////////////////////////////////////////////
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ////////////////////////////////////////////////////////////
+  // RELATIONS
+  ////////////////////////////////////////////////////////////
+
+  author   User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category PreachingCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  series   PreachingSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+
   preachingViews PreachingView[]
   likes          PreachingLike[]
   comments       PreachingComment[]
   bookmarks      PreachingBookmark[]
   notes          PreachingNote[]
   verses         PreachingVerse[]
-  authorId       String
-  author         User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  category       PreachingCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  ////////////////////////////////////////////////////////////
+  // INDEX
+  ////////////////////////////////////////////////////////////
+
+  @@index([slug])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([seriesId])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([publishedAt])
+  @@index([isPublished])
+  @@index([isFeatured])
+  @@index([visibility])
+  @@index([language])
+  @@index([viewCount])
+  @@index([likeCount])
+  @@index([commentCount])
+  @@index([bookmarkCount])
+  @@index([authorId, createdAt])
+  @@index([categoryId, publishedAt])
+  @@index([seriesId, publishedAt])
+  @@index([isPublished, publishedAt])
+  @@index([isFeatured, publishedAt])
 }
 
 model PreachingView {
-  id          String   @id @default(cuid())
-  preachingId String
-  userId      String
-  watchedAt   DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  preachingId   String
+  userId        String
+  watchDuration Int?
+  watchPercent  Float?
+  completed     Boolean  @default(false)
+  device        String?
+  platform      String?
+  ipAddress     String?
+  watchedAt     DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
-  @@index([preachingId])
   @@index([userId])
+  @@index([preachingId])
+  @@index([watchedAt])
+  @@index([completed])
 }
 
 model PreachingLike {
@@ -413,25 +608,32 @@ model PreachingLike {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
+  @@index([userId])
+  @@index([preachingId])
 }
 
 model PreachingComment {
   id          String   @id @default(cuid())
   preachingId String
   userId      String
+  parentId    String?
   content     String
+  isEdited    Boolean  @default(false)
+  isHidden    Boolean  @default(false)
+  likeCount   Int      @default(0)
+  replyCount  Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  parentId String?
-
   preaching Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent    PreachingComment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies   PreachingComment[] @relation("CommentReplies")
+  parent    PreachingComment?  @relation("PreachingCommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies   PreachingComment[] @relation("PreachingCommentReplies")
 
   @@index([preachingId])
+  @@index([userId])
   @@index([parentId])
+  @@index([createdAt])
 }
 
 model PreachingBookmark {
@@ -444,32 +646,47 @@ model PreachingBookmark {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
+  @@index([userId])
+  @@index([preachingId])
 }
 
 model PreachingNote {
   id          String   @id @default(cuid())
   preachingId String
   userId      String
+  title       String?
   content     String
   timestamp   Int?
+  color       String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([preachingId])
 }
 
 model PreachingVerse {
   id          String   @id @default(cuid())
   preachingId String
   userId      String
+  reference   String
   book        String
   chapter     Int
-  verse       Int
+  verseStart  Int
+  verseEnd    Int?
   text        String
+  translation String?
   createdAt   DateTime @default(now())
 
   preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([preachingId])
+  @@index([userId])
+  @@index([reference])
 }
 
 model LiveBroadcast {
@@ -769,6 +986,7 @@ model Stream {
   title       String
   description String?
   streamUrl   String?
+  viewerCount Int       @default(0)
   status      String    @default("OFFLINE")
   isLive      Boolean   @default(false)
   startedAt   DateTime?
@@ -779,33 +997,30 @@ model Stream {
 }
 
 model Radio {
-  id          String  @id @default(cuid())
-  title       String
-  description String?
-  streamUrl   String?
-  status      String  @default("OFFLINE")
-  isLive      Boolean @default(false)
-  isAutoDJ    Boolean @default(false)
-
-  listenerCount Int @default(0)
-  peakListeners Int @default(0)
-
-  startedAt DateTime?
-  endedAt   DateTime?
-
-  userId     String?
-  playlistId String?
-
-  createdAt DateTime @default(now())
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  streamUrl     String?
+  status        String    @default("OFFLINE")
+  isLive        Boolean   @default(false)
+  isAutoDJ      Boolean   @default(false)
+  listenerCount Int       @default(0)
+  peakListeners Int       @default(0)
+  currentTrack  String?
+  startedAt     DateTime?
+  endedAt       DateTime?
+  userId        String?
+  playlistId    String?
+  createdAt     DateTime  @default(now())
 
   schedules    RadioSchedule[]
   chatMessages RadioChatMessage[]
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  playlist Playlist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
-
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  playlist     Playlist?          @relation(fields: [playlistId], references: [id], onDelete: SetNull)
   churchRadios ChurchRadio[]
+
+  @@index([status])
+  @@index([isLive])
 }
 
 model Playlist {
@@ -816,8 +1031,9 @@ model Playlist {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  items  PlaylistItem[]
-  radios Radio[]
+  items     PlaylistItem[]
+  radios    Radio[]
+  schedules RadioSchedule[]
 }
 
 model PlaylistItem {
@@ -937,52 +1153,40 @@ model PrayerChainLink {
 }
 
 model PrayerReaction {
-  id String @id @default(cuid())
-
+  id              String   @id @default(cuid())
   prayerRequestId String
   userId          String
-
-  type String @default("PRAY")
-
-  createdAt DateTime @default(now())
+  type            String   @default("PRAY")
+  createdAt       DateTime @default(now())
 
   prayerRequest PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, prayerRequestId, type])
 }
 
 model PrayerResponse {
-  id String @id @default(cuid())
-
+  id              String   @id @default(cuid())
   prayerRequestId String
   userId          String
-
-  content String
-  type    String @default("PRAYER")
-
-  createdAt DateTime @default(now())
+  content         String
+  type            String   @default("PRAYER")
+  createdAt       DateTime @default(now())
 
   prayerRequest PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PrayerVerse {
-  id String @id @default(cuid())
-
+  id              String   @id @default(cuid())
   prayerRequestId String
   userId          String
-
-  reference String
-  text      String?
-
-  createdAt DateTime @default(now())
+  reference       String
+  text            String?
+  createdAt       DateTime @default(now())
 
   prayerRequest PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([prayerRequestId])
   @@index([userId])
@@ -1021,22 +1225,45 @@ model AudioTrack {
 }
 
 model RadioSchedule {
-  id         String   @id @default(cuid())
-  radioId    String
-  playlistId String?
-  startTime  DateTime
-  endTime    DateTime
-  createdAt  DateTime @default(now())
+  id          String    @id @default(cuid())
+  radioId     String
+  playlistId  String?
+  title       String
+  description String?
+  hostName    String?
+  startTime   DateTime
+  duration    Int       @default(60)
+  endTime     DateTime?
+  isRecurring Boolean   @default(false)
+  recurrence  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  radio Radio @relation(fields: [radioId], references: [id], onDelete: Cascade)
+  radio    Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
+  playlist Playlist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+
+  @@index([radioId])
+  @@index([startTime])
 }
 
 model RadioChatMessage {
-  id        String   @id @default(cuid())
-  radioId   String
-  userId    String?
-  content   String
-  createdAt DateTime @default(now())
+  id      String  @id @default(cuid())
+  radioId String
+  userId  String?
+  content String
+
+  // MODERATION CHAT
+  isDeleted Boolean   @default(false)
+  isPinned  Boolean   @default(false)
+  deletedAt DateTime?
+  pinnedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   radio Radio @relation(fields: [radioId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([radioId])
+  @@index([userId])
+  @@index([createdAt])
 }
