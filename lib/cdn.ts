@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 export async function purgeChurchCache(slug: string) {
   // Build the full public URL for the church page. Prefer NEXT_PUBLIC_APP_URL, then APP_URL
   const base = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || process.env.VERCEL_URL || "";
