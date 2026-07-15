@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "prisma generate && next build",
-    "start": "prisma db push && tsx server.ts",
+    "start": "prisma migrate deploy && tsx server.ts",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
