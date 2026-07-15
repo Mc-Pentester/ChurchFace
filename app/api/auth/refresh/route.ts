@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { signAccessToken, createRefreshToken, revokeRefreshToken } from "@/lib/jwt";
+import { signAccessToken, createRefreshToken, revokeRefreshToken, findValidRefreshToken } from "@/lib/jwt";
 
 export const runtime = "nodejs";
 
@@ -9,8 +8,8 @@ export async function POST(req: Request) {
     const { refreshToken, deviceInfo } = await req.json();
     if (!refreshToken) return NextResponse.json({ error: "Bad request" }, { status: 400 });
 
-    const rt = await prisma.refreshToken.findUnique({ where: { token: refreshToken } });
-    if (!rt || rt.revoked || rt.expiresAt < new Date()) {
+    const rt = await findValidRefreshToken(refreshToken);
+    if (!rt) {
       return NextResponse.json({ error: "Invalid refresh token" }, { status: 401 });
     }
 

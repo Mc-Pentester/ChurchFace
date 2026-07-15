@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Bell,
   MessageCircle,
@@ -245,24 +246,24 @@ export default function Navbar() {
           >
             🙏 Prière
           </a>
-          <a
+          <Link
             href="/live"
             className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
             📺 Live
-          </a>
-          <a
+          </Link>
+          <Link
             href="/radio"
             className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
             🎙️ Radio
-          </a>
-          <a
+          </Link>
+          <Link
             href="/church/create"
             className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white hover:bg-white/20 px-3 py-2 rounded-full transition"
           >
             ⛪ Créer une église
-          </a>
+          </Link>
         </div>
 
         {/* ONLINE - Desktop only */}

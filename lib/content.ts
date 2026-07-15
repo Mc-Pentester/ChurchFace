@@ -50,13 +50,12 @@ export async function createPostForEntity({
     },
   });
 
-  // Emit socket event if socket server is available
+  // Emit socket event if socket server is available.
+  // Scope strictly to the church room so posts are not broadcast to other churches.
   try {
     const io = getSocketServer();
     if (io) {
-      // Emit to church-specific room and a global channel
       io.to(`church:${churchId}`).emit("post:created", post);
-      io.emit("post:created", post);
     }
   } catch (err) {
     // Do not block flow on socket errors

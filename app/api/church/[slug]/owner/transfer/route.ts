@@ -41,16 +41,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         create: { churchId: church.id, userId: newOwnerUserId, role: "CHURCH_OWNER", appointedAt: new Date() },
       });
 
-      // ensure target is a member
-      try {
-        await tx.churchMember.upsert({
-          where: { churchId_userId: { churchId: church.id, userId: newOwnerUserId } },
-          update: { role: "ADMIN", isActive: true },
-          create: { churchId: church.id, userId: newOwnerUserId, role: "ADMIN", isActive: true },
-        });
-      } catch (err) {
-        // ignore
-      }
+      // ensure target is a member — must succeed so the new owner is a valid member.
+      // Any failure here should roll back the whole transfer transaction.
+      await tx.churchMember.upsert({
+        where: { churchId_userId: { churchId: church.id, userId: newOwnerUserId } },
+        update: { role: "ADMIN", isActive: true },
+        create: { churchId: church.id, userId: newOwnerUserId, role: "ADMIN", isActive: true },
+      });
     });
 
     return NextResponse.json({ success: true });
