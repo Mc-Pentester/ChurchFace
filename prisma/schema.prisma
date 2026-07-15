@@ -8,72 +8,71 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  password    String
-  name        String?
-  image       String?
-  bio         String?
-  role        String    @default("USER")
-  city        String?
-  churchId    String?
-  isSuspended Boolean   @default(false)
-  isBanned    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  suspendedAt DateTime?
-
-  refreshTokens              RefreshToken[]
+  id                         String                      @id @default(cuid())
+  email                      String                      @unique
+  password                   String
+  name                       String?
+  image                      String?
+  bio                        String?
+  role                       String                      @default("USER")
+  city                       String?
+  churchId                   String?
+  isSuspended                Boolean                     @default(false)
+  isBanned                   Boolean                     @default(false)
+  createdAt                  DateTime                    @default(now())
+  suspendedAt                DateTime?
   accounts                   Account[]
-  sessions                   Session[]
-  posts                      Post[]
+  adminLogs                  AdminLog[]
+  audioTracks                AudioTrack[]
+  chatMemberships            ChatMember[]
+  churchAdmins               ChurchAdmin[]
+  churchCourseEnrollments    ChurchCourseEnrollment[]
+  churchEventAttendees       ChurchEventAttendee[]
+  churchFollows              ChurchFollow[]
+  churchMemberships          ChurchMember[]
+  churchPostComments         ChurchPostComment[]
+  churchPostLikes            ChurchPostLike[]
   comments                   Comment[]
+  friendships2               Friendship[]                @relation("FriendshipReceiver")
+  friendships1               Friendship[]                @relation("FriendshipSender")
   likes                      Like[]
+  sentMessages               Message[]                   @relation("MessageSender")
+  messageSeen                MessageSeen[]
+  notificationsSent          Notification[]              @relation("NotificationSender")
+  notificationsReceived      Notification[]              @relation("NotificationReceiver")
+  posts                      Post[]
+  prayerChainLinks           PrayerChainLink[]
+  prayerLiveParticipants     PrayerLiveParticipant[]
+  PrayerLiveRoom             PrayerLiveRoom[]
+  prayerLiveRoomMembers      PrayerLiveRoomMember[]
+  prayerLiveRoomParticipants PrayerLiveRoomParticipant[]
+  prayerReactions            PrayerReaction[]
+  prayerRequests             PrayerRequest[]
+  prayerResponses            PrayerResponse[]
+  prayerTestimonies          PrayerTestimony[]
+  prayerVerses               PrayerVerse[]
+  preachings                 Preaching[]
+  preachingBookmarks         PreachingBookmark[]
+  preachingComments          PreachingComment[]
+  preachingLikes             PreachingLike[]
+  preachingNotes             PreachingNote[]
+  preachingSeries            PreachingSeries[]
+  preachingVerses            PreachingVerse[]
+  preachingViews             PreachingView[]
+  pushSubscriptions          PushSubscription[]
+  radios                     Radio[]
+  RadioChatMessage           RadioChatMessage[]
+  refreshTokens              RefreshToken[]
+  reportsCreated             Report[]                    @relation("ReportReporter")
+  reportsResolved            Report[]                    @relation("ReportResolver")
+  sessions                   Session[]
   shares                     Share[]
   stories                    Story[]
   storyViews                 StoryView[]
-  chatMemberships            ChatMember[]
-  sentMessages               Message[]                   @relation("MessageSender")
-  messageSeen                MessageSeen[]
-  pushSubscriptions          PushSubscription[]
-  friendships1               Friendship[]                @relation("FriendshipSender")
-  friendships2               Friendship[]                @relation("FriendshipReceiver")
+  streams                    Stream[]
+  church                     Church?                     @relation("UserChurch", fields: [churchId], references: [id])
   followers                  UserFollow[]                @relation("UserFollowFollower")
   following                  UserFollow[]                @relation("UserFollowFollowing")
-  adminLogs                  AdminLog[]
-  prayerRequests             PrayerRequest[]
-  preachings                 Preaching[]
-  preachingViews             PreachingView[]
-  preachingLikes             PreachingLike[]
-  preachingComments          PreachingComment[]
-  preachingBookmarks         PreachingBookmark[]
-  preachingNotes             PreachingNote[]
-  preachingVerses            PreachingVerse[]
-  preachingSeries            PreachingSeries[]
-  churchMemberships          ChurchMember[]
-  churchAdmins               ChurchAdmin[]
-  churchEventAttendees       ChurchEventAttendee[]
-  churchCourseEnrollments    ChurchCourseEnrollment[]
-  churchPostLikes            ChurchPostLike[]
-  churchPostComments         ChurchPostComment[]
-  radios                     Radio[]
-  streams                    Stream[]
-  audioTracks                AudioTrack[]
-  prayerLiveRoomMembers      PrayerLiveRoomMember[]
-  prayerLiveRoomParticipants PrayerLiveRoomParticipant[]
-  prayerChainLinks           PrayerChainLink[]
-  prayerReactions            PrayerReaction[]
-  prayerResponses            PrayerResponse[]
-  prayerVerses               PrayerVerse[]
-  prayerTestimonies          PrayerTestimony[]
-  churchFollows              ChurchFollow[]
-  church                     Church?                     @relation("UserChurch", fields: [churchId], references: [id])
-  PrayerLiveRoom             PrayerLiveRoom[]
-  prayerLiveParticipants     PrayerLiveParticipant[]
-  RadioChatMessage           RadioChatMessage[]
-  reportsCreated             Report[]                    @relation("ReportReporter")
-  reportsResolved            Report[]                    @relation("ReportResolver")
-  notificationsReceived      Notification[]              @relation("NotificationReceiver")
-  notificationsSent          Notification[]              @relation("NotificationSender")
 }
 
 model Account {
@@ -89,8 +88,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -100,8 +98,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -120,26 +117,24 @@ model RefreshToken {
   revoked    Boolean  @default(false)
   createdAt  DateTime @default(now())
   expiresAt  DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  content   String?
-  imageUrl  String?
-  videoUrl  String?
-  hashtags  String[] @default([])
-  likes     Int      @default(0)
-  isHidden  Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-
-  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  id            String    @id @default(cuid())
+  content       String?
+  imageUrl      String?
+  videoUrl      String?
+  hashtags      String[]  @default([])
+  likes         Int       @default(0)
+  isHidden      Boolean   @default(false)
+  authorId      String
+  createdAt     DateTime  @default(now())
   comments      Comment[]
   likeRelations Like[]    @relation("PostLikes")
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   shares        Share[]
 
   @@index([createdAt])
@@ -149,18 +144,17 @@ model Post {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   content   String
   postId    String
   userId    String
   parentId  String?
-  isHidden  Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
-  replies Comment[] @relation("CommentReplies")
+  isHidden  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
   @@index([userId, createdAt])
@@ -172,9 +166,8 @@ model Like {
   postId    String
   userId    String
   createdAt DateTime @default(now())
-
-  post Post @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
 }
@@ -184,24 +177,22 @@ model Share {
   postId    String
   userId    String
   createdAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
 }
 
 model Story {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   imageUrl  String?
   videoUrl  String?
   content   String?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
   expiresAt DateTime
   authorId  String
-
-  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  views  StoryView[]
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views     StoryView[]
 }
 
 model StoryView {
@@ -209,21 +200,19 @@ model StoryView {
   storyId   String
   userId    String
   createdAt DateTime @default(now())
-
-  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([storyId, userId])
 }
 
 model Chat {
-  id        String   @id @default(cuid())
-  isGroup   Boolean  @default(false)
+  id        String       @id @default(cuid())
+  isGroup   Boolean      @default(false)
   name      String?
-  createdAt DateTime @default(now())
-
-  members  ChatMember[]
-  messages Message[]
+  createdAt DateTime     @default(now())
+  members   ChatMember[]
+  messages  Message[]
 }
 
 model ChatMember {
@@ -232,23 +221,21 @@ model ChatMember {
   chatId   String
   isTyping Boolean   @default(false)
   lastSeen DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chat     Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, chatId])
 }
 
 model Message {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   content   String
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
   chatId    String
   senderId  String
-
-  chat   Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  seen   MessageSeen[]
+  chat      Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  seen      MessageSeen[]
 }
 
 model MessageSeen {
@@ -256,9 +243,8 @@ model MessageSeen {
   messageId String
   userId    String
   seenAt    DateTime @default(now())
-
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId])
 }
@@ -266,17 +252,16 @@ model MessageSeen {
 model Notification {
   id         String   @id @default(cuid())
   userId     String
-  senderId   String?
   type       String
   message    String
   entityType String?
   entityId   String?
-  metadata   Json?
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
-
-  user   User  @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
-  sender User? @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+  metadata   Json?
+  senderId   String?
+  sender     User?    @relation("NotificationSender", fields: [senderId], references: [id])
+  user       User     @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([senderId])
@@ -289,8 +274,7 @@ model PushSubscription {
   endpoint  String
   keys      String
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Friendship {
@@ -300,9 +284,8 @@ model Friendship {
   status     String   @default("PENDING")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  sender   User @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
 }
@@ -312,37 +295,26 @@ model UserFollow {
   followerId  String
   followingId String
   createdAt   DateTime @default(now())
-
-  follower  User @relation("UserFollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
-  following User @relation("UserFollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  follower    User     @relation("UserFollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
 }
 
 model Report {
-  id         String @id @default(cuid())
-  // Auteur du signalement
-  reporterId String
-
-  // Élément signalé
-  targetId   String
-  targetType String
-
-  // Motif court
-  reason String
-
-  // Explication libre
+  id          String    @id @default(cuid())
+  reporterId  String
+  targetId    String
+  targetType  String
+  reason      String
+  status      String    @default("PENDING")
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime  @default(now())
   description String?
-
-  // Workflow modération
-  status     String    @default("PENDING")
-  resolvedAt DateTime?
-  resolvedBy String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  reporter User  @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  resolver User? @relation("ReportResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  updatedAt   DateTime  @updatedAt
+  reporter    User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolver    User?     @relation("ReportResolver", fields: [resolvedBy], references: [id])
 
   @@index([reporterId])
   @@index([targetId])
@@ -358,36 +330,23 @@ model AdminLog {
   action    String
   details   String?
   createdAt DateTime @default(now())
-
-  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
 }
 
-//////////////////////////////////////////////////////////////
-// PREACHING CATEGORY
-//////////////////////////////////////////////////////////////
-
 model PreachingCategory {
-  id          String  @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
-  slug        String  @unique
+  slug        String            @unique
   description String?
-
-  // Affichage
-  icon   String?
-  color  String?
-  banner String?
-
-  // Organisation
-  order Int @default(0)
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  preachings Preaching[]
-  series     PreachingSeries[]
+  icon        String?
+  color       String?
+  banner      String?
+  order       Int               @default(0)
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  preachings  Preaching[]
+  series      PreachingSeries[]
 
   @@index([order])
   @@index([isActive])
@@ -395,45 +354,24 @@ model PreachingCategory {
   @@index([slug])
 }
 
-//////////////////////////////////////////////////////////////
-// PREACHING SERIES
-//////////////////////////////////////////////////////////////
-
 model PreachingSeries {
-  id String @id @default(cuid())
-
-  title String
-  slug  String @unique
-
+  id          String             @id @default(cuid())
+  title       String
+  slug        String             @unique
   description String?
-
-  thumbnail String?
-  banner    String?
-
-  authorId String
-
-  categoryId String?
-
-  order Int @default(0)
-
-  isFeatured Boolean @default(false)
-
-  isPublished Boolean @default(false)
-
+  thumbnail   String?
+  banner      String?
+  authorId    String
+  categoryId  String?
+  order       Int                @default(0)
+  isFeatured  Boolean            @default(false)
+  isPublished Boolean            @default(false)
   publishedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  ////////////////////////////////////////////////////////////
-
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  category PreachingCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
-  preachings Preaching[]
-
-  ////////////////////////////////////////////////////////////
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  preachings  Preaching[]
+  author      User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category    PreachingCategory? @relation(fields: [categoryId], references: [id])
 
   @@index([authorId])
   @@index([categoryId])
@@ -446,110 +384,67 @@ model PreachingSeries {
   @@index([categoryId, isPublished])
 }
 
-//////////////////////////////////////////////////////////////
-// PREACHING
-//////////////////////////////////////////////////////////////
-
 model Preaching {
-  ////////////////////////////////////////////////////////////
-  // IDENTITE
-  ////////////////////////////////////////////////////////////
-
-  id          String @id @default(cuid())
-  title       String
-  slug        String @unique
-  description String
-
-  ////////////////////////////////////////////////////////////
-  // MEDIA
-  ////////////////////////////////////////////////////////////
-
-  videoUrl  String
-  audioUrl  String?
-  thumbnail String?
-  banner    String?
-  duration  Int?
-
-  ////////////////////////////////////////////////////////////
-  // ORGANISATION
-  ////////////////////////////////////////////////////////////
-
-  authorId   String
-  categoryId String?
-  seriesId   String?
-
-  ////////////////////////////////////////////////////////////
-  // PUBLICATION
-  ////////////////////////////////////////////////////////////
-
-  isPublished Boolean   @default(false)
-  isFeatured  Boolean   @default(false)
-  isPinned    Boolean   @default(false)
-  publishedAt DateTime?
-
-  ////////////////////////////////////////////////////////////
-  // VISIBILITE
-  ////////////////////////////////////////////////////////////
-
-  visibility String @default("PUBLIC")
-  language   String @default("fr")
-
-  ////////////////////////////////////////////////////////////
-  // INTERACTIONS
-  ////////////////////////////////////////////////////////////
-
-  allowComments Boolean @default(true)
-  allowDownload Boolean @default(false)
-  allowSharing  Boolean @default(true)
-
-  ////////////////////////////////////////////////////////////
-  // SEO
-  ////////////////////////////////////////////////////////////
-
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  id             String              @id @default(cuid())
+  title          String
+  slug           String              @unique
+  description    String
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  videoUrl       String
+  audioUrl       String?
+  thumbnail      String?
+  banner         String?
+  duration       Int?
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  authorId       String
+  categoryId     String?
+  seriesId       String?
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  isPublished    Boolean             @default(false)
+  isFeatured     Boolean             @default(false)
+  isPinned       Boolean             @default(false)
+  publishedAt    DateTime?
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  visibility     String              @default("PUBLIC")
+  language       String              @default("fr")
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  allowComments  Boolean             @default(true)
+  allowDownload  Boolean             @default(false)
+  allowSharing   Boolean             @default(true)
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
   seoTitle       String?
   seoDescription String?
-
-  ////////////////////////////////////////////////////////////
-  // RECHERCHE
-  ////////////////////////////////////////////////////////////
-
-  tags String[] @default([])
-
-  ////////////////////////////////////////////////////////////
-  // STATISTIQUES
-  ////////////////////////////////////////////////////////////
-
-  viewCount     Int @default(0)
-  likeCount     Int @default(0)
-  commentCount  Int @default(0)
-  bookmarkCount Int @default(0)
-  shareCount    Int @default(0)
-
-  ////////////////////////////////////////////////////////////
-  // AUDIT
-  ////////////////////////////////////////////////////////////
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  ////////////////////////////////////////////////////////////
-  // RELATIONS
-  ////////////////////////////////////////////////////////////
-
-  author   User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  category PreachingCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  series   PreachingSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-
-  preachingViews PreachingView[]
-  likes          PreachingLike[]
-  comments       PreachingComment[]
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  tags           String[]            @default([])
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  viewCount      Int                 @default(0)
+  likeCount      Int                 @default(0)
+  commentCount   Int                 @default(0)
+  bookmarkCount  Int                 @default(0)
+  shareCount     Int                 @default(0)
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  author         User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category       PreachingCategory?  @relation(fields: [categoryId], references: [id])
+  series         PreachingSeries?    @relation(fields: [seriesId], references: [id])
   bookmarks      PreachingBookmark[]
+  comments       PreachingComment[]
+  likes          PreachingLike[]
   notes          PreachingNote[]
   verses         PreachingVerse[]
-
-  ////////////////////////////////////////////////////////////
-  // INDEX
-  ////////////////////////////////////////////////////////////
+  preachingViews PreachingView[]
 
   @@index([slug])
   @@index([authorId])
@@ -574,20 +469,19 @@ model Preaching {
 }
 
 model PreachingView {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   preachingId   String
   userId        String
   watchDuration Int?
   watchPercent  Float?
-  completed     Boolean  @default(false)
+  completed     Boolean   @default(false)
   device        String?
   platform      String?
   ipAddress     String?
-  watchedAt     DateTime @default(now())
-  createdAt     DateTime @default(now())
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchedAt     DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  preaching     Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
   @@index([userId])
@@ -597,13 +491,12 @@ model PreachingView {
 }
 
 model PreachingLike {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
-  createdAt   DateTime @default(now())
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
   @@index([userId])
@@ -611,22 +504,21 @@ model PreachingLike {
 }
 
 model PreachingComment {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   preachingId String
   userId      String
   parentId    String?
   content     String
-  isEdited    Boolean  @default(false)
-  isHidden    Boolean  @default(false)
-  likeCount   Int      @default(0)
-  replyCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  preaching Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent    PreachingComment?  @relation("PreachingCommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
-  replies   PreachingComment[] @relation("PreachingCommentReplies")
+  isEdited    Boolean            @default(false)
+  isHidden    Boolean            @default(false)
+  likeCount   Int                @default(0)
+  replyCount  Int                @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  parent      PreachingComment?  @relation("PreachingCommentReplies", fields: [parentId], references: [id])
+  replies     PreachingComment[] @relation("PreachingCommentReplies")
+  preaching   Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([preachingId])
   @@index([userId])
@@ -635,13 +527,12 @@ model PreachingComment {
 }
 
 model PreachingBookmark {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
-  createdAt   DateTime @default(now())
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([preachingId, userId])
   @@index([userId])
@@ -649,25 +540,24 @@ model PreachingBookmark {
 }
 
 model PreachingNote {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
   title       String?
   content     String
   timestamp   Int?
   color       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([preachingId])
 }
 
 model PreachingVerse {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   preachingId String
   userId      String
   reference   String
@@ -677,10 +567,9 @@ model PreachingVerse {
   verseEnd    Int?
   text        String
   translation String?
-  createdAt   DateTime @default(now())
-
-  preaching Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([preachingId])
   @@index([userId])
@@ -688,54 +577,49 @@ model PreachingVerse {
 }
 
 model LiveBroadcast {
-  id          String    @id @default(cuid())
+  id          String       @id @default(cuid())
   title       String
   description String?
   streamUrl   String?
-  streamMode  String    @default("RTMP")
+  streamMode  String       @default("RTMP")
   rtmpUrl     String?
   webrtcUrl   String?
-  status      String    @default("OFFLINE")
+  status      String       @default("OFFLINE")
   startedAt   DateTime?
   endedAt     DateTime?
-  createdAt   DateTime  @default(now())
-
+  createdAt   DateTime     @default(now())
   churchLives ChurchLive[]
 }
 
 model Church {
-  id          String  @id @default(cuid())
-  slug        String  @unique
-  name        String
-  description String?
-  slogan      String?
-  logo        String?
-  coverImage  String?
-  website     String?
-  email       String?
-  phone       String?
-  address     String?
-  city        String?
-  country     String?
-  schedule    String?
-
-  radioEnabled    Boolean @default(false)
-  donationEnabled Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  // Relations
-  members   ChurchMember[]
-  admins    ChurchAdmin[]
-  events    ChurchEvent[]
-  media     ChurchMedia[]
-  radios    ChurchRadio[]
-  lives     ChurchLive[]
-  courses   ChurchCourse[]
-  posts     ChurchPost[]
-  follows   ChurchFollow[]
-  playlists ChurchPlaylist[]
-  users     User[]           @relation("UserChurch")
+  id              String           @id @default(cuid())
+  slug            String           @unique
+  name            String
+  description     String?
+  slogan          String?
+  logo            String?
+  coverImage      String?
+  website         String?
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  country         String?
+  schedule        String?
+  radioEnabled    Boolean          @default(false)
+  donationEnabled Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  admins          ChurchAdmin[]
+  courses         ChurchCourse[]
+  events          ChurchEvent[]
+  follows         ChurchFollow[]
+  lives           ChurchLive[]
+  media           ChurchMedia[]
+  members         ChurchMember[]
+  playlists       ChurchPlaylist[]
+  posts           ChurchPost[]
+  radios          ChurchRadio[]
+  users           User[]           @relation("UserChurch")
 }
 
 model ChurchMember {
@@ -745,9 +629,8 @@ model ChurchMember {
   role     String   @default("MEMBER")
   isActive Boolean  @default(true)
   joinedAt DateTime @default(now())
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church   Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchId, userId])
 }
@@ -758,15 +641,14 @@ model ChurchAdmin {
   userId      String
   role        String   @default("CHURCH_ADMIN")
   appointedAt DateTime @default(now())
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church      Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchId, userId])
 }
 
 model ChurchEvent {
-  id            String    @id @default(cuid())
+  id            String                @id @default(cuid())
   churchId      String
   title         String
   description   String?
@@ -774,23 +656,21 @@ model ChurchEvent {
   endDate       DateTime?
   location      String?
   imageUrl      String?
-  isPublic      Boolean   @default(true)
-  attendeeCount Int       @default(0)
-  createdAt     DateTime  @default(now())
-
-  church    Church                @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  attendees ChurchEventAttendee[]
+  isPublic      Boolean               @default(true)
+  attendeeCount Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  church        Church                @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  attendees     ChurchEventAttendee[]
 }
 
 model ChurchEventAttendee {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   eventId   String
   userId    String
-  status    String   @default("GOING")
-  createdAt DateTime @default(now())
-
-  event ChurchEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String      @default("GOING")
+  createdAt DateTime    @default(now())
+  event     ChurchEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
 }
@@ -803,88 +683,70 @@ model ChurchMedia {
   caption   String?
   order     Int      @default(0)
   createdAt DateTime @default(now())
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
 }
 
 model ChurchRadio {
-  id String @id @default(cuid())
-
-  churchId   String
-  radioId    String?
-  playlistId String?
-
+  id          String          @id @default(cuid())
+  churchId    String
+  radioId     String?
+  playlistId  String?
   title       String?
   name        String?
   description String?
   streamUrl   String?
   schedule    String?
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-
-  radio Radio? @relation(fields: [radioId], references: [id], onDelete: SetNull)
-
-  playlist ChurchPlaylist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  church      Church          @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  playlist    ChurchPlaylist? @relation(fields: [playlistId], references: [id])
+  radio       Radio?          @relation(fields: [radioId], references: [id])
 }
 
 model ChurchPlaylist {
-  id          String   @id @default(cuid())
+  id          String               @id @default(cuid())
   churchId    String
   title       String
   description String?
-  category    String   @default("GENERAL")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-
-  items ChurchPlaylistItem[]
-
-  radios ChurchRadio[]
+  category    String               @default("GENERAL")
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  church      Church               @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  items       ChurchPlaylistItem[]
+  radios      ChurchRadio[]
 
   @@index([churchId])
 }
 
 model ChurchPlaylistItem {
-  id String @id @default(cuid())
-
+  id         String         @id @default(cuid())
   playlistId String
-
-  title String
-  url   String
-
-  type      String @default("AUDIO")
-  mediaType String @default("AUDIO")
-
+  title      String
+  url        String
+  type       String         @default("AUDIO")
+  mediaType  String         @default("AUDIO")
   artist     String?
   album      String?
   coverImage String?
-
-  duration Int?
-  order    Int  @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  playlist ChurchPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  duration   Int?
+  order      Int            @default(0)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  playlist   ChurchPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
 
   @@index([playlistId])
   @@index([mediaType])
 }
 
 model ChurchLive {
-  id              String    @id @default(cuid())
+  id              String         @id @default(cuid())
   churchId        String
   liveBroadcastId String?
   title           String?
   description     String?
   thumbnail       String?
-  status          String    @default("SCHEDULED")
+  status          String         @default("SCHEDULED")
   startedAt       DateTime?
   endedAt         DateTime?
   scheduledStart  DateTime?
@@ -892,79 +754,73 @@ model ChurchLive {
   playUrl         String?
   streamUrl       String?
   streamMode      String?
-  viewerCount     Int       @default(0)
-  createdAt       DateTime  @default(now())
-
-  church    Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  broadcast LiveBroadcast? @relation(fields: [liveBroadcastId], references: [id], onDelete: SetNull)
+  viewerCount     Int            @default(0)
+  createdAt       DateTime       @default(now())
+  church          Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  broadcast       LiveBroadcast? @relation(fields: [liveBroadcastId], references: [id])
 }
 
 model ChurchCourse {
-  id          String   @id @default(cuid())
+  id          String                   @id @default(cuid())
   churchId    String
   title       String
   description String?
   imageUrl    String?
-  isPublished Boolean  @default(false)
-  enrollCount Int      @default(0)
-  createdAt   DateTime @default(now())
-
+  isPublished Boolean                  @default(false)
+  enrollCount Int                      @default(0)
+  createdAt   DateTime                 @default(now())
   church      Church                   @relation(fields: [churchId], references: [id], onDelete: Cascade)
   enrollments ChurchCourseEnrollment[]
 }
 
 model ChurchCourseEnrollment {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   courseId  String
   userId    String
-  progress  Int      @default(0)
-  createdAt DateTime @default(now())
-
-  course ChurchCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progress  Int          @default(0)
+  createdAt DateTime     @default(now())
+  course    ChurchCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, userId])
 }
 
 model ChurchPost {
-  id            String   @id @default(cuid())
+  id            String              @id @default(cuid())
   churchId      String
   content       String?
   imageUrl      String?
   videoUrl      String?
-  generated     Boolean  @default(false)
+  generated     Boolean             @default(false)
   generatedType String?
   generatedId   String?
-  createdAt     DateTime @default(now())
-
-  church   Church              @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  likes    ChurchPostLike[]
-  comments ChurchPostComment[]
+  createdAt     DateTime            @default(now())
+  church        Church              @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  comments      ChurchPostComment[]
+  likes         ChurchPostLike[]
 
   @@index([generatedType, generatedId])
 }
 
 model ChurchPostLike {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   churchPostId String
   userId       String
-  createdAt    DateTime @default(now())
-
-  post ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
-  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  post         ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchPostId, userId])
 }
 
 model ChurchPostComment {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   churchPostId String
   userId       String
   content      String
-  createdAt    DateTime @default(now())
-
-  post ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
-  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  post         ChurchPost @relation(fields: [churchPostId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ChurchFollow {
@@ -972,9 +828,8 @@ model ChurchFollow {
   churchId  String
   userId    String
   createdAt DateTime @default(now())
-
-  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchId, userId])
 }
@@ -990,219 +845,193 @@ model Stream {
   startedAt   DateTime?
   userId      String?
   createdAt   DateTime  @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user        User?     @relation(fields: [userId], references: [id])
 }
 
 model Radio {
-  id            String    @id @default(cuid())
+  id            String             @id @default(cuid())
   title         String
   description   String?
   streamUrl     String?
-  status        String    @default("OFFLINE")
-  isLive        Boolean   @default(false)
-  isAutoDJ      Boolean   @default(false)
-  listenerCount Int       @default(0)
-  peakListeners Int       @default(0)
+  status        String             @default("OFFLINE")
+  isLive        Boolean            @default(false)
+  isAutoDJ      Boolean            @default(false)
+  listenerCount Int                @default(0)
+  peakListeners Int                @default(0)
   currentTrack  String?
   startedAt     DateTime?
   endedAt       DateTime?
   userId        String?
   playlistId    String?
-  createdAt     DateTime  @default(now())
-
-  schedules    RadioSchedule[]
-  chatMessages RadioChatMessage[]
-  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
-  playlist     Playlist?          @relation(fields: [playlistId], references: [id], onDelete: SetNull)
-  churchRadios ChurchRadio[]
+  createdAt     DateTime           @default(now())
+  churchRadios  ChurchRadio[]
+  playlist      Playlist?          @relation(fields: [playlistId], references: [id])
+  user          User?              @relation(fields: [userId], references: [id])
+  chatMessages  RadioChatMessage[]
+  schedules     RadioSchedule[]
 
   @@index([status])
   @@index([isLive])
 }
 
 model Playlist {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   title       String
   description String?
-  category    String   @default("GENERAL")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  items     PlaylistItem[]
-  radios    Radio[]
-  schedules RadioSchedule[]
+  category    String          @default("GENERAL")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  items       PlaylistItem[]
+  radios      Radio[]
+  schedules   RadioSchedule[]
 }
 
 model PlaylistItem {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   title      String
   url        String
   duration   Int?
-  type       String   @default("AUDIO")
+  type       String    @default("AUDIO")
   playlistId String?
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
-
-  playlist Playlist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+  order      Int       @default(0)
+  createdAt  DateTime  @default(now())
+  playlist   Playlist? @relation(fields: [playlistId], references: [id])
 }
 
 model PrayerRequest {
-  id         String   @id @default(cuid())
-  userId     String
-  title      String
-  content    String
-  category   String?
-  isUrgent   Boolean  @default(false)
-  isAnswered Boolean  @default(false)
-  createdAt  DateTime @default(now())
-
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reactions     PrayerReaction[]
-  responses     PrayerResponse[]
-  verses        PrayerVerse[]
-  testimony     PrayerTestimony?
-  prayerChain   PrayerChain?     @relation(fields: [prayerChainId], references: [id], onDelete: SetNull)
+  id            String           @id @default(cuid())
+  userId        String
+  title         String
+  content       String
+  category      String?
+  isUrgent      Boolean          @default(false)
+  isAnswered    Boolean          @default(false)
+  createdAt     DateTime         @default(now())
   prayerChainId String?
+  reactions     PrayerReaction[]
+  prayerChain   PrayerChain?     @relation(fields: [prayerChainId], references: [id])
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses     PrayerResponse[]
+  testimony     PrayerTestimony?
+  verses        PrayerVerse[]
 }
 
 model PrayerLiveRoom {
-  id          String  @id @default(cuid())
-  title       String
-  description String?
-  moderatorId String
-  isActive    Boolean @default(true)
-
-  isPublic Boolean @default(true)
-
-  createdAt DateTime @default(now())
-
+  id                        String                      @id @default(cuid())
+  title                     String
+  description               String?
+  moderatorId               String
+  isActive                  Boolean                     @default(true)
+  isPublic                  Boolean                     @default(true)
+  createdAt                 DateTime                    @default(now())
+  participants              PrayerLiveParticipant[]
   moderator                 User                        @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
   PrayerLiveRoomMember      PrayerLiveRoomMember[]
   PrayerLiveRoomParticipant PrayerLiveRoomParticipant[]
-  participants              PrayerLiveParticipant[]
 }
 
 model PrayerLiveParticipant {
-  id String @id @default(cuid())
-
-  roomId String
-  userId String
-
-  joinedAt DateTime @default(now())
-
-  room PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String         @id @default(cuid())
+  roomId   String
+  userId   String
+  joinedAt DateTime       @default(now())
+  room     PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
 }
 
 model PrayerLiveRoomMember {
-  id       String   @id @default(cuid())
+  id       String         @id @default(cuid())
   roomId   String
   userId   String
-  joinedAt DateTime @default(now())
-
-  room PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime       @default(now())
+  room     PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
 }
 
 model PrayerLiveRoomParticipant {
-  id       String   @id @default(cuid())
+  id       String         @id @default(cuid())
   roomId   String
   userId   String
-  joinedAt DateTime @default(now())
-
-  room PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime       @default(now())
+  room     PrayerLiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
 }
 
 model PrayerChain {
-  id              String   @id @default(cuid())
+  id              String            @id @default(cuid())
   title           String
   description     String?
-  isActive        Boolean  @default(true)
+  isActive        Boolean           @default(true)
   prayerRequestId String?
-  createdAt       DateTime @default(now())
-
-  links          PrayerChainLink[]
-  prayerRequests PrayerRequest[]
+  createdAt       DateTime          @default(now())
+  links           PrayerChainLink[]
+  prayerRequests  PrayerRequest[]
 }
 
 model PrayerChainLink {
-  id String @id @default(cuid())
-
-  chainId String
-  userId  String
-  message String?
-
-  createdAt DateTime @default(now())
-
-  chain PrayerChain @relation(fields: [chainId], references: [id], onDelete: Cascade)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String      @id @default(cuid())
+  chainId   String
+  userId    String
+  message   String?
+  createdAt DateTime    @default(now())
+  chain     PrayerChain @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([chainId, userId])
 }
 
 model PrayerReaction {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   prayerRequestId String
   userId          String
-  type            String   @default("PRAY")
-  createdAt       DateTime @default(now())
-
-  prayerRequest PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String        @default("PRAY")
+  createdAt       DateTime      @default(now())
+  prayerRequest   PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, prayerRequestId, type])
 }
 
 model PrayerResponse {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   prayerRequestId String
   userId          String
   content         String
-  type            String   @default("PRAYER")
-  createdAt       DateTime @default(now())
-
-  prayerRequest PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String        @default("PRAYER")
+  createdAt       DateTime      @default(now())
+  prayerRequest   PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PrayerVerse {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   prayerRequestId String
   userId          String
   reference       String
   text            String?
-  createdAt       DateTime @default(now())
-
-  prayerRequest PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  prayerRequest   PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([prayerRequestId])
   @@index([userId])
 }
 
 model PrayerTestimony {
-  id String @id @default(cuid())
-
-  prayerRequestId String @unique
+  id              String        @id @default(cuid())
+  prayerRequestId String        @unique
   userId          String
-
-  content  String
-  imageUrl String?
-
-  createdAt DateTime @default(now())
-
-  prayerRequest PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content         String
+  imageUrl        String?
+  createdAt       DateTime      @default(now())
+  prayerRequest   PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AudioTrack {
@@ -1218,8 +1047,7 @@ model AudioTrack {
   uploadedBy String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
-
-  uploader User? @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+  uploader   User?    @relation(fields: [uploadedBy], references: [id])
 }
 
 model RadioSchedule {
@@ -1230,36 +1058,32 @@ model RadioSchedule {
   description String?
   hostName    String?
   startTime   DateTime
-  duration    Int       @default(60)
   endTime     DateTime?
-  isRecurring Boolean   @default(false)
-  recurrence  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  radio    Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
-  playlist Playlist? @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+  duration    Int       @default(60)
+  isRecurring Boolean   @default(false)
+  recurrence  String?
+  playlist    Playlist? @relation(fields: [playlistId], references: [id])
+  radio       Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
 
   @@index([radioId])
   @@index([startTime])
 }
 
 model RadioChatMessage {
-  id      String  @id @default(cuid())
-  radioId String
-  userId  String?
-  content String
-
-  // MODERATION CHAT
+  id        String    @id @default(cuid())
+  radioId   String
+  userId    String?
+  content   String
   isDeleted Boolean   @default(false)
   isPinned  Boolean   @default(false)
   deletedAt DateTime?
   pinnedAt  DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-
-  radio Radio @relation(fields: [radioId], references: [id], onDelete: Cascade)
-  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  radio     Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
 
   @@index([radioId])
   @@index([userId])
