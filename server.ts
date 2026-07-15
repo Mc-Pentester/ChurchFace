@@ -171,34 +171,46 @@ app.prepare().then(async () => {
     // =========================
 
     socket.on("post:like", async ({ postId, fromUserId, postOwnerId }) => {
-      await sendNotification({
-        toUserId: postOwnerId,
-        fromUserId,
-        type: "LIKE",
-        message: "a aimé votre publication ❤️",
-        entityId: postId,
-        entityType: "post",
-      });
+      try {
+        await sendNotification({
+          toUserId: postOwnerId,
+          fromUserId,
+          type: "LIKE",
+          message: "a aimé votre publication ❤️",
+          entityId: postId,
+          entityType: "post",
+        });
+      } catch (err) {
+        console.error("post:like notification failed:", err);
+      }
     });
 
     socket.on("post:comment", async ({ postId, fromUserId, postOwnerId }) => {
-      await sendNotification({
-        toUserId: postOwnerId,
-        fromUserId,
-        type: "COMMENT",
-        message: "a commenté votre publication 💬",
-        entityId: postId,
-        entityType: "post",
-      });
+      try {
+        await sendNotification({
+          toUserId: postOwnerId,
+          fromUserId,
+          type: "COMMENT",
+          message: "a commenté votre publication 💬",
+          entityId: postId,
+          entityType: "post",
+        });
+      } catch (err) {
+        console.error("post:comment notification failed:", err);
+      }
     });
 
     socket.on("user:follow", async ({ fromUserId, toUserId }) => {
-      await sendNotification({
-        toUserId,
-        fromUserId,
-        type: "FOLLOW",
-        message: "a commencé à vous suivre 👤",
-      });
+      try {
+        await sendNotification({
+          toUserId,
+          fromUserId,
+          type: "FOLLOW",
+          message: "a commencé à vous suivre 👤",
+        });
+      } catch (err) {
+        console.error("user:follow notification failed:", err);
+      }
     });
 
     // =========================
@@ -212,22 +224,26 @@ app.prepare().then(async () => {
     // 👁 SEEN MESSAGES
     // =========================
     socket.on("message:seen", async ({ chatId, userId }) => {
-      const unseen = await prisma.message.findMany({
-        where: { chatId, senderId: { not: userId } },
-        select: { id: true },
-      });
-
-      for (const msg of unseen) {
-        await prisma.messageSeen.upsert({
-          where: {
-            messageId_userId: { messageId: msg.id, userId },
-          },
-          create: { messageId: msg.id, userId },
-          update: {},
+      try {
+        const unseen = await prisma.message.findMany({
+          where: { chatId, senderId: { not: userId } },
+          select: { id: true },
         });
-      }
 
-      io.to(chatId).emit("message:seen", { userId, chatId });
+        for (const msg of unseen) {
+          await prisma.messageSeen.upsert({
+            where: {
+              messageId_userId: { messageId: msg.id, userId },
+            },
+            create: { messageId: msg.id, userId },
+            update: {},
+          });
+        }
+
+        io.to(chatId).emit("message:seen", { userId, chatId });
+      } catch (err) {
+        console.error("message:seen handler failed:", err);
+      }
     });
 
     // =========================
