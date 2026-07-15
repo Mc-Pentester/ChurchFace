@@ -1,0 +1,9 @@
+ALTER TABLE "User"
+ADD COLUMN "churchId" TEXT;
+
+ALTER TABLE "User"
+ADD CONSTRAINT "User_churchId_fkey"
+FOREIGN KEY ("churchId")
+REFERENCES "Church"("id")
+ON DELETE SET NULL
+ON UPDATE CASCADE;
