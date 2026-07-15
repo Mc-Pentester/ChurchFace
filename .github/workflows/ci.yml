@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      # Enable once the repo's pre-existing TypeScript errors are fixed:
+      # - run: npx tsc --noEmit
+      # Requires env (DATABASE_URL, NEXTAUTH_SECRET, JWT_SECRET, ...) via repo Actions secrets:
+      # - run: npm run build

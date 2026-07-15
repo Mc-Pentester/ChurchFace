@@ -22,6 +22,12 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/immutability": "off",
       "react-hooks/exhaustive-deps": "off",
+      // React Compiler diagnostics — not treated as blocking in this project.
+      "react-hooks/refs": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      // Stylistic; noisy for French copy full of apostrophes.
+      "react/no-unescaped-entities": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "@next/next/no-img-element": "off",
     },

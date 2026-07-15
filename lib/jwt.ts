@@ -1,36 +1,56 @@
 import { sign, verify } from "jsonwebtoken";
+import type { SignOptions } from "jsonwebtoken";
+import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET: string =
-  process.env.JWT_SECRET ??
-  (() => {
-    throw new Error(
-      "JWT_SECRET environment variable is not set. Refusing to start with an insecure default."
-    );
-  })();
 const ACCESS_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
 const REFRESH_EXPIRES_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || "30", 10);
 
-export function signAccessToken(payload: object) {
-  return sign(payload, JWT_SECRET, { expiresIn: ACCESS_EXPIRES_IN });
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+  return secret;
 }
 
-export async function verifyAccessToken(token: string) {
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export function signAccessToken(payload: object) {
+  return sign(payload, getJwtSecret(), {
+    expiresIn: ACCESS_EXPIRES_IN,
+  } as SignOptions);
+}
+
+export function verifyAccessToken(token: string) {
   try {
-    return verify(token, JWT_SECRET) as any;
-  } catch (err) {
+    return verify(token, getJwtSecret());
+  } catch {
     return null;
   }
 }
 
 export async function createRefreshToken(userId: string, deviceInfo?: string) {
-  // For simplicity we store a random token (in production hash it)
-  const token = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  // Cryptographically strong token; only its hash is persisted.
+  const token = randomBytes(48).toString("hex");
   const expiresAt = new Date(Date.now() + REFRESH_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
-  const rt = await prisma.refreshToken.create({ data: { userId, token, deviceInfo: deviceInfo || null, expiresAt } });
-  return rt.token;
+  await prisma.refreshToken.create({
+    data: { userId, token: hashToken(token), deviceInfo: deviceInfo || null, expiresAt },
+  });
+  return token;
+}
+
+export async function findValidRefreshToken(token: string) {
+  const rt = await prisma.refreshToken.findUnique({ where: { token: hashToken(token) } });
+  if (!rt || rt.revoked || rt.expiresAt < new Date()) return null;
+  return rt;
 }
 
 export async function revokeRefreshToken(token: string) {
-  await prisma.refreshToken.updateMany({ where: { token }, data: { revoked: true } });
+  await prisma.refreshToken.updateMany({
+    where: { token: hashToken(token) },
+    data: { revoked: true },
+  });
 }

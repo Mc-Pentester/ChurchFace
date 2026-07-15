@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getSocketServer } from "@/lib/io";
 
 export async function createPost({ churchId, content, imageUrl = null, videoUrl = null }: { churchId: string; content: string; imageUrl?: string | null; videoUrl?: string | null }) {
   // Lightweight service that creates a church post. Keep idempotence to caller.
@@ -16,13 +17,15 @@ export async function createPost({ churchId, content, imageUrl = null, videoUrl 
     },
   });
 
-  // Publish event on Redis / event-bus (consumer should emit to sockets)
+  // Emit realtime event to the church room (best-effort, scoped to the church).
   try {
-    const { publishEvent } = await import("@/lib/io/publisher");
-    publishEvent("post.created", { churchId, postId: post.id });
+    const io = getSocketServer();
+    if (io) {
+      io.to(`church:${churchId}`).emit("post:created", post);
+    }
   } catch (err) {
-    // If publishing fails, log but do not roll back the creation.
-    console.warn("createPost: failed to publish event", err);
+    // If emitting fails, log but do not roll back the creation.
+    console.warn("createPost: failed to emit post:created", err);
   }
 
   return post;

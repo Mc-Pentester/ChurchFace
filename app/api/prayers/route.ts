@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const skip = (page - 1) * limit;
 
   let orderBy: any = { createdAt: "desc" };
-  let where: any = {};
+  const where: any = {};
 
   if (category && category !== "ALL") {
     where.category = category;
