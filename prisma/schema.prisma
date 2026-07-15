@@ -34,7 +34,6 @@ model User {
   chatMemberships            ChatMember[]
   sentMessages               Message[]                   @relation("MessageSender")
   messageSeen                MessageSeen[]
-  notifications              Notification[]
   pushSubscriptions          PushSubscription[]
   friendships1               Friendship[]                @relation("FriendshipSender")
   friendships2               Friendship[]                @relation("FriendshipReceiver")
@@ -74,10 +73,7 @@ model User {
   reportsCreated             Report[]                    @relation("ReportReporter")
   reportsResolved            Report[]                    @relation("ReportResolver")
   notificationsReceived      Notification[]              @relation("NotificationReceiver")
-
-
-notificationsSent Notification[]
-  @relation("NotificationSender")
+  notificationsSent          Notification[]              @relation("NotificationSender")
 }
 
 model Account {
@@ -270,7 +266,7 @@ model MessageSeen {
 model Notification {
   id         String   @id @default(cuid())
   userId     String
-  senderId   String
+  senderId   String?
   type       String
   message    String
   entityType String?
@@ -278,7 +274,8 @@ model Notification {
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User  @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
+  sender User? @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([senderId])
