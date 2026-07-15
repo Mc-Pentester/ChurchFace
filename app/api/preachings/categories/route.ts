@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const categories = await prisma.preachingCategory.findMany({
       orderBy: {
-        order: "asc",
+        name: "asc",
       },
       include: {
         _count: {
@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { name, slug, description, icon, order } = await req.json();
+    const { name, slug, description, icon } = await req.json();
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -45,7 +45,6 @@ export async function POST(req: Request) {
         slug,
         description,
         icon,
-        order: order || 0,
       },
     });
 

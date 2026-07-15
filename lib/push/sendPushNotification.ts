@@ -3,7 +3,7 @@ import { prisma } from "../prisma";
 
 const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 const privateVapidKey = process.env.VAPID_PRIVATE_KEY || "";
-const vapidContact = process.env.VAPID_CONTACT_EMAIL || "contact@churchface.com";
+const vapidContact = process.env.VAPID_CONTACT_EMAIL || "churchface26@gmail.com";
 
 if (publicVapidKey && privateVapidKey) {
   try {

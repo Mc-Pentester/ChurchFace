@@ -14,7 +14,7 @@ export async function sendPushNotification(subscription: any, payload: any) {
   try {
     // This requires web-push package
     // const webpush = require('web-push');
-    // webpush.setVapidDetails('mailto:contact@churchface.com', publicVapidKey, privateVapidKey);
+    // webpush.setVapidDetails('mailto:chucrhface26@gmail.com', publicVapidKey, privateVapidKey);
     // await webpush.sendNotification(subscription, JSON.stringify(payload));
     console.log('Push notification sent (placeholder):', payload);
   } catch (error) {
