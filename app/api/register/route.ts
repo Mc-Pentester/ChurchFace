@@ -46,12 +46,17 @@ export async function POST(req: Request) {
 
     return NextResponse.json(user);
 
-  } catch (error) {
-    console.error("Registration error:", error);
-    return NextResponse.json(
-      { error: "Erreur serveur" },
-      { status: 500 }
-    );
-  }
+  } catch (error: any) {
+
+  console.error("Registration error:", error);
+  
+  return NextResponse.json(
+    {
+      error: error.message,
+      details: error.code
+    },
+    { status:500 }
+  );
+}
 }
 

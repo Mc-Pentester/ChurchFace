@@ -8,7 +8,9 @@ export default withAuth({
 
 export const config = {
   matcher: [
-    // Match all paths except these specific patterns
-    "/((?!api/auth/.*|login|_next/static|_next/image|favicon.ico).*)",
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/admin/:path*",
   ],
 };
