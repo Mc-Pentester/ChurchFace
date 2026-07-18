@@ -11,16 +11,16 @@ model User {
   id                         String                      @id @default(cuid())
   email                      String                      @unique
   password                   String
-  name                       String?
+  createdAt                  DateTime                    @default(now())
   image                      String?
+  name                       String?
   bio                        String?
   role                       String                      @default("USER")
   city                       String?
-  churchId                   String?
-  isSuspended                Boolean                     @default(false)
   isBanned                   Boolean                     @default(false)
-  createdAt                  DateTime                    @default(now())
+  isSuspended                Boolean                     @default(false)
   suspendedAt                DateTime?
+  churchId                   String?
   accounts                   Account[]
   adminLogs                  AdminLog[]
   audioTracks                AudioTrack[]
@@ -125,13 +125,13 @@ model RefreshToken {
 model Post {
   id            String    @id @default(cuid())
   content       String?
+  createdAt     DateTime  @default(now())
+  authorId      String
+  hashtags      String[]  @default([])
   imageUrl      String?
   videoUrl      String?
-  hashtags      String[]  @default([])
-  likes         Int       @default(0)
   isHidden      Boolean   @default(false)
-  authorId      String
-  createdAt     DateTime  @default(now())
+  likes         Int       @default(0)
   comments      Comment[]
   likeRelations Like[]    @relation("PostLikes")
   author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -146,11 +146,11 @@ model Post {
 model Comment {
   id        String    @id @default(cuid())
   content   String
-  postId    String
   userId    String
+  postId    String
+  createdAt DateTime  @default(now())
   parentId  String?
   isHidden  Boolean   @default(false)
-  createdAt DateTime  @default(now())
   parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies   Comment[] @relation("CommentReplies")
   post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -163,8 +163,8 @@ model Comment {
 
 model Like {
   id        String   @id @default(cuid())
-  postId    String
   userId    String
+  postId    String
   createdAt DateTime @default(now())
   post      Post     @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -174,8 +174,8 @@ model Like {
 
 model Share {
   id        String   @id @default(cuid())
-  postId    String
   userId    String
+  postId    String
   createdAt DateTime @default(now())
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -251,15 +251,15 @@ model MessageSeen {
 
 model Notification {
   id         String   @id @default(cuid())
-  userId     String
   type       String
   message    String
-  entityType String?
-  entityId   String?
-  read       Boolean  @default(false)
+  userId     String
   createdAt  DateTime @default(now())
-  metadata   Json?
   senderId   String?
+  entityId   String?
+  entityType String?
+  metadata   Json?
+  read       Boolean  @default(false)
   sender     User?    @relation("NotificationSender", fields: [senderId], references: [id])
   user       User     @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -272,8 +272,8 @@ model PushSubscription {
   id        String   @id @default(cuid())
   userId    String
   endpoint  String
-  keys      String
   createdAt DateTime @default(now())
+  keys      String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -307,11 +307,11 @@ model Report {
   targetId    String
   targetType  String
   reason      String
+  description String?
   status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
   resolvedAt  DateTime?
   resolvedBy  String?
-  createdAt   DateTime  @default(now())
-  description String?
   updatedAt   DateTime  @updatedAt
   reporter    User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
   resolver    User?     @relation("ReportResolver", fields: [resolvedBy], references: [id])
@@ -339,12 +339,12 @@ model PreachingCategory {
   slug        String            @unique
   description String?
   icon        String?
-  color       String?
-  banner      String?
   order       Int               @default(0)
-  isActive    Boolean           @default(true)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+  banner      String?
+  color       String?
+  isActive    Boolean           @default(true)
   preachings  Preaching[]
   series      PreachingSeries[]
 
@@ -357,18 +357,18 @@ model PreachingCategory {
 model PreachingSeries {
   id          String             @id @default(cuid())
   title       String
-  slug        String             @unique
   description String?
   thumbnail   String?
-  banner      String?
   authorId    String
-  categoryId  String?
-  order       Int                @default(0)
-  isFeatured  Boolean            @default(false)
-  isPublished Boolean            @default(false)
-  publishedAt DateTime?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  banner      String?
+  categoryId  String?
+  isFeatured  Boolean            @default(false)
+  isPublished Boolean            @default(false)
+  order       Int                @default(0)
+  publishedAt DateTime?
+  slug        String             @unique
   preachings  Preaching[]
   author      User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
   category    PreachingCategory? @relation(fields: [categoryId], references: [id])
@@ -389,53 +389,53 @@ model Preaching {
   /// /////////////////////////////////////////////////////////
   id             String              @id @default(cuid())
   title          String
-  slug           String              @unique
   description    String
+  thumbnail      String?
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
   videoUrl       String
-  audioUrl       String?
-  thumbnail      String?
-  banner         String?
   duration       Int?
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
   authorId       String
   categoryId     String?
   seriesId       String?
-  /// /////////////////////////////////////////////////////////
-  /// /////////////////////////////////////////////////////////
-  isPublished    Boolean             @default(false)
-  isFeatured     Boolean             @default(false)
-  isPinned       Boolean             @default(false)
   publishedAt    DateTime?
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
-  visibility     String              @default("PUBLIC")
-  language       String              @default("fr")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
   allowComments  Boolean             @default(true)
   allowDownload  Boolean             @default(false)
   allowSharing   Boolean             @default(true)
+  audioUrl       String?
+  banner         String?
+  bookmarkCount  Int                 @default(0)
+  commentCount   Int                 @default(0)
+  isFeatured     Boolean             @default(false)
+  isPinned       Boolean             @default(false)
+  /// /////////////////////////////////////////////////////////
+  /// /////////////////////////////////////////////////////////
+  isPublished    Boolean             @default(false)
+  language       String              @default("fr")
+  likeCount      Int                 @default(0)
+  seoDescription String?
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
   seoTitle       String?
-  seoDescription String?
+  shareCount     Int                 @default(0)
+  slug           String              @unique
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
   tags           String[]            @default([])
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
   viewCount      Int                 @default(0)
-  likeCount      Int                 @default(0)
-  commentCount   Int                 @default(0)
-  bookmarkCount  Int                 @default(0)
-  shareCount     Int                 @default(0)
   /// /////////////////////////////////////////////////////////
   /// /////////////////////////////////////////////////////////
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  visibility     String              @default("PUBLIC")
   author         User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
   category       PreachingCategory?  @relation(fields: [categoryId], references: [id])
   series         PreachingSeries?    @relation(fields: [seriesId], references: [id])
@@ -472,14 +472,14 @@ model PreachingView {
   id            String    @id @default(cuid())
   preachingId   String
   userId        String
+  watchedAt     DateTime  @default(now())
+  completed     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  device        String?
+  ipAddress     String?
+  platform      String?
   watchDuration Int?
   watchPercent  Float?
-  completed     Boolean   @default(false)
-  device        String?
-  platform      String?
-  ipAddress     String?
-  watchedAt     DateTime  @default(now())
-  createdAt     DateTime  @default(now())
   preaching     Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -507,14 +507,14 @@ model PreachingComment {
   id          String             @id @default(cuid())
   preachingId String
   userId      String
-  parentId    String?
   content     String
+  parentId    String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   isEdited    Boolean            @default(false)
   isHidden    Boolean            @default(false)
   likeCount   Int                @default(0)
   replyCount  Int                @default(0)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
   parent      PreachingComment?  @relation("PreachingCommentReplies", fields: [parentId], references: [id])
   replies     PreachingComment[] @relation("PreachingCommentReplies")
   preaching   Preaching          @relation(fields: [preachingId], references: [id], onDelete: Cascade)
@@ -543,12 +543,12 @@ model PreachingNote {
   id          String    @id @default(cuid())
   preachingId String
   userId      String
-  title       String?
   content     String
   timestamp   Int?
-  color       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  color       String?
+  title       String?
   preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -559,15 +559,15 @@ model PreachingNote {
 model PreachingVerse {
   id          String    @id @default(cuid())
   preachingId String
-  userId      String
-  reference   String
   book        String
   chapter     Int
-  verseStart  Int
-  verseEnd    Int?
   text        String
-  translation String?
   createdAt   DateTime  @default(now())
+  reference   String
+  translation String?
+  userId      String
+  verseEnd    Int?
+  verseStart  Int
   preaching   Preaching @relation(fields: [preachingId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -581,13 +581,13 @@ model LiveBroadcast {
   title       String
   description String?
   streamUrl   String?
-  streamMode  String       @default("RTMP")
-  rtmpUrl     String?
-  webrtcUrl   String?
   status      String       @default("OFFLINE")
   startedAt   DateTime?
   endedAt     DateTime?
   createdAt   DateTime     @default(now())
+  rtmpUrl     String?
+  streamMode  String       @default("RTMP")
+  webrtcUrl   String?
   churchLives ChurchLive[]
 }
 
@@ -605,10 +605,10 @@ model Church {
   address         String?
   city            String?
   country         String?
-  schedule        String?
-  radioEnabled    Boolean          @default(false)
   donationEnabled Boolean          @default(false)
+  radioEnabled    Boolean          @default(false)
   createdAt       DateTime         @default(now())
+  schedule        String?
   admins          ChurchAdmin[]
   courses         ChurchCourse[]
   events          ChurchEvent[]
@@ -627,8 +627,8 @@ model ChurchMember {
   churchId String
   userId   String
   role     String   @default("MEMBER")
-  isActive Boolean  @default(true)
   joinedAt DateTime @default(now())
+  isActive Boolean  @default(true)
   church   Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -652,10 +652,10 @@ model ChurchEvent {
   churchId      String
   title         String
   description   String?
+  imageUrl      String?
   startDate     DateTime
   endDate       DateTime?
   location      String?
-  imageUrl      String?
   isPublic      Boolean               @default(true)
   attendeeCount Int                   @default(0)
   createdAt     DateTime              @default(now())
@@ -667,8 +667,8 @@ model ChurchEventAttendee {
   id        String      @id @default(cuid())
   eventId   String
   userId    String
-  status    String      @default("GOING")
   createdAt DateTime    @default(now())
+  status    String      @default("GOING")
   event     ChurchEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -680,9 +680,9 @@ model ChurchMedia {
   churchId  String
   type      String   @default("IMAGE")
   url       String
-  caption   String?
   order     Int      @default(0)
   createdAt DateTime @default(now())
+  caption   String?
   church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
 }
 
@@ -690,15 +690,15 @@ model ChurchRadio {
   id          String          @id @default(cuid())
   churchId    String
   radioId     String?
-  playlistId  String?
-  title       String?
   name        String?
-  description String?
   streamUrl   String?
-  schedule    String?
   isActive    Boolean         @default(true)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  description String?
+  playlistId  String?
+  schedule    String?
+  title       String?
   church      Church          @relation(fields: [churchId], references: [id], onDelete: Cascade)
   playlist    ChurchPlaylist? @relation(fields: [playlistId], references: [id])
   radio       Radio?          @relation(fields: [radioId], references: [id])
@@ -744,18 +744,18 @@ model ChurchLive {
   churchId        String
   liveBroadcastId String?
   title           String?
-  description     String?
+  streamUrl       String?
   thumbnail       String?
   status          String         @default("SCHEDULED")
+  viewerCount     Int            @default(0)
   startedAt       DateTime?
   endedAt         DateTime?
-  scheduledStart  DateTime?
-  scheduledEnd    DateTime?
-  playUrl         String?
-  streamUrl       String?
-  streamMode      String?
-  viewerCount     Int            @default(0)
   createdAt       DateTime       @default(now())
+  description     String?
+  playUrl         String?
+  scheduledEnd    DateTime?
+  scheduledStart  DateTime?
+  streamMode      String?
   church          Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
   broadcast       LiveBroadcast? @relation(fields: [liveBroadcastId], references: [id])
 }
@@ -765,10 +765,10 @@ model ChurchCourse {
   churchId    String
   title       String
   description String?
-  imageUrl    String?
   isPublished Boolean                  @default(false)
   enrollCount Int                      @default(0)
   createdAt   DateTime                 @default(now())
+  imageUrl    String?
   church      Church                   @relation(fields: [churchId], references: [id], onDelete: Cascade)
   enrollments ChurchCourseEnrollment[]
 }
@@ -791,10 +791,10 @@ model ChurchPost {
   content       String?
   imageUrl      String?
   videoUrl      String?
+  createdAt     DateTime            @default(now())
   generated     Boolean             @default(false)
   generatedType String?
   generatedId   String?
-  createdAt     DateTime            @default(now())
   church        Church              @relation(fields: [churchId], references: [id], onDelete: Cascade)
   comments      ChurchPostComment[]
   likes         ChurchPostLike[]
@@ -838,13 +838,13 @@ model Stream {
   id          String    @id @default(cuid())
   title       String
   description String?
-  streamUrl   String?
-  viewerCount Int       @default(0)
-  status      String    @default("OFFLINE")
   isLive      Boolean   @default(false)
   startedAt   DateTime?
+  viewerCount Int       @default(0)
   userId      String?
   createdAt   DateTime  @default(now())
+  status      String    @default("OFFLINE")
+  streamUrl   String?
   user        User?     @relation(fields: [userId], references: [id])
 }
 
@@ -852,18 +852,18 @@ model Radio {
   id            String             @id @default(cuid())
   title         String
   description   String?
-  streamUrl     String?
-  status        String             @default("OFFLINE")
   isLive        Boolean            @default(false)
   isAutoDJ      Boolean            @default(false)
-  listenerCount Int                @default(0)
-  peakListeners Int                @default(0)
-  currentTrack  String?
   startedAt     DateTime?
   endedAt       DateTime?
+  listenerCount Int                @default(0)
+  peakListeners Int                @default(0)
+  streamUrl     String?
   userId        String?
   playlistId    String?
   createdAt     DateTime           @default(now())
+  currentTrack  String?
+  status        String             @default("OFFLINE")
   churchRadios  ChurchRadio[]
   playlist      Playlist?          @relation(fields: [playlistId], references: [id])
   user          User?              @relation(fields: [userId], references: [id])
@@ -890,10 +890,10 @@ model PlaylistItem {
   id         String    @id @default(cuid())
   title      String
   url        String
-  duration   Int?
   type       String    @default("AUDIO")
-  playlistId String?
+  duration   Int?
   order      Int       @default(0)
+  playlistId String?
   createdAt  DateTime  @default(now())
   playlist   Playlist? @relation(fields: [playlistId], references: [id])
 }
@@ -920,9 +920,9 @@ model PrayerLiveRoom {
   id                        String                      @id @default(cuid())
   title                     String
   description               String?
-  moderatorId               String
-  isActive                  Boolean                     @default(true)
   isPublic                  Boolean                     @default(true)
+  isActive                  Boolean                     @default(true)
+  moderatorId               String
   createdAt                 DateTime                    @default(now())
   participants              PrayerLiveParticipant[]
   moderator                 User                        @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
@@ -965,10 +965,10 @@ model PrayerLiveRoomParticipant {
 
 model PrayerChain {
   id              String            @id @default(cuid())
+  prayerRequestId String?
   title           String
   description     String?
   isActive        Boolean           @default(true)
-  prayerRequestId String?
   createdAt       DateTime          @default(now())
   links           PrayerChainLink[]
   prayerRequests  PrayerRequest[]
@@ -1039,13 +1039,13 @@ model AudioTrack {
   title      String
   artist     String?
   album      String?
-  category   String?
-  duration   Int?
   url        String
-  type       String   @default("MUSIC")
   coverUrl   String?
-  uploadedBy String?
+  duration   Int?
+  type       String   @default("MUSIC")
+  category   String?
   isActive   Boolean  @default(true)
+  uploadedBy String?
   createdAt  DateTime @default(now())
   uploader   User?    @relation(fields: [uploadedBy], references: [id])
 }
@@ -1059,11 +1059,11 @@ model RadioSchedule {
   hostName    String?
   startTime   DateTime
   endTime     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
   duration    Int       @default(60)
   isRecurring Boolean   @default(false)
   recurrence  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   playlist    Playlist? @relation(fields: [playlistId], references: [id])
   radio       Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
 
@@ -1076,11 +1076,11 @@ model RadioChatMessage {
   radioId   String
   userId    String?
   content   String
-  isDeleted Boolean   @default(false)
   isPinned  Boolean   @default(false)
+  isDeleted Boolean   @default(false)
+  createdAt DateTime  @default(now())
   deletedAt DateTime?
   pinnedAt  DateTime?
-  createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   radio     Radio     @relation(fields: [radioId], references: [id], onDelete: Cascade)
   user      User?     @relation(fields: [userId], references: [id])
