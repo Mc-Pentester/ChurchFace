@@ -155,7 +155,7 @@ export async function PATCH(
             ...(body.playlistId !== undefined && { playlistId: body.playlistId }),
             ...(body.isLive !== undefined && { isLive: body.isLive }),
             ...(body.isAutoDJ !== undefined && { isAutoDJ: body.isAutoDJ }),
-            ...(body.currentTrackId !== undefined && { currentTrackId: body.currentTrackId }),
+            ...(body.currentTrack !== undefined && { currentTrack: body.currentTrack }),
             ...(body.startedAt !== undefined && { startedAt: body.startedAt }),
             ...(body.endedAt !== undefined && { endedAt: body.endedAt }),
           },

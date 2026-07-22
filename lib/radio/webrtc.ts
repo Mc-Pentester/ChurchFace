@@ -1,12 +1,19 @@
 export const ICE_SERVERS: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
+  {
+    urls: "stun:stun.l.google.com:19302",
+  },
 ];
 
 export function createPeerConnection(): RTCPeerConnection {
-  return new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  return new RTCPeerConnection({
+    iceServers: ICE_SERVERS,
+  });
 }
 
-/** Un élément <audio> ne peut être lié qu'une seule fois via createMediaElementSource. */
+/**
+ * Un élément <audio> ne peut être associé qu'une seule fois
+ * à createMediaElementSource().
+ */
 const legacyElementSources = new WeakMap<
   HTMLAudioElement,
   MediaElementAudioSourceNode
@@ -17,155 +24,381 @@ type CapturableAudio = HTMLAudioElement & {
   mozCaptureStream?: () => MediaStream;
 };
 
-function captureElementAudio(el: HTMLAudioElement): MediaStream | null {
+function captureElementAudio(
+  element: HTMLAudioElement
+): MediaStream | null {
   try {
-    const media = el as CapturableAudio;
-    if (typeof media.captureStream === "function") {
+    const media = element as CapturableAudio;
+
+    if (
+      typeof media.captureStream ===
+      "function"
+    ) {
       return media.captureStream();
     }
-    const moz = media.mozCaptureStream;
-    if (typeof moz === "function") {
-      return moz.call(el);
+
+    if (
+      typeof media.mozCaptureStream ===
+      "function"
+    ) {
+      return media.mozCaptureStream();
     }
-  } catch {
-    /* navigateur sans support */
+  } catch (error) {
+    console.warn(
+      "Audio capture not supported:",
+      error
+    );
   }
+
   return null;
 }
 
 /**
- * Mixe le micro et la sortie d'un élément <audio> (playlist) pour WebRTC.
+ * Mixe :
+ *
+ * - le microphone ;
+ * - l'audio de la playlist ;
+ *
+ * dans un seul MediaStream destiné
+ * à la diffusion WebRTC.
  */
 export class RadioAudioMixer {
   private ctx: AudioContext | null = null;
-  private dest: MediaStreamAudioDestinationNode | null = null;
+
+  private destination:
+    MediaStreamAudioDestinationNode | null =
+    null;
+
   private micGain: GainNode | null = null;
+
   private musicGain: GainNode | null = null;
-  private micStream: MediaStream | null = null;
-  private micSource: MediaStreamAudioSourceNode | null = null;
-  private musicStreamSource: MediaStreamAudioSourceNode | null = null;
-  private legacyMusicSource: MediaElementAudioSourceNode | null = null;
-  private connectedEl: HTMLAudioElement | null = null;
+
+  private micStream: MediaStream | null =
+    null;
+
+  private micSource:
+    MediaStreamAudioSourceNode | null =
+    null;
+
+  private musicStreamSource:
+    MediaStreamAudioSourceNode | null =
+    null;
+
+  private legacyMusicSource:
+    MediaElementAudioSourceNode | null =
+    null;
+
+  private connectedAudioElement:
+    HTMLAudioElement | null =
+    null;
+
   private started = false;
 
-  async start(audioEl: HTMLAudioElement | null): Promise<MediaStream> {
+  /**
+   * Démarre le mixeur audio.
+   */
+  async start(
+    audioElement: HTMLAudioElement | null
+  ): Promise<MediaStream> {
     if (!this.ctx) {
       this.ctx = new AudioContext();
-      this.dest = this.ctx.createMediaStreamDestination();
-      this.micGain = this.ctx.createGain();
-      this.musicGain = this.ctx.createGain();
-      this.micGain.connect(this.dest);
-      this.musicGain.connect(this.dest);
+
+      this.destination =
+        this.ctx.createMediaStreamDestination();
+
+      this.micGain =
+        this.ctx.createGain();
+
+      this.musicGain =
+        this.ctx.createGain();
+
+      this.micGain.connect(
+        this.destination
+      );
+
+      this.musicGain.connect(
+        this.destination
+      );
     }
 
     await this.ctx.resume();
-    await this.ensureMic();
 
-    if (audioEl) {
-      this.attachPlaylist(audioEl);
+    await this.ensureMicrophone();
+
+    if (audioElement) {
+      this.attachPlaylist(
+        audioElement
+      );
     }
 
     this.started = true;
-    return this.dest!.stream;
+
+    return this.destination!.stream;
   }
 
-  private async ensureMic() {
-    if (!this.ctx || !this.micGain) return;
-    if (this.micStream?.active) return;
-
-    this.micSource?.disconnect();
-    this.micStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-      video: false,
-    });
-    this.micSource = this.ctx.createMediaStreamSource(this.micStream);
-    this.micSource.connect(this.micGain);
-  }
-
-  attachPlaylist(audioEl: HTMLAudioElement) {
-    if (!this.ctx || !this.musicGain) return;
-    if (this.connectedEl === audioEl && this.musicStreamSource) return;
-    if (this.connectedEl === audioEl && this.legacyMusicSource) return;
-
-    this.disconnectMusic();
-
-    const captured = captureElementAudio(audioEl);
-    if (captured) {
-      this.musicStreamSource = this.ctx.createMediaStreamSource(captured);
-      this.musicStreamSource.connect(this.musicGain);
-      this.connectedEl = audioEl;
+  /**
+   * Active le microphone.
+   */
+  private async ensureMicrophone() {
+    if (
+      !this.ctx ||
+      !this.micGain
+    ) {
       return;
     }
 
-    let legacy = legacyElementSources.get(audioEl);
-    if (!legacy) {
-      legacy = this.ctx.createMediaElementSource(audioEl);
-      legacyElementSources.set(audioEl, legacy);
-      legacy.connect(this.ctx.destination);
+    if (
+      this.micStream &&
+      this.micStream.active
+    ) {
+      return;
     }
 
-    legacy.connect(this.musicGain);
-    this.legacyMusicSource = legacy;
-    this.connectedEl = audioEl;
+    this.micSource?.disconnect();
+
+    this.micStream =
+      await navigator.mediaDevices.getUserMedia(
+        {
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: false,
+        }
+      );
+
+    this.micSource =
+      this.ctx.createMediaStreamSource(
+        this.micStream
+      );
+
+    this.micSource.connect(
+      this.micGain
+    );
   }
 
+  /**
+   * Connecte l'audio de la playlist
+   * au mixeur.
+   */
+  attachPlaylist(
+    audioElement: HTMLAudioElement
+  ) {
+    if (
+      !this.ctx ||
+      !this.musicGain
+    ) {
+      return;
+    }
+
+    if (
+      this.connectedAudioElement ===
+      audioElement
+    ) {
+      return;
+    }
+
+    this.disconnectMusic();
+
+    const capturedStream =
+      captureElementAudio(
+        audioElement
+      );
+
+    if (capturedStream) {
+      this.musicStreamSource =
+        this.ctx.createMediaStreamSource(
+          capturedStream
+        );
+
+      this.musicStreamSource.connect(
+        this.musicGain
+      );
+
+      this.connectedAudioElement =
+        audioElement;
+
+      return;
+    }
+
+    let legacySource =
+      legacyElementSources.get(
+        audioElement
+      );
+
+    if (!legacySource) {
+      legacySource =
+        this.ctx.createMediaElementSource(
+          audioElement
+        );
+
+      legacyElementSources.set(
+        audioElement,
+        legacySource
+      );
+
+      legacySource.connect(
+        this.ctx.destination
+      );
+    }
+
+    legacySource.connect(
+      this.musicGain
+    );
+
+    this.legacyMusicSource =
+      legacySource;
+
+    this.connectedAudioElement =
+      audioElement;
+  }
+
+  /**
+   * Déconnecte la playlist.
+   */
   private disconnectMusic() {
-    this.musicStreamSource?.disconnect();
-    this.musicStreamSource = null;
-    if (this.legacyMusicSource && this.musicGain) {
+    if (
+      this.musicStreamSource
+    ) {
+      this.musicStreamSource.disconnect();
+
+      this.musicStreamSource = null;
+    }
+
+    if (
+      this.legacyMusicSource &&
+      this.musicGain
+    ) {
       try {
-        this.legacyMusicSource.disconnect(this.musicGain);
+        this.legacyMusicSource.disconnect(
+          this.musicGain
+        );
       } catch {
-        /* déjà déconnecté */
+        // Déjà déconnecté.
       }
     }
-    this.legacyMusicSource = null;
-    this.connectedEl = null;
+
+    this.legacyMusicSource =
+      null;
+
+    this.connectedAudioElement =
+      null;
   }
 
-  setMicLevel(volume: number, muted: boolean) {
-    if (!this.micGain) return;
-    this.micGain.gain.value = muted ? 0 : Math.max(0, Math.min(1, volume / 100));
+  /**
+   * Définit le volume du microphone.
+   */
+  setMicLevel(
+    volume: number,
+    muted: boolean
+  ) {
+    if (!this.micGain) {
+      return;
+    }
+
+    const normalizedVolume =
+      Math.max(
+        0,
+        Math.min(1, volume / 100)
+      );
+
+    this.micGain.gain.value =
+      muted
+        ? 0
+        : normalizedVolume;
   }
 
-  setMusicLevel(volume: number, muted: boolean) {
-    if (!this.musicGain) return;
-    this.musicGain.gain.value = muted ? 0 : Math.max(0, Math.min(1, volume / 100));
+  /**
+   * Définit le volume de la musique.
+   */
+  setMusicLevel(
+    volume: number,
+    muted: boolean
+  ) {
+    if (!this.musicGain) {
+      return;
+    }
+
+    const normalizedVolume =
+      Math.max(
+        0,
+        Math.min(1, volume / 100)
+      );
+
+    this.musicGain.gain.value =
+      muted
+        ? 0
+        : normalizedVolume;
   }
 
+  /**
+   * Retourne le flux audio mixé.
+   */
   getStream(): MediaStream | null {
-    return this.dest?.stream ?? null;
+    return (
+      this.destination?.stream ??
+      null
+    );
   }
 
-  /** Coupe le micro mais conserve le mixeur (réutilisable ON/OFF AIR). */
+  /**
+   * Coupe temporairement le microphone.
+   *
+   * Le mixeur reste utilisable.
+   */
   suspend() {
     this.micSource?.disconnect();
-    this.micSource = null;
-    this.micStream?.getTracks().forEach((t) => t.stop());
-    this.micStream = null;
+
+    this.micSource =
+      null;
+
+    this.micStream
+      ?.getTracks()
+      .forEach((track) => {
+        track.stop();
+      });
+
+    this.micStream =
+      null;
   }
 
-  /** Destruction complète (démontage du composant). */
+  /**
+   * Détruit complètement le mixeur.
+   */
   stop() {
     this.suspend();
+
     this.disconnectMusic();
+
     this.micGain?.disconnect();
+
     this.musicGain?.disconnect();
-    this.dest?.disconnect();
+
+    this.destination?.disconnect();
+
     this.ctx?.close();
 
-    this.ctx = null;
-    this.dest = null;
-    this.micGain = null;
-    this.musicGain = null;
-    this.started = false;
+    this.ctx =
+      null;
+
+    this.destination =
+      null;
+
+    this.micGain =
+      null;
+
+    this.musicGain =
+      null;
+
+    this.started =
+      false;
   }
 
-  isStarted() {
+  /**
+   * Indique si le mixeur est actif.
+   */
+  isStarted(): boolean {
     return this.started;
   }
 }

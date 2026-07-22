@@ -57,10 +57,10 @@ export async function POST(
     }
 
     const playlist =
-      await prisma.playlist.findFirst({
+      await prisma.churchPlaylist.findFirst({
         where: {
           id: playlistId,
-          
+          churchId: host.churchId,
         },
         include: {
           items: {
@@ -88,7 +88,7 @@ export async function POST(
         ? lastItem.order + 1
         : 0;
 
-    await prisma.playlistItem.create({
+    await prisma.churchPlaylistItem.create({
       data: {
         playlistId,
         title,
@@ -106,7 +106,7 @@ export async function POST(
     });
 
     const updatedPlaylist =
-      await prisma.playlist.findUnique({
+      await prisma.churchPlaylist.findUnique({
         where: {
           id: playlistId,
         },

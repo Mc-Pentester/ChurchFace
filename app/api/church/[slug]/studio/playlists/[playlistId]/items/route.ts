@@ -1,38 +1,57 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireStudioAccess } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 interface RouteContext {
   params: Promise<{
+    slug: string;
     playlistId: string;
   }>;
 }
 
 /**
- * POST — Ajouter une piste à une playlist.
+ * POST — Ajouter une piste à une playlist d'église.
  */
 export async function POST(
   req: Request,
   context: RouteContext,
 ) {
   try {
-    const host = await requireStudioAccess();
+    const { slug, playlistId } = await context.params;
+    const session = await getServerSession(authOptions);
 
-    if (!host) {
+    if (!session?.user) {
       return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 },
+        { error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
-    const { playlistId } = await context.params;
+    const church = await prisma.church.findUnique({
+      where: { slug },
+      include: {
+        admins: true,
+      },
+    });
 
-    if (!playlistId) {
+    if (!church) {
       return NextResponse.json(
-        { error: "Playlist ID requis" },
-        { status: 400 },
+        { error: "Church not found" },
+        { status: 404 },
+      );
+    }
+
+    const isAdmin = church.admins.some(
+      (admin) => admin.userId === session.user.id
+    );
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 },
       );
     }
 
@@ -57,10 +76,10 @@ export async function POST(
     }
 
     const playlist =
-      await prisma.playlist.findFirst({
+      await prisma.churchPlaylist.findFirst({
         where: {
           id: playlistId,
-          
+          churchId: church.id,
         },
         include: {
           items: {
@@ -88,7 +107,7 @@ export async function POST(
         ? lastItem.order + 1
         : 0;
 
-    await prisma.playlistItem.create({
+    await prisma.churchPlaylistItem.create({
       data: {
         playlistId,
         title,
@@ -106,7 +125,7 @@ export async function POST(
     });
 
     const updatedPlaylist =
-      await prisma.playlist.findUnique({
+      await prisma.churchPlaylist.findUnique({
         where: {
           id: playlistId,
         },
@@ -124,7 +143,7 @@ export async function POST(
     });
   } catch (error) {
     console.error(
-      "STUDIO PLAYLIST ITEM POST ERROR:",
+      "CHURCH PLAYLIST ITEM POST ERROR:",
       error,
     );
 
