@@ -96,13 +96,13 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       });
     };
 
-    socket.on("message:new", handleNewMessage);
-    socket.on("typing:update", handleTyping);
-    console.log("Socket listeners set up for message:new and typing:update");
+  //socket.on("message:new",        handleNewMessage);
+   // socket.on("typing:update", handleTyping);
+    //console.log("Socket listeners set up for message:new and typing:update");
 
-    return () => {
+  //  return () => {
       console.log("Cleaning up socket listeners");
-      socket.off("message:new", handleNewMessage);
+     //socket.off("message:new", handleNewMessage);
       socket.off("typing:update", handleTyping);
     };
     } catch (error) {
