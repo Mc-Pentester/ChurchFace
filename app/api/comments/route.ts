@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
 import { createNotification } from "@/lib/notifications";
+import { sanitizeText } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const postId = body?.postId;
-    const content = typeof body?.content === "string" ? body.content.trim() : "";
+    const content = sanitizeText(typeof body?.content === "string" ? body.content.trim() : "");
     const parentId = body?.parentId || null;
 
     if (!postId || !content) {

@@ -25,14 +25,14 @@ socket.on("disconnect", () => {
   console.log("Socket disconnected");
 });
 
-// Hook to emit user:online when session is available
+// Hook to emit register when session is available
 export function useSocketPresence() {
   const { data: session } = useSession();
 
   useEffect(() => {
     if (session?.user?.id && socket.connected) {
-      console.log("Emitting user:online for:", session.user.id);
-      socket.emit("user:online", session.user.id);
+      console.log("Emitting register for:", session.user.id);
+      socket.emit("register", session.user.id);
     }
   }, [session?.user?.id, socket.connected]);
 
@@ -40,8 +40,8 @@ export function useSocketPresence() {
     const handleConnect = () => {
       console.log("Socket connected, checking session");
       if (session?.user?.id) {
-        console.log("Emitting user:online on connect for:", session.user.id);
-        socket.emit("user:online", session.user.id);
+        console.log("Emitting register on connect for:", session.user.id);
+        socket.emit("register", session.user.id);
       }
     };
 

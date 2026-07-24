@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   try {
     const broadcasts = await prisma.liveBroadcast.findMany({
       where: {
-        status: status as any,
+        status,
       },
       orderBy: {
         createdAt: "desc",
@@ -24,6 +24,7 @@ export async function GET(req: Request) {
     return NextResponse.json(broadcasts);
   } catch (error) {
     console.error("Error fetching live broadcasts:", error);
+
     return NextResponse.json(
       { error: "Failed to fetch live broadcasts" },
       { status: 500 }
@@ -34,8 +35,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -54,12 +58,15 @@ export async function POST(req: Request) {
         description,
         streamUrl,
         status: "OFFLINE",
+        authorId: session.user.id,
       },
     });
 
     return NextResponse.json(broadcast, { status: 201 });
+
   } catch (error) {
     console.error("Error creating live broadcast:", error);
+
     return NextResponse.json(
       { error: "Failed to create live broadcast" },
       { status: 500 }

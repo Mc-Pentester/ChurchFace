@@ -67,3 +67,30 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ success: true });
 }
+
+// DELETE /api/notifications - Delete notifications
+export async function DELETE(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { notificationIds, deleteAll } = await request.json();
+
+  if (deleteAll) {
+    await prisma.notification.deleteMany({
+      where: {
+        userId: session.user.id,
+      },
+    });
+  } else if (notificationIds && Array.isArray(notificationIds)) {
+    await prisma.notification.deleteMany({
+      where: {
+        id: { in: notificationIds },
+        userId: session.user.id,
+      },
+    });
+  }
+
+  return NextResponse.json({ success: true });
+}

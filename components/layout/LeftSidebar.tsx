@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 const navItems = [
   { label: "Accueil", href: "/" },
@@ -9,13 +11,46 @@ const navItems = [
   { label: "Messages", href: "/messages" },
   { label: "Lives", href: "/live" },
   { label: "Radio", href: "/radio" },
-  { label: "Admin", href: "/api/admin" },
+  { label: "Admin", href: "/api/admin", adminOnly: true },
   { label: "Paramètres", href: "/profile/edit" },
 ];
 
 const chatItem = { label: "💬 Chat en direct", href: "/chat" };
 
 export default function LeftSidebar() {
+  const { data: session } = useSession();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!session?.user?.id) {
+        setCheckingAdmin(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/me");
+        const data = await res.json();
+        setIsAdmin(data.isAdmin || false);
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+      } finally {
+        setCheckingAdmin(false);
+      }
+    };
+
+    checkAdmin();
+  }, [session?.user?.id]);
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.adminOnly) {
+      return isAdmin;
+    }
+    return true;
+  });
+
   return (
     <div className="p-4 space-y-3">
 
@@ -25,7 +60,7 @@ export default function LeftSidebar() {
 
       <nav className="space-y-2 text-gray-700">
 
-        {navItems.map((item) => (
+        {visibleNavItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}

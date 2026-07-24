@@ -4,35 +4,66 @@ import { requireStudioAccess } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-interface RouteContext {
-  params: Promise<{
-    playlistId: string;
-  }>;
-}
-
 /**
- * POST — Ajouter une piste à une playlist.
+ * GET — Lister toutes les playlists globales du Studio.
  */
-export async function POST(
-  req: Request,
-  context: RouteContext,
-) {
+export async function GET() {
   try {
     const host = await requireStudioAccess();
 
     if (!host) {
       return NextResponse.json(
         { error: "Forbidden" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
-    const { playlistId } = await context.params;
+    const playlists = await prisma.playlist.findMany({
+      where: {
+        churchId: null,
+      },
+      include: {
+        items: {
+          orderBy: {
+            order: "asc",
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
 
-    if (!playlistId) {
+    return NextResponse.json({
+      playlists,
+    });
+  } catch (error) {
+    console.error(
+      "STUDIO PLAYLISTS GET ERROR:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Erreur lors de la récupération des playlists",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST — Créer une nouvelle playlist globale.
+ */
+export async function POST(req: Request) {
+  try {
+    const host = await requireStudioAccess();
+
+    if (!host) {
       return NextResponse.json(
-        { error: "Playlist ID requis" },
-        { status: 400 },
+        { error: "Forbidden" },
+        { status: 403 }
       );
     }
 
@@ -42,98 +73,53 @@ export async function POST(
       typeof body?.title === "string" &&
       body.title.trim()
         ? body.title.trim()
-        : "Sans titre";
+        : "Nouvelle playlist";
 
-    const url =
-      typeof body?.url === "string"
-        ? body.url.trim()
-        : "";
+    const description =
+      typeof body?.description === "string"
+        ? body.description.trim() || null
+        : null;
 
-    if (!url) {
-      return NextResponse.json(
-        { error: "URL de la piste requise" },
-        { status: 400 },
-      );
-    }
+    const category =
+      typeof body?.category === "string" &&
+      body.category.trim()
+        ? body.category.trim()
+        : "GENERAL";
 
-    const playlist =
-      await prisma.playlist.findFirst({
-        where: {
-          id: playlistId,
-          
-        },
-        include: {
-          items: {
-            orderBy: {
-              order: "asc",
-            },
+    const playlist = await prisma.playlist.create({
+      data: {
+        title,
+        description,
+        category,
+        churchId: null,
+      },
+      include: {
+        items: {
+          orderBy: {
+            order: "asc",
           },
         },
-      });
-
-    if (!playlist) {
-      return NextResponse.json(
-        { error: "Playlist introuvable" },
-        { status: 404 },
-      );
-    }
-
-    const lastItem =
-      playlist.items[
-        playlist.items.length - 1
-      ];
-
-    const nextOrder =
-      lastItem
-        ? lastItem.order + 1
-        : 0;
-
-    await prisma.playlistItem.create({
-      data: {
-        playlistId,
-        title,
-        url,
-        type:
-          body?.type === "VIDEO"
-            ? "VIDEO"
-            : "AUDIO",
-        duration:
-          typeof body?.duration === "number"
-            ? body.duration
-            : null,
-        order: nextOrder,
       },
     });
 
-    const updatedPlaylist =
-      await prisma.playlist.findUnique({
-        where: {
-          id: playlistId,
-        },
-        include: {
-          items: {
-            orderBy: {
-              order: "asc",
-            },
-          },
-        },
-      });
-
-    return NextResponse.json({
-      playlist: updatedPlaylist,
-    });
+    return NextResponse.json(
+      {
+        playlist,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error(
-      "STUDIO PLAYLIST ITEM POST ERROR:",
-      error,
+      "STUDIO PLAYLIST POST ERROR:",
+      error
     );
 
     return NextResponse.json(
       {
         error:
-          "Erreur lors de l'ajout de la piste",
+          "Erreur lors de la création de la playlist",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

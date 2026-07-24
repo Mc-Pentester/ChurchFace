@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
 import { notificationSound } from "@/lib/sounds";
 import HamburgerMenu from "./HamburgerMenu";
+import { usePushSubscription } from "@/lib/hooks/usePushSubscription";
 
 type Notification = {
   id: string;
@@ -37,6 +38,9 @@ type Notification = {
 export default function Navbar() {
   const { data: session } = useSession();
   const router = useRouter();
+
+  // Subscribe to push notifications when user is logged in
+  usePushSubscription();
 
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -154,6 +158,51 @@ export default function Navbar() {
     } catch (e) {
       console.error("Error marking notifications as read:", e);
     }
+  };
+
+  /**
+   * HANDLE NOTIFICATION CLICK
+   */
+  const handleNotificationClick = async (notif: Notification) => {
+    // Supprimer la notification
+    try {
+      await fetch("/api/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationIds: [notif.id] }),
+      });
+    } catch (e) {
+      console.error("Error deleting notification:", e);
+    }
+
+    // Rafraîchir la liste
+    fetchNotifications();
+
+    // Naviguer vers l'entité concernée
+    if (notif.entityId && notif.entityType) {
+      switch (notif.entityType) {
+        case "POST":
+          router.push(`/post/${notif.entityId}`);
+          break;
+        case "FRIEND_REQUEST":
+          router.push(`/profile/${notif.sender?.id}`);
+          break;
+        case "MESSAGE":
+          router.push(`/messages/${notif.sender?.id}`);
+          break;
+        case "LIVE":
+          router.push(`/live/${notif.entityId}`);
+          break;
+        case "CHURCH":
+          router.push(`/church/${notif.entityId}`);
+          break;
+        default:
+          console.log("Unknown notification type:", notif.entityType);
+      }
+    }
+
+    // Fermer le dropdown
+    setShowNotifications(false);
   };
 
   /**
@@ -316,7 +365,7 @@ export default function Navbar() {
                       className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
                         !notif.read ? "bg-emerald-50/50" : ""
                       }`}
-                      onClick={() => markAsRead([notif.id])}
+                      onClick={() => handleNotificationClick(notif)}
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden flex-shrink-0">

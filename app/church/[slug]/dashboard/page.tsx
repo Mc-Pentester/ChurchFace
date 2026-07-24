@@ -176,6 +176,20 @@ export default async function ChurchDashboard({ params }: { params: Promise<{ sl
             <p className="text-2xl font-bold text-gray-900">{church._count.lives} lives</p>
           </a>
 
+          {/* Studio Live */}
+          <a href={`/church/${slug}/studio/live`} className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-white/20 text-white p-4 rounded-xl">
+                🎙️
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Studio Live</h3>
+                <p className="text-sm text-white/80">Diffuser en direct</p>
+              </div>
+            </div>
+            <p className="text-sm text-white/80">Ouvrir le studio de diffusion</p>
+          </a>
+
           {/* Radio */}
           <a href={`/church/${slug}/radio`} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer">
             <div className="flex items-center gap-4 mb-4">

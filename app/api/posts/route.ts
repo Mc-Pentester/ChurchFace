@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
+import { sanitizeText } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
     const page = hasMore ? posts.slice(0, limit) : posts;
     const nextCursor = hasMore ? page[page.length - 1]?.id ?? null : null;
 
-    const normalizedPosts = page.map((post) => ({
+    const normalizedPosts = page.map((post: any) => ({
       ...post,
       comments: [...post.comments].reverse(),
     }));
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    const content = body?.content?.trim() || "";
+    const content = sanitizeText(body?.content?.trim() || "");
 
     const hashtags = [...content.matchAll(/#[a-zA-Z0-9_\u00C0-\u017F]+/g)].map(
       (m) => m[0].slice(1).toLowerCase()

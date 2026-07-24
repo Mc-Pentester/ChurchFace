@@ -32,15 +32,8 @@ export async function sendPushNotification(userId: string, payload: any) {
 
   const promises = subs.map(async (sub) => {
     try {
-      // Normalize keys: could be stored as JSON string or object
-      let keys: any = (sub as any).keys;
-      if (typeof keys === "string" && keys.length > 0) {
-        try {
-          keys = JSON.parse(keys);
-        } catch (e) {
-          // not JSON — leave as-is
-        }
-      }
+      // Keys are now stored as Json type directly
+      const keys: any = sub.keys;
 
       const p256dh = keys?.p256dh || keys?.p256dh?.toString?.();
       const auth = keys?.auth;

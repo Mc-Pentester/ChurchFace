@@ -56,3 +56,32 @@ export function getClientIp(request: Request) {
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
+export type RateLimitConfig = {
+  limit: number;
+  windowMs: number;
+  keyPrefix?: string;
+  skipSuccessfulRequests?: boolean;
+};
+
+export function createRateLimitMiddleware(config: RateLimitConfig) {
+  return async (request: Request): Promise<{ success: boolean; error?: string }> => {
+    const ip = getClientIp(request);
+    const key = `${config.keyPrefix || 'api'}:${ip}`;
+    
+    const result = rateLimit({
+      key,
+      limit: config.limit,
+      windowMs: config.windowMs,
+    });
+    
+    if (!result.success) {
+      return {
+        success: false,
+        error: `Rate limit exceeded. Try again in ${Math.ceil(result.retryAfterMs / 1000)} seconds.`,
+      };
+    }
+    
+    return { success: true };
+  };
+}
+

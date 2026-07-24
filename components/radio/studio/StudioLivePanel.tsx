@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
 interface StudioLivePanelProps {
@@ -37,14 +37,14 @@ export default function StudioLivePanel({ radio, onUpdate }: StudioLivePanelProp
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isLive]);
 
-  function formatTime(totalSeconds: number) {
+  const formatTime = useCallback((totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600).toString().padStart(2, "0");
     const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, "0");
     const s = (totalSeconds % 60).toString().padStart(2, "0");
     return `${h}:${m}:${s}`;
-  }
+  }, []);
 
-  async function toggleLive() {
+  const toggleLive = useCallback(async () => {
     if (!isLive) {
       setShowGoLiveConfirm(true);
       return;
@@ -52,22 +52,22 @@ export default function StudioLivePanel({ radio, onUpdate }: StudioLivePanelProp
     await updateRadio({ isLive: false, isAutoDJ: false, endedAt: new Date() });
     setIsLive(false);
     setMicActive(false);
-  }
+  }, [isLive]);
 
-  async function confirmGoLive() {
+  const confirmGoLive = useCallback(async () => {
     setShowGoLiveConfirm(false);
     await updateRadio({ isLive: true, isAutoDJ: false, startedAt: new Date() });
     setIsLive(true);
-  }
+  }, []);
 
-  async function toggleAutoDJ() {
+  const toggleAutoDJ = useCallback(async () => {
     const next = !isAutoDJ;
     await updateRadio({ isAutoDJ: next, isLive: next });
     setIsAutoDJ(next);
     setIsLive(next);
-  }
+  }, [isAutoDJ]);
 
-  async function updateRadio(data: any) {
+  const updateRadio = useCallback(async (data: any) => {
     if (!radio?.id) return;
     const res = await fetch(`/api/radio/${radio.id}`, {
       method: "PUT",
@@ -76,7 +76,7 @@ export default function StudioLivePanel({ radio, onUpdate }: StudioLivePanelProp
     });
     const json = await res.json();
     if (json.radio) onUpdate(json.radio);
-  }
+  }, [radio?.id, onUpdate]);
 
   return (
     <div className="space-y-4">

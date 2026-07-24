@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import StudioHeader from "@/components/radio/studio/StudioHeader";
@@ -96,6 +96,8 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
     setIsLive(updatedLive?.status === "LIVE");
   }, []);
 
+  const activeLive = useMemo(() => churchLive, [churchLive]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
@@ -103,9 +105,6 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
       </div>
     );
   }
-
-  // Utiliser churchLive comme source principale
-  const activeLive = churchLive;
 
   return (
     <div className="h-screen bg-[#0a0a0f] text-white flex flex-col overflow-hidden">

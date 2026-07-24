@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, MessageSquare, Users, FileText, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Shield, AlertTriangle, MessageSquare, Users, FileText, Clock, CheckCircle, XCircle, Radio } from "lucide-react";
 import type { ModerationStats } from "@/types/moderation";
+import { useSession } from "next-auth/react";
 
 export default function ModerationPage() {
+  const { data: session } = useSession();
   const [stats, setStats] = useState<ModerationStats>({
     pendingReports: 0,
     reportedPosts: 0,
@@ -56,14 +58,23 @@ export default function ModerationPage() {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-500 to-purple-500 text-white">
-              <Shield size={24} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-500 to-purple-500 text-white">
+                <Shield size={24} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Modération</h1>
+                <p className="text-sm text-gray-500">Gérer le contenu et les utilisateurs</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Modération</h1>
-              <p className="text-sm text-gray-500">Gérer le contenu et les utilisateurs</p>
-            </div>
+            <a
+              href="/admin/studio"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition"
+            >
+              <Radio size={20} />
+              <span className="font-medium">Studio Live</span>
+            </a>
           </div>
         </div>
       </div>

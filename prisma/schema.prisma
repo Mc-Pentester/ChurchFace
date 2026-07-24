@@ -36,6 +36,7 @@ model User {
   friendships2               Friendship[]                @relation("FriendshipReceiver")
   friendships1               Friendship[]                @relation("FriendshipSender")
   likes                      Like[]
+  liveBroadcasts             LiveBroadcast[]
   sentMessages               Message[]                   @relation("MessageSender")
   messageSeen                MessageSeen[]
   notificationsSent          Notification[]              @relation("NotificationSender")
@@ -63,7 +64,6 @@ model User {
   radios                     Radio[]
   RadioChatMessage           RadioChatMessage[]
   refreshTokens              RefreshToken[]
-  playlists                  Playlist[]
   reportsCreated             Report[]                    @relation("ReportReporter")
   reportsResolved            Report[]                    @relation("ReportResolver")
   sessions                   Session[]
@@ -274,7 +274,7 @@ model PushSubscription {
   userId    String
   endpoint  String
   createdAt DateTime @default(now())
-  keys      String
+  keys      Json
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -578,23 +578,33 @@ model PreachingVerse {
 }
 
 model LiveBroadcast {
-  id          String       @id @default(cuid())
+  id          String  @id @default(cuid())
   title       String
   description String?
-  streamUrl   String?
-  status      String       @default("OFFLINE")
+  thumbnail   String?
+  streamUrl   String
+  rtmpUrl     String?
+  webrtcUrl   String?
+  streamMode  String  @default("RTMP")
+
+  authorId    String
+  viewerCount Int    @default(0)
+
+  status      String    @default("SCHEDULED")
+  scheduledAt DateTime?
   startedAt   DateTime?
   endedAt     DateTime?
-  createdAt   DateTime     @default(now())
-  rtmpUrl     String?
-  streamMode  String       @default("RTMP")
-  webrtcUrl   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author      User         @relation(fields: [authorId], references: [id])
   churchLives ChurchLive[]
 }
 
 model Church {
-  id              String           @id @default(cuid())
-  slug            String           @unique
+  id              String         @id @default(cuid())
+  slug            String         @unique
   name            String
   description     String?
   slogan          String?
@@ -606,9 +616,9 @@ model Church {
   address         String?
   city            String?
   country         String?
-  donationEnabled Boolean          @default(false)
-  radioEnabled    Boolean          @default(false)
-  createdAt       DateTime         @default(now())
+  donationEnabled Boolean        @default(false)
+  radioEnabled    Boolean        @default(false)
+  createdAt       DateTime       @default(now())
   schedule        String?
   admins          ChurchAdmin[]
   courses         ChurchCourse[]
@@ -620,7 +630,7 @@ model Church {
   playlists       Playlist[]
   posts           ChurchPost[]
   radios          ChurchRadio[]
-  users           User[]           @relation("UserChurch")
+  users           User[]         @relation("UserChurch")
 }
 
 model ChurchMember {
@@ -688,57 +698,22 @@ model ChurchMedia {
 }
 
 model ChurchRadio {
-  id          String          @id @default(cuid())
+  id          String    @id @default(cuid())
   churchId    String
   radioId     String?
   name        String?
   streamUrl   String?
-  isActive    Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   description String?
   playlistId  String?
   schedule    String?
   title       String?
-  church      Church          @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  playlist    Playlist?       @relation("PlaylistChurchRadios", fields: [playlistId], references: [id])
-  radio       Radio?          @relation(fields: [radioId], references: [id])
+  church      Church    @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  playlist    Playlist? @relation("PlaylistChurchRadios", fields: [playlistId], references: [id])
+  radio       Radio?    @relation(fields: [radioId], references: [id])
 }
-
-// model ChurchPlaylist {
-//   id          String               @id @default(cuid())
-//   churchId    String
-//   title       String
-//   description String?
-//   category    String               @default("GENERAL")
-//   createdAt   DateTime             @default(now())
-//   updatedAt   DateTime             @updatedAt
-//   church      Church               @relation(fields: [churchId], references: [id], onDelete: Cascade)
-//   items       ChurchPlaylistItem[]
-//   radios      ChurchRadio[]
-//
-//   @@index([churchId])
-// }
-//
-// model ChurchPlaylistItem {
-//   id         String         @id @default(cuid())
-//   playlistId String
-//   title      String
-//   url        String
-//   type       String         @default("AUDIO")
-//   mediaType  String         @default("AUDIO")
-//   artist     String?
-//   album      String?
-//   coverImage String?
-//   duration   Int?
-//   order      Int            @default(0)
-//   createdAt  DateTime       @default(now())
-//   updatedAt  DateTime       @updatedAt
-//   playlist   ChurchPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-//
-//   @@index([playlistId])
-//   @@index([mediaType])
-// }
 
 model ChurchLive {
   id              String         @id @default(cuid())
@@ -850,49 +825,55 @@ model Stream {
 }
 
 model Radio {
-  id            String             @id @default(cuid())
-  title         String
-  description   String?
-  isLive        Boolean            @default(false)
-  isAutoDJ      Boolean            @default(false)
-  startedAt     DateTime?
-  endedAt       DateTime?
-  listenerCount Int                @default(0)
-  peakListeners Int                @default(0)
-  streamUrl     String?
-  userId        String?
-  playlistId    String?
-  createdAt     DateTime           @default(now())
-  currentTrack  String?
-  status        String             @default("OFFLINE")
-  churchRadios  ChurchRadio[]
-  playlist      Playlist?          @relation(fields: [playlistId], references: [id])
-  user          User?              @relation(fields: [userId], references: [id])
-  chatMessages  RadioChatMessage[]
-  schedules     RadioSchedule[]
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  isLive         Boolean   @default(false)
+  isAutoDJ       Boolean   @default(false)
+  startedAt      DateTime?
+  endedAt        DateTime?
+  listenerCount  Int       @default(0)
+  peakListeners  Int       @default(0)
+  totalDuration  Int       @default(0)
+  streamUrl      String?
+  rtmpUrl        String?
+  currentTrackId String?
+  userId         String?
+  playlistId     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  currentTrack   String?
+  status         String    @default("OFFLINE")
+
+  churchRadios ChurchRadio[]
+  playlist     Playlist?          @relation(fields: [playlistId], references: [id])
+  user         User?              @relation(fields: [userId], references: [id])
+  chatMessages RadioChatMessage[]
+  schedules    RadioSchedule[]
 
   @@index([status])
   @@index([isLive])
 }
 
 model Playlist {
-  id          String          @id @default(cuid())
+  id       String  @id @default(cuid())
+  churchId String?
+
   title       String
   description String?
-  category    String          @default("GENERAL")
-  churchId    String?
-  userId      String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  items       PlaylistItem[]
-  radios      Radio[]
-  schedules   RadioSchedule[]
-  church      Church?         @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user        User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  churchRadios ChurchRadio[]  @relation("PlaylistChurchRadios")
+  category    String  @default("GENERAL")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  church Church? @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  items        PlaylistItem[]
+  radios       Radio[]
+  schedules    RadioSchedule[]
+  churchRadios ChurchRadio[]   @relation("PlaylistChurchRadios")
 
   @@index([churchId])
-  @@index([userId])
 }
 
 model PlaylistItem {
@@ -1056,7 +1037,6 @@ model AudioTrack {
   isActive   Boolean  @default(true)
   uploadedBy String?
   createdAt  DateTime @default(now())
-  updatedAt DateTime  @updatedAt
   uploader   User?    @relation(fields: [uploadedBy], references: [id])
 }
 
@@ -1099,3 +1079,38 @@ model RadioChatMessage {
   @@index([userId])
   @@index([createdAt])
 }
+
+// model ChurchPlaylist {
+//   id                 String               @id
+//   churchId           String
+//   title              String
+//   description        String?
+//   category           String               @default("GENERAL")
+//   createdAt          DateTime             @default(now())
+//   updatedAt          DateTime
+//   Church             Church               @relation(fields: [churchId], references: [id], onDelete: Cascade)
+//   ChurchPlaylistItem ChurchPlaylistItem[]
+//   churchRadios       ChurchRadio[]        @relation("PlaylistChurchRadios")
+
+//   @@index([churchId])
+// }
+
+// model ChurchPlaylistItem {
+//   id             String         @id
+//   playlistId     String
+//   title          String
+//   url            String
+//   type           String         @default("AUDIO")
+//   mediaType      String         @default("AUDIO")
+//   artist         String?
+//   album          String?
+//   coverImage     String?
+//   duration       Int?
+//   order          Int            @default(0)
+//   createdAt      DateTime       @default(now())
+//   updatedAt      DateTime
+//   ChurchPlaylist ChurchPlaylist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+//   @@index([mediaType])
+//   @@index([playlistId])
+// }

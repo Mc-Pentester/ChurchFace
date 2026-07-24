@@ -35,6 +35,8 @@ export default function ChurchStudioLive({
   const [showSettings, setShowSettings] = useState(false);
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
   const [isLiveKitConnected, setIsLiveKitConnected] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraLoading, setCameraLoading] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -53,9 +55,15 @@ export default function ChurchStudioLive({
   // Accès à la caméra
   useEffect(() => {
     async function setupCamera() {
-      if (!videoRef.current || !isVideoEnabled) return;
+      if (!videoRef.current || !isVideoEnabled) {
+        setCameraError(null);
+        setCameraLoading(false);
+        return;
+      }
       
       try {
+        setCameraLoading(true);
+        setCameraError(null);
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: isAudioEnabled,
@@ -65,6 +73,9 @@ export default function ChurchStudioLive({
         }
       } catch (error) {
         console.error("Error accessing camera:", error);
+        setCameraError("Impossible d'accéder à la caméra. Vérifiez les permissions.");
+      } finally {
+        setCameraLoading(false);
       }
     }
 
@@ -92,29 +103,29 @@ export default function ChurchStudioLive({
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isLive]);
 
-  function formatTime(totalSeconds: number) {
+  const formatTime = useCallback((totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600).toString().padStart(2, "0");
     const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, "0");
     const s = (totalSeconds % 60).toString().padStart(2, "0");
     return `${h}:${m}:${s}`;
-  }
+  }, []);
 
-  async function toggleLive() {
+  const toggleLive = useCallback(async () => {
     if (!isLive) {
       setShowGoLiveConfirm(true);
       return;
     }
     await updateLive({ status: "ENDED", endedAt: new Date() });
     setIsLive(false);
-  }
+  }, [isLive]);
 
-  async function confirmGoLive() {
+  const confirmGoLive = useCallback(async () => {
     setShowGoLiveConfirm(false);
     await updateLive({ status: "LIVE", startedAt: new Date() });
     setIsLive(true);
-  }
+  }, []);
 
-  async function updateLive(data: any) {
+  const updateLive = useCallback(async (data: any) => {
     const churchLiveId = live?.id;
     
     if (!churchLiveId) return;
@@ -133,9 +144,9 @@ export default function ChurchStudioLive({
     if (json.churchLive) {
       onLiveUpdate?.(json.churchLive);
     }
-  }
+  }, [live?.id, churchSlug, onLiveUpdate]);
 
-  async function saveSettings() {
+  const saveSettings = useCallback(async () => {
     await updateLive({
       title,
       description,
@@ -145,9 +156,9 @@ export default function ChurchStudioLive({
       streamMode,
     });
     setShowSettings(false);
-  }
+  }, [updateLive, title, description, thumbnail, streamUrl, playUrl, streamMode]);
 
-  async function generateLiveKitToken() {
+  const generateLiveKitToken = useCallback(async () => {
     if (!live?.id) return;
     
     try {
@@ -168,25 +179,25 @@ export default function ChurchStudioLive({
     } catch (error) {
       console.error("Error generating LiveKit token:", error);
     }
-  }
+  }, [live?.id]);
 
   useEffect(() => {
     if (streamMode === "WEBRTC" && isLive) {
       generateLiveKitToken();
     }
-  }, [streamMode, isLive, live?.id]);
+  }, [streamMode, isLive, generateLiveKitToken]);
 
-  function toggleVideo() {
+  const toggleVideo = useCallback(() => {
     setIsVideoEnabled(!isVideoEnabled);
-  }
+  }, [isVideoEnabled]);
 
-  function toggleAudio() {
+  const toggleAudio = useCallback(() => {
     setIsAudioEnabled(!isAudioEnabled);
-  }
+  }, [isAudioEnabled]);
 
-  function toggleScreenShare() {
+  const toggleScreenShare = useCallback(() => {
     setIsScreenSharing(!isScreenSharing);
-  }
+  }, [isScreenSharing]);
 
   return (
     <main className="flex-1 min-w-0 bg-[#0a0a0f] overflow-y-auto">
@@ -205,13 +216,26 @@ export default function ChurchStudioLive({
                   onDisconnected={() => setIsLiveKitConnected(false)}
                 />
               ) : isVideoEnabled ? (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
+                cameraLoading ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                    <div className="animate-spin w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full" />
+                  </div>
+                ) : cameraError ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-900 p-4">
+                    <div className="text-center">
+                      <VideoOff size={48} className="text-red-500 mx-auto mb-2" />
+                      <p className="text-sm text-red-400">{cameraError}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                )
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-900">
                   <VideoOff size={48} className="text-gray-600" />
@@ -223,6 +247,16 @@ export default function ChurchStudioLive({
                 <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-600 px-3 py-1.5 rounded-full">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   <span className="text-white text-xs font-bold">LIVE</span>
+                </div>
+              )}
+
+              {/* LiveKit Connection Indicator */}
+              {streamMode === "WEBRTC" && (
+                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/70 px-3 py-1.5 rounded-full">
+                  <div className={`w-2 h-2 rounded-full ${isLiveKitConnected ? "bg-emerald-500" : "bg-yellow-500"} ${isLiveKitConnected ? "" : "animate-pulse"}`} />
+                  <span className="text-white text-xs">
+                    {isLiveKitConnected ? "Connecté" : "Connexion..."}
+                  </span>
                 </div>
               )}
 

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
   Shield, Users, FileText, MessageSquare, Radio, Headphones,
-  Trash2, RefreshCw, Crown, UserX, Activity, Eye, Heart,
+  Trash, RefreshCw, Crown, UserX, Activity, Eye, Heart,
   AlertTriangle, CheckCircle, ListMusic, Plus, X, GripVertical,
 } from "lucide-react";
 
@@ -299,7 +299,7 @@ export default function AdminPage() {
   /* (tu peux garder ton JSX actuel tel quel) */
   /* ─────────────────────────────── */
 
-  const tabs: { key: Tab | "studio"; label: string; icon: any; href?: string }[] = [
+  const tabs: { key: Tab | "studio" | "moderation"; label: string; icon: any; href?: string }[] = [
     { key: "overview", label: "Vue d'ensemble", icon: Activity },
     { key: "users", label: "Utilisateurs", icon: Users },
     { key: "posts", label: "Posts", icon: FileText },
@@ -307,6 +307,7 @@ export default function AdminPage() {
     { key: "streams", label: "Lives", icon: Radio },
     { key: "studio", label: "Radio Studio", icon: Headphones, href: "/admin/studio" },
     { key: "playlists", label: "Playlists", icon: ListMusic },
+    { key: "moderation", label: "Modération", icon: Shield, href: "/admin/moderation" },
   ];
 
   return (
@@ -487,7 +488,7 @@ export default function AdminPage() {
                             className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition"
                             title="Supprimer"
                           >
-                            <Trash2 size={14} />
+                            <Trash size={14} />
                           </button>
                         </td>
                       </tr>
@@ -529,7 +530,7 @@ export default function AdminPage() {
                         className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition shrink-0"
                         title="Supprimer"
                       >
-                        <Trash2 size={16} />
+                        <Trash size={16} />
                       </button>
                     </div>
                   </div>
@@ -561,7 +562,7 @@ export default function AdminPage() {
                         className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition shrink-0"
                         title="Supprimer"
                       >
-                        <Trash2 size={16} />
+                        <Trash size={16} />
                       </button>
                     </div>
                   </div>
@@ -593,7 +594,7 @@ export default function AdminPage() {
                         className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition shrink-0"
                         title="Supprimer"
                       >
-                        <Trash2 size={16} />
+                        <Trash size={16} />
                       </button>
                     </div>
                   </div>
@@ -646,7 +647,7 @@ export default function AdminPage() {
                           className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition"
                           title="Supprimer"
                         >
-                          <Trash2 size={14} />
+                          <Trash size={14} />
                         </button>
                       </div>
                     </div>
