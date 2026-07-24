@@ -151,13 +151,15 @@ export default function CallModal({
       await pc.setLocalDescription(offer);
 
       socket.emit("call:offer", {
-        callId: callIdRef.current,
-        offer,
-        recipientId,
-        callerId: currentUserId,
-        callerName: undefined, // fourni par le serveur via la session
-        callType,
-      });
+  callId: callIdRef.current,
+  offer,
+  recipientId,
+  callerId: currentUserId,
+  callerName: currentUser?.name || "Un utilisateur",
+  callerImage: currentUser?.image || null,
+  callType
+});
+
 
       // Handlers nommés pour pouvoir les retirer proprement
       const handleAnswer = async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
