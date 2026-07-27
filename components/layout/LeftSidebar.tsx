@@ -11,7 +11,7 @@ const navItems = [
   { label: "Messages", href: "/messages" },
   { label: "Lives", href: "/live" },
   { label: "Radio", href: "/radio" },
-  { label: "Admin", href: "/api/admin", adminOnly: true },
+  { label: "Admin", href: "/admin", adminOnly: true },
   { label: "Paramètres", href: "/profile/edit" },
 ];
 
