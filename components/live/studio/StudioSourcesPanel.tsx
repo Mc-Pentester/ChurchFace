@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Video, Monitor, Image, Music, Type, Globe, Trash2, Eye, EyeOff, Volume2, VolumeX } from "lucide-react";
+import { Plus, Video, Monitor, Image, Music, Type, Globe, Trash2, Eye, EyeOff, Volume2, VolumeX, Settings } from "lucide-react";
 
 interface StudioSource {
   id: string;
@@ -22,6 +22,7 @@ interface StudioSourcesPanelProps {
   onSourceToggleVisibility: (sourceId: string) => void;
   onSourceToggleMute: (sourceId: string) => void;
   onSourceVolumeChange: (sourceId: string, volume: number) => void;
+  onSourceSettings?: (sourceId: string) => void;
 }
 
 const SOURCE_TYPES = [
@@ -43,6 +44,7 @@ export default function StudioSourcesPanel({
   onSourceToggleVisibility,
   onSourceToggleMute,
   onSourceVolumeChange,
+  onSourceSettings,
 }: StudioSourcesPanelProps) {
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -108,6 +110,24 @@ export default function StudioSourcesPanel({
                 </div>
 
                 <div className="flex items-center gap-1">
+                  {onSourceSettings && (
+                    <button
+                      onClick={() => onSourceSettings(source.id)}
+                      className="p-1.5 bg-gray-700 text-gray-400 hover:text-white rounded transition"
+                      aria-label="Settings"
+                    >
+                      <Settings size={14} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onSourceToggleVisibility(source.id)}
+                    className={`p-1.5 rounded transition ${
+                      source.isVisible ? "bg-emerald-600/20 text-emerald-400" : "bg-gray-700 text-gray-400 hover:text-white"
+                    }`}
+                    aria-label={source.isVisible ? "Hide" : "Show"}
+                  >
+                    {source.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
                   {source.type === "AUDIO" || source.type === "CAMERA" ? (
                     <button
                       onClick={() => onSourceToggleMute(source.id)}
@@ -118,17 +138,7 @@ export default function StudioSourcesPanel({
                     >
                       {source.muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => onSourceToggleVisibility(source.id)}
-                      className={`p-1.5 rounded transition ${
-                        source.isVisible ? "bg-emerald-600/20 text-emerald-400" : "bg-gray-700 text-gray-400 hover:text-white"
-                      }`}
-                      aria-label={source.isVisible ? "Hide" : "Show"}
-                    >
-                      {source.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
-                    </button>
-                  )}
+                  ) : null}
 
                   <button
                     onClick={() => onSourceDelete(source.id)}

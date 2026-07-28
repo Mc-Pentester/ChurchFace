@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import { Room, RoomEvent, Track, LocalParticipant, RemoteParticipant } from "livekit-client";
 
 interface StudioLiveKitRoomProps {
@@ -12,11 +12,26 @@ interface StudioLiveKitRoomProps {
   onLocalStreamChange?: (stream: MediaStream | null) => void;
   onParticipantJoined?: (participant: RemoteParticipant) => void;
   onParticipantLeft?: (participant: RemoteParticipant) => void;
+  onCameraEnabledChange?: (enabled: boolean) => void;
+  onMicEnabledChange?: (enabled: boolean) => void;
+  onDevicesAvailable?: (devices: { cameras: MediaDeviceInfo[], microphones: MediaDeviceInfo[] }) => void;
   initialCameraEnabled?: boolean;
   initialMicEnabled?: boolean;
 }
 
-export default function StudioLiveKitRoom({
+export interface StudioLiveKitRoomRef {
+  toggleMute: () => Promise<void>;
+  toggleCamera: () => Promise<void>;
+  startScreenShare: () => Promise<void>;
+  stopScreenShare: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  room: Room | null;
+  localParticipant: LocalParticipant | null;
+  switchCamera: (deviceId: string) => Promise<void>;
+  switchMicrophone: (deviceId: string) => Promise<void>;
+}
+
+const StudioLiveKitRoom = forwardRef<StudioLiveKitRoomRef, StudioLiveKitRoomProps>(({
   token,
   serverUrl,
   roomName,
@@ -25,9 +40,12 @@ export default function StudioLiveKitRoom({
   onLocalStreamChange,
   onParticipantJoined,
   onParticipantLeft,
+  onCameraEnabledChange,
+  onMicEnabledChange,
+  onDevicesAvailable,
   initialCameraEnabled = true,
   initialMicEnabled = true,
-}: StudioLiveKitRoomProps) {
+}, ref) => {
   const roomRef = useRef<Room | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -43,10 +61,11 @@ export default function StudioLiveKitRoom({
     try {
       await room.localParticipant.setMicrophoneEnabled(!isMuted);
       setIsMuted(!isMuted);
+      onMicEnabledChange?.(!isMuted);
     } catch (error) {
       console.error("Microphone error:", error);
     }
-  }, [isMuted]);
+  }, [isMuted, onMicEnabledChange]);
 
   const toggleCamera = useCallback(async () => {
     const room = roomRef.current;
@@ -55,10 +74,11 @@ export default function StudioLiveKitRoom({
     try {
       await room.localParticipant.setCameraEnabled(!isVideoEnabled);
       setIsVideoEnabled(!isVideoEnabled);
+      onCameraEnabledChange?.(!isVideoEnabled);
     } catch (error) {
       console.error("Camera error:", error);
     }
-  }, [isVideoEnabled]);
+  }, [isVideoEnabled, onCameraEnabledChange]);
 
   const startScreenShare = useCallback(async () => {
     const room = roomRef.current;
@@ -82,6 +102,51 @@ export default function StudioLiveKitRoom({
     }
   }, []);
 
+  const switchCamera = useCallback(async (deviceId: string) => {
+    const room = roomRef.current;
+    if (!room) {
+      console.error("No room available for camera switch. Room state:", {
+        isConnected,
+        roomExists: !!room
+      });
+      return;
+    }
+
+    try {
+      console.log("Switching camera to device:", deviceId);
+      
+      // Enable camera with specific device
+      await room.localParticipant.setCameraEnabled(true, {
+        deviceId: { exact: deviceId }
+      });
+      
+      console.log("Camera switched successfully");
+    } catch (error) {
+      console.error("Camera switch error:", error);
+    }
+  }, [isConnected]);
+
+  const switchMicrophone = useCallback(async (deviceId: string) => {
+    const room = roomRef.current;
+    if (!room) {
+      console.error("No room available for microphone switch");
+      return;
+    }
+
+    try {
+      console.log("Switching microphone to device:", deviceId);
+      
+      // Enable microphone with specific device
+      await room.localParticipant.setMicrophoneEnabled(true, {
+        deviceId: { exact: deviceId }
+      });
+      
+      console.log("Microphone switched successfully");
+    } catch (error) {
+      console.error("Microphone switch error:", error);
+    }
+  }, []);
+
   const disconnect = useCallback(async () => {
     const room = roomRef.current;
     if (room) {
@@ -92,9 +157,33 @@ export default function StudioLiveKitRoom({
 
   useEffect(() => {
     let mounted = true;
+    let tempStream: MediaStream | null = null;
 
     async function start() {
       try {
+        // Request permission first to get full device list
+        try {
+          tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          
+          // Stop the temporary stream
+          tempStream.getTracks().forEach(track => track.stop());
+          tempStream = null;
+        } catch (permError) {
+          console.warn("Permission denied or no devices:", permError);
+          // Continue with device enumeration anyway (may return empty or unlabeled devices)
+        }
+        
+        // Get available devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        const microphones = devices.filter(device => device.kind === 'audioinput');
+        
+        console.log("Detected devices:", { cameras: cameras.length, microphones: microphones.length });
+        
+        if (mounted && onDevicesAvailable) {
+          onDevicesAvailable({ cameras, microphones });
+        }
+
         const room = new Room({
           adaptiveStream: true,
           dynacast: true,
@@ -198,25 +287,21 @@ export default function StudioLiveKitRoom({
   ]);
 
   // Expose control functions via ref for parent components
-  useEffect(() => {
-    if (roomRef.current) {
-      (roomRef.current as any).toggleMute = toggleMute;
-      (roomRef.current as any).toggleCamera = toggleCamera;
-      (roomRef.current as any).startScreenShare = startScreenShare;
-      (roomRef.current as any).stopScreenShare = stopScreenShare;
-      (roomRef.current as any).disconnect = disconnect;
-    }
-  }, [toggleMute, toggleCamera, startScreenShare, stopScreenShare, disconnect]);
+  useImperativeHandle(ref, () => ({
+    toggleMute,
+    toggleCamera,
+    startScreenShare,
+    stopScreenShare,
+    disconnect,
+    switchCamera,
+    switchMicrophone,
+    room: roomRef.current,
+    localParticipant: roomRef.current?.localParticipant || null,
+  }), [toggleMute, toggleCamera, startScreenShare, stopScreenShare, disconnect, switchCamera, switchMicrophone]);
 
   return null; // This component manages the connection but doesn't render anything
-}
+});
 
-export type StudioLiveKitRoomRef = {
-  toggleMute: () => Promise<void>;
-  toggleCamera: () => Promise<void>;
-  startScreenShare: () => Promise<void>;
-  stopScreenShare: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  room: Room | null;
-  localParticipant: LocalParticipant | null;
-};
+StudioLiveKitRoom.displayName = "StudioLiveKitRoom";
+
+export default StudioLiveKitRoom;

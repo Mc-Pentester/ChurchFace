@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { UploadButton } from "@/lib/uploadthing";
 import ShareMenu from "./ShareMenu";
 import ReportButton from "../moderation/ReportButton";
+import UploadProgress from "@/components/upload/UploadProgress";
 
 
 /**
@@ -431,28 +431,13 @@ export default function Feed() {
 
         <div className="flex items-center gap-3 mt-4">
 
-          <UploadButton
+          <UploadProgress
             endpoint="mediaUploader"
-            onClientUploadComplete={(res: any[]) => {
-              const file = res?.[0];
-              const url = file?.ufsUrl || file?.url || file?.fileUrl || "";
-
-              if (!url) return;
-
-              // UploadThing retourne désormais le type MIME dans file.type
-              const type = (file?.type || "").toLowerCase();
-
-              // Fallback sur l'URL si le type est absent
-              const cleanUrl = url.split("?")[0].toLowerCase();
-              const videoExts = /\.(mp4|mov|webm|ogg|mkv|avi|m4v|flv)$/;
-
-              const isVideo =
-                type.startsWith("video/") ||
-                videoExts.test(cleanUrl);
-
+            onUploadComplete={(url, isVideo) => {
               setMediaUrl(url);
               setMediaIsVideo(isVideo);
             }}
+            disabled={isSubmittingPost}
           />
 
           <button

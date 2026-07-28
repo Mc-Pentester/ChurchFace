@@ -13,6 +13,7 @@ export async function createPostForEntity({
   imageUrl,
   videoUrl,
   tx,
+  authorId,
 }: {
   churchId: string;
   type: string;
@@ -22,11 +23,12 @@ export async function createPostForEntity({
   imageUrl?: string | null;
   videoUrl?: string | null;
   tx?: PrismaTransactionClient; // optional transaction client
+  authorId?: string; // optional author ID for global post
 }) {
   const client = tx || prisma;
 
-  // Check existing by generatedType/generatedId
-  const existing = await client.churchPost.findFirst({
+  // Check existing ChurchPost by generatedType/generatedId
+  const existingChurchPost = await client.churchPost.findFirst({
     where: {
       churchId,
       generatedType: type,
@@ -34,33 +36,62 @@ export async function createPostForEntity({
     },
   });
 
-  if (existing) return existing;
-
   const content = `${title}${summary ? `\n\n${summary}` : ""}`;
 
-  const post = await client.churchPost.create({
-    data: {
-      churchId,
-      content,
-      imageUrl: imageUrl || null,
-      videoUrl: videoUrl || null,
-      generated: true,
-      generatedType: type,
-      generatedId: entityId,
-    },
-  });
+  // Create or return existing ChurchPost
+  let churchPost;
+  if (!existingChurchPost) {
+    churchPost = await client.churchPost.create({
+      data: {
+        churchId,
+        content,
+        imageUrl: imageUrl || null,
+        videoUrl: videoUrl || null,
+        generated: true,
+        generatedType: type,
+        generatedId: entityId,
+      },
+    });
 
-  // Emit socket event if socket server is available.
-  // Scope strictly to the church room so posts are not broadcast to other churches.
-  try {
-    const io = getSocketServer();
-    if (io) {
-      io.to(`church:${churchId}`).emit("post:created", post);
+    // Emit socket event if socket server is available.
+    // Scope strictly to the church room so posts are not broadcast to other churches.
+    try {
+      const io = getSocketServer();
+      if (io) {
+        io.to(`church:${churchId}`).emit("post:created", churchPost);
+      }
+    } catch (err) {
+      // Do not block flow on socket errors
+      console.error("Socket emit error for post:created:", err);
     }
-  } catch (err) {
-    // Do not block flow on socket errors
-    console.error("Socket emit error for post:created:", err);
+  } else {
+    churchPost = existingChurchPost;
   }
 
-  return post;
+  // Create global Post for main feed if authorId is provided
+  if (authorId) {
+    const existingGlobalPost = await client.post.findFirst({
+      where: {
+        churchId,
+        generatedType: type,
+        generatedId: entityId,
+      },
+    });
+
+    if (!existingGlobalPost) {
+      await client.post.create({
+        data: {
+          content,
+          imageUrl: imageUrl || null,
+          videoUrl: videoUrl || null,
+          churchId,
+          generatedType: type,
+          generatedId: entityId,
+          authorId,
+        },
+      });
+    }
+  }
+
+  return churchPost;
 }

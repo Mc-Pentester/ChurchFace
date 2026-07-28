@@ -24,8 +24,7 @@ export default function AdminSidebar({ church }: AdminSidebarProps) {
     { id: "media", label: "Médias", icon: PhotoIcon, href: `/church/${church.slug}/admin/media` },
     { id: "radio", label: "Radio", icon: RadioIcon, href: `/church/${church.slug}/admin/radio` },
     { id: "studio", label: "Studio Radio", icon: RadioIcon, href: `/church/${church.slug}/admin/studio` },
-    { id: "live", label: "Live", icon: VideoCameraIcon, href: `/church/${church.slug}/admin/live` },
-    { id: "studio-live", label: "Studio Live", icon: VideoCameraIcon, href: `/church/${church.slug}/admin/studio/live` },
+    { id: "live", label: "Studio Live", icon: VideoCameraIcon, href: `/church/${church.slug}/admin/live` },
     { id: "courses", label: "Formations", icon: AcademicCapIcon, href: `/church/${church.slug}/admin/courses` },
     { id: "settings", label: "Paramètres", icon: CogIcon, href: `/church/${church.slug}/admin/settings` },
   ];

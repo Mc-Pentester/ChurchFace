@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import StudioPreview from "./StudioPreview";
 import StudioProgram from "./StudioProgram";
 import StudioScenesPanel from "./StudioScenesPanel";
@@ -8,9 +8,10 @@ import StudioSourcesPanel from "./StudioSourcesPanel";
 import StudioAudioMixer from "./StudioAudioMixer";
 import StudioControls from "./StudioControls";
 import StudioOutputManager from "./StudioOutputManager";
-import StudioLiveKitRoom from "./StudioLiveKitRoom";
+import StudioLiveKitRoom, { StudioLiveKitRoomRef } from "./StudioLiveKitRoom";
+import StudioSourceSettings from "./StudioSourceSettings";
 import { useLiveRecording } from "@/hooks/useLiveRecording";
-import { Mic, Music, MonitorUp, Volume2 } from "lucide-react";
+import { Mic, Music, MonitorUp, Volume2, Camera } from "lucide-react";
 
 interface StudioScene {
   id: string;
@@ -74,6 +75,11 @@ export default function StudioLive({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [programStream, setProgramStream] = useState<MediaStream | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<StudioSource | null>(null);
+  const [availableDevices, setAvailableDevices] = useState<{ cameras: MediaDeviceInfo[], microphones: MediaDeviceInfo[] }>({ cameras: [], microphones: [] });
+  const [devicesPermissionGranted, setDevicesPermissionGranted] = useState(false);
+  const liveKitRoomRef = useRef<StudioLiveKitRoomRef | null>(null);
 
   // Scenes state
   const [scenes, setScenes] = useState<StudioScene[]>([
@@ -204,15 +210,98 @@ export default function StudioLive({
   };
 
   const handleSourceToggleVisibility = (sourceId: string) => {
+    const source = sources.find(s => s.id === sourceId);
+    if (!source) return;
+
+    const newVisibility = !source.isVisible;
     setSources(
-      sources.map((s) => (s.id === sourceId ? { ...s, isVisible: !s.isVisible } : s))
+      sources.map((s) => (s.id === sourceId ? { ...s, isVisible: newVisibility } : s))
     );
+
+    // Activate/deactivate camera or microphone via LiveKit
+    if (source.type === "CAMERA" && source.settings?.deviceId) {
+      if (newVisibility) {
+        console.log("Activating camera with device:", source.settings.deviceId);
+        console.log("liveKitRoomRef.current:", liveKitRoomRef.current);
+        if (liveKitRoomRef.current) {
+          liveKitRoomRef.current.switchCamera(source.settings.deviceId);
+        } else {
+          console.error("liveKitRoomRef.current is null - LiveKit not connected");
+        }
+      } else {
+        console.log("Deactivating camera");
+        console.log("liveKitRoomRef.current:", liveKitRoomRef.current);
+        if (liveKitRoomRef.current) {
+          liveKitRoomRef.current.toggleCamera(); // Toggle off
+        } else {
+          console.error("liveKitRoomRef.current is null - LiveKit not connected");
+        }
+      }
+    } else if (source.type === "AUDIO" && source.settings?.deviceId) {
+      if (newVisibility) {
+        console.log("Activating microphone with device:", source.settings.deviceId);
+        console.log("liveKitRoomRef.current:", liveKitRoomRef.current);
+        if (liveKitRoomRef.current) {
+          liveKitRoomRef.current.switchMicrophone(source.settings.deviceId);
+        } else {
+          console.error("liveKitRoomRef.current is null - LiveKit not connected");
+        }
+      } else {
+        console.log("Muting microphone");
+        console.log("liveKitRoomRef.current:", liveKitRoomRef.current);
+        if (liveKitRoomRef.current) {
+          liveKitRoomRef.current.toggleMute(); // Mute
+        } else {
+          console.error("liveKitRoomRef.current is null - LiveKit not connected");
+        }
+      }
+    }
   };
 
   const handleSourceToggleMute = (sourceId: string) => {
     setSources(
       sources.map((s) => (s.id === sourceId ? { ...s, muted: !s.muted } : s))
     );
+  };
+
+  const handleSourceSettings = (sourceId: string) => {
+    const source = sources.find(s => s.id === sourceId);
+    if (source) {
+      setSelectedSource(source);
+      setShowSettings(true);
+    }
+  };
+
+  const handleSourceSettingsSave = (updatedSettings: any) => {
+    if (selectedSource) {
+      const updatedSource = { ...selectedSource, ...updatedSettings };
+      setSources(sources.map(s => 
+        s.id === selectedSource.id 
+          ? updatedSource
+          : s
+      ));
+
+      // If source is visible and has a device, activate it immediately
+      if (updatedSource.isVisible && updatedSource.settings?.deviceId) {
+        if (updatedSource.type === "CAMERA") {
+          console.log("Activating camera with device:", updatedSource.settings.deviceId);
+          console.log("liveKitRoomRef.current:", liveKitRoomRef.current);
+          if (liveKitRoomRef.current) {
+            liveKitRoomRef.current.switchCamera(updatedSource.settings.deviceId);
+          } else {
+            console.error("liveKitRoomRef.current is null - LiveKit not connected");
+          }
+        } else if (updatedSource.type === "AUDIO") {
+          console.log("Activating microphone with device:", updatedSource.settings.deviceId);
+          console.log("liveKitRoomRef.current:", liveKitRoomRef.current);
+          if (liveKitRoomRef.current) {
+            liveKitRoomRef.current.switchMicrophone(updatedSource.settings.deviceId);
+          } else {
+            console.error("liveKitRoomRef.current is null - LiveKit not connected");
+          }
+        }
+      }
+    }
   };
 
   const handleSourceVolumeChange = (sourceId: string, volume: number) => {
@@ -249,20 +338,37 @@ export default function StudioLive({
     }
   };
 
-  const handleToggleCamera = () => {
-    setIsCameraEnabled(!isCameraEnabled);
-  };
+  const handleToggleCamera = useCallback(async () => {
+    if (liveKitRoomRef.current) {
+      await liveKitRoomRef.current.toggleCamera();
+      setIsCameraEnabled(!isCameraEnabled);
+    }
+  }, [isCameraEnabled]);
 
-  const handleToggleMic = () => {
-    setIsMicEnabled(!isMicEnabled);
-  };
+  const handleToggleMic = useCallback(async () => {
+    if (liveKitRoomRef.current) {
+      await liveKitRoomRef.current.toggleMute();
+      setIsMicEnabled(!isMicEnabled);
+    }
+  }, [isMicEnabled]);
 
-  const handleToggleScreenShare = () => {
-    setIsScreenSharing(!isScreenSharing);
-  };
+  const handleToggleScreenShare = useCallback(async () => {
+    if (liveKitRoomRef.current) {
+      if (isScreenSharing) {
+        await liveKitRoomRef.current.stopScreenShare();
+      } else {
+        await liveKitRoomRef.current.startScreenShare();
+      }
+      setIsScreenSharing(!isScreenSharing);
+    }
+  }, [isScreenSharing]);
 
   const handleOpenSettings = () => {
-    console.log("Open settings");
+    setShowSettings(true);
+  };
+
+  const handleCloseSettings = () => {
+    setShowSettings(false);
   };
 
   // Output handlers
@@ -305,9 +411,43 @@ export default function StudioLive({
   };
 
   // LiveKit integration
-  const handleLocalStreamChange = (stream: MediaStream | null) => {
+  const handleLocalStreamChange = useCallback((stream: MediaStream | null) => {
     setLocalStream(stream);
     setProgramStream(stream); // For now, program = preview
+  }, []);
+
+  const handleCameraEnabledChange = useCallback((enabled: boolean) => {
+    setIsCameraEnabled(enabled);
+  }, []);
+
+  const handleMicEnabledChange = useCallback((enabled: boolean) => {
+    setIsMicEnabled(enabled);
+  }, []);
+
+  const handleDevicesAvailable = useCallback((devices: { cameras: MediaDeviceInfo[], microphones: MediaDeviceInfo[] }) => {
+    setAvailableDevices(devices);
+  }, []);
+
+  // Request camera/microphone permission on user action
+  const handleRequestPermissions = async () => {
+    try {
+      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      
+      // Stop the temporary stream
+      tempStream.getTracks().forEach(track => track.stop());
+      
+      // Get available devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      const microphones = devices.filter(device => device.kind === 'audioinput');
+      
+      console.log("Detected devices:", { cameras: cameras.length, microphones: microphones.length });
+      setAvailableDevices({ cameras, microphones });
+      setDevicesPermissionGranted(true);
+    } catch (error) {
+      console.error("Permission request failed:", error);
+      alert("Impossible d'accéder à la caméra et au micro. Vérifiez les permissions de votre navigateur.");
+    }
   };
 
   return (
@@ -325,10 +465,34 @@ export default function StudioLive({
         </div>
       </div>
 
+      {/* Debug LiveKit connection */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-900/50 text-yellow-200 text-xs p-2">
+          LiveKit Debug: token={livekitToken ? 'present' : 'missing'}, url={livekitUrl ? 'present' : 'missing'}, room={roomName ? 'present' : 'missing'}
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Scenes */}
-        <div className="w-64 bg-[#16161f] border-r border-gray-800 p-4">
+        <div className="w-64 bg-[#16161f] border-r border-gray-800 p-4 flex flex-col gap-4">
+          {/* Permission Request Button */}
+          {!devicesPermissionGranted && (
+            <div className="bg-[#252535] rounded-lg p-4 border border-emerald-600/50">
+              <h3 className="text-white font-semibold mb-2">Activer le studio</h3>
+              <p className="text-gray-400 text-sm mb-3">
+                Pour utiliser le studio live, vous devez autoriser l'accès à votre caméra et votre micro.
+              </p>
+              <button
+                onClick={handleRequestPermissions}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold transition"
+              >
+                <Camera size={20} />
+                <span>Activer la caméra et le micro</span>
+              </button>
+            </div>
+          )}
+
           <StudioScenesPanel
             scenes={scenes}
             onSceneSelect={handleSceneSelect}
@@ -359,6 +523,7 @@ export default function StudioLive({
               onSourceToggleVisibility={handleSourceToggleVisibility}
               onSourceToggleMute={handleSourceToggleMute}
               onSourceVolumeChange={handleSourceVolumeChange}
+              onSourceSettings={handleSourceSettings}
             />
           </div>
         </div>
@@ -406,12 +571,27 @@ export default function StudioLive({
       {/* LiveKit Room (hidden, manages connection) */}
       {livekitToken && livekitUrl && roomName && (
         <StudioLiveKitRoom
+          ref={liveKitRoomRef}
           token={livekitToken}
           serverUrl={livekitUrl}
           roomName={roomName}
           onLocalStreamChange={handleLocalStreamChange}
+          onCameraEnabledChange={handleCameraEnabledChange}
+          onMicEnabledChange={handleMicEnabledChange}
+          onDevicesAvailable={handleDevicesAvailable}
           initialCameraEnabled={isCameraEnabled}
           initialMicEnabled={isMicEnabled}
+        />
+      )}
+
+      {/* Source Settings Modal */}
+      {selectedSource && (
+        <StudioSourceSettings
+          source={selectedSource}
+          isOpen={showSettings}
+          onClose={handleCloseSettings}
+          onSave={handleSourceSettingsSave}
+          availableDevices={availableDevices}
         />
       )}
     </div>

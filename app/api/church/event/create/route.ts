@@ -53,6 +53,7 @@ export async function POST(req: Request) {
           title: `📅 Événement : ${event.title}`,
           summary: event.description || null,
           tx,
+          authorId: session.user.id,
         });
       } catch (err) {
         console.error("Failed to create post for event:", err);

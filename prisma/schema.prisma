@@ -133,15 +133,21 @@ model Post {
   videoUrl      String?
   isHidden      Boolean   @default(false)
   likes         Int       @default(0)
+  churchId      String?
+  generatedType String?
+  generatedId   String?
   comments      Comment[]
   likeRelations Like[]    @relation("PostLikes")
   author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  church        Church?   @relation(fields: [churchId], references: [id], onDelete: Cascade)
   shares        Share[]
 
   @@index([createdAt])
   @@index([authorId, createdAt])
   @@index([isHidden])
   @@index([likes])
+  @@index([churchId])
+  @@index([generatedType, generatedId])
 }
 
 model Comment {
@@ -636,6 +642,7 @@ model Church {
   posts           ChurchPost[]
   radios          ChurchRadio[]
   users           User[]         @relation("UserChurch")
+  globalPosts     Post[]
 }
 
 model ChurchMember {

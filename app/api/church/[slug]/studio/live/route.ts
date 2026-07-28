@@ -45,20 +45,54 @@ export async function GET(
     let churchLive = await prisma.churchLive.findFirst({
       where: { churchId: church.id },
       orderBy: { createdAt: "desc" },
+      include: {
+        broadcast: true,
+      },
     });
 
     if (!churchLive) {
-      // Créer d'abord ChurchLive sans liveBroadcastId
+      // Créer ChurchLive et LiveBroadcast
+      const broadcast = await prisma.liveBroadcast.create({
+        data: {
+          title: `${church.name} Live`,
+          streamUrl: "",
+          status: "OFFLINE",
+          authorId: session.user.id,
+        },
+      });
+
       churchLive = await prisma.churchLive.create({
         data: {
           churchId: church.id,
           title: `${church.name} Live`,
           status: "OFFLINE",
+          liveBroadcastId: broadcast.id,
+        },
+        include: {
+          broadcast: true,
+        },
+      });
+    } else if (!churchLive.broadcast) {
+      // Créer LiveBroadcast si manquant
+      const broadcast = await prisma.liveBroadcast.create({
+        data: {
+          title: churchLive.title || `${church.name} Live`,
+          streamUrl: churchLive.streamUrl || "",
+          status: churchLive.status || "OFFLINE",
+          authorId: session.user.id,
+        },
+      });
+
+      churchLive = await prisma.churchLive.update({
+        where: { id: churchLive.id },
+        data: { liveBroadcastId: broadcast.id },
+        include: {
+          broadcast: true,
         },
       });
     }
 
-    return NextResponse.json({ churchLive, liveBroadcast: null });
+    return NextResponse.json({ churchLive, liveBroadcast: churchLive.broadcast });
   } catch (error) {
     console.error("Error fetching church studio live:", error);
     return NextResponse.json({ error: "Failed to fetch church live" }, { status: 500 });
@@ -124,6 +158,7 @@ export async function PATCH(
             summary: churchLive.title || null,
             videoUrl: churchLive.playUrl || churchLive.streamUrl || null,
             tx,
+            authorId: session.user.id,
           });
         }
       } catch (err) {

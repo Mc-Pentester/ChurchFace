@@ -14,12 +14,25 @@ export const runtime = "nodejs";
  */
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
     const search = req.nextUrl.searchParams;
     const limitRaw = Number(search.get("limit") ?? "10");
     const limit = Number.isFinite(limitRaw)
       ? Math.min(Math.max(limitRaw, 1), 20)
       : 10;
     const cursor = search.get("cursor");
+
+    // Get followed church IDs if user is authenticated
+    let followedChurchIds: string[] = [];
+    if (userId) {
+      const follows = await prisma.churchFollow.findMany({
+        where: { userId },
+        select: { churchId: true },
+      });
+      followedChurchIds = follows.map((f) => f.churchId);
+    }
 
     const posts = await prisma.post.findMany({
       take: limit + 1,
@@ -32,12 +45,31 @@ export async function GET(req: NextRequest) {
       orderBy: {
         createdAt: "desc",
       },
+      where: {
+        isHidden: false,
+        OR: [
+          // Personal posts
+          { churchId: null },
+          // Public posts from followed churches
+          ...(followedChurchIds.length > 0
+            ? [{ churchId: { in: followedChurchIds } }]
+            : []),
+        ],
+      },
       include: {
         author: {
           select: {
             id: true,
             name: true,
             image: true,
+          },
+        },
+        church: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo: true,
           },
         },
         comments: {
