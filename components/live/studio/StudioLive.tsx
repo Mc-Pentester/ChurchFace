@@ -318,16 +318,38 @@ export default function StudioLive({
   };
 
   // Control handlers
-  const handleStartLive = () => {
+  const handleStartLive = async () => {
     setIsLive(true);
     if (programStream) {
       startRecording(programStream);
     }
+
+    // Update ChurchLive status to LIVE
+    try {
+      await fetch(`/api/live/${broadcastId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'LIVE' })
+      });
+    } catch (error) {
+      console.error('Failed to update live status:', error);
+    }
   };
 
-  const handleStopLive = () => {
+  const handleStopLive = async () => {
     setIsLive(false);
     stopRecording();
+
+    // Update ChurchLive status to OFFLINE
+    try {
+      await fetch(`/api/live/${broadcastId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'OFFLINE' })
+      });
+    } catch (error) {
+      console.error('Failed to update live status:', error);
+    }
   };
 
   const handleToggleRecording = () => {
@@ -464,13 +486,6 @@ export default function StudioLive({
           )}
         </div>
       </div>
-
-      {/* Debug LiveKit connection */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-yellow-900/50 text-yellow-200 text-xs p-2">
-          LiveKit Debug: token={livekitToken ? 'present' : 'missing'}, url={livekitUrl ? 'present' : 'missing'}, room={roomName ? 'present' : 'missing'}
-        </div>
-      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">

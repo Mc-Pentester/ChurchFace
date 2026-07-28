@@ -18,10 +18,19 @@ type Post = {
   videoUrl?: string | null;
   createdAt?: string;
   hashtags?: string[];
+  generatedType?: string | null;
+  generatedId?: string | null;
 
   author?: {
     id: string;
     name: string;
+  };
+
+  church?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo?: string | null;
   };
 
   comments?: Comment[];
@@ -512,7 +521,20 @@ export default function Feed() {
           )}
 
           {/* MEDIA */}
-          {p.videoUrl ? (
+          {p.generatedType === "CHURCH_LIVE" && p.generatedId ? (
+            <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">LIVE</span>
+                <span className="text-sm font-semibold text-gray-700">Diffusion en direct</span>
+              </div>
+              <a
+                href={`/church/${p.church?.slug}/live`}
+                className="block text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+              >
+                Voir la diffusion →
+              </a>
+            </div>
+          ) : p.videoUrl ? (
             <video
               src={p.videoUrl}
               controls

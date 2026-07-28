@@ -18,8 +18,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "churchId is required" }, { status: 400 });
     }
 
-    const posts = await prisma.churchPost.findMany({
-      where: { churchId },
+    const posts = await prisma.post.findMany({
+      where: { 
+        churchId,
+        isHidden: false,
+      },
       take: limit + 1,
       ...(cursor && {
         cursor: { id: cursor },
@@ -27,10 +30,55 @@ export async function GET(req: Request) {
       }),
       orderBy: { createdAt: "desc" },
       include: {
-        _count: {
+        author: {
           select: {
-            likes: true,
-            comments: true,
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        church: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo: true,
+          },
+        },
+        comments: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 20,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+            replies: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    image: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        likeRelations: {
+          select: {
+            userId: true,
+          },
+        },
+        shares: {
+          select: {
+            userId: true,
           },
         },
       },
@@ -47,10 +95,10 @@ export async function GET(req: Request) {
       posts.map(async (post: any) => {
         let isLiked = false;
         if (session?.user) {
-          const like = await prisma.churchPostLike.findUnique({
+          const like = await prisma.like.findUnique({
             where: {
-              churchPostId_userId: {
-                churchPostId: post.id,
+              postId_userId: {
+                postId: post.id,
                 userId: session.user.id,
               },
             },
@@ -59,6 +107,7 @@ export async function GET(req: Request) {
         }
         return {
           ...post,
+          comments: [...post.comments].reverse(),
           isLiked,
         };
       })
