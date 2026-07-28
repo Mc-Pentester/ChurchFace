@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 const registerRateLimit = createRateLimitMiddleware({
   limit: 3,
-  windowMs: 60 * 60 * 1000, // 1 heure
+  windowMs: 300 * 1000, // 5 minutes
   keyPrefix: "register",
 });
 
@@ -27,21 +27,29 @@ export async function POST(req: Request) {
 
     const validationResult = registerSchema.safeParse(body);
     if (!validationResult.success) {
+      const issues = validationResult.error.issues;
+      const messages = issues.map(issue => {
+        if (issue.path[0] === 'email') return "L'email doit être valide";
+        if (issue.path[0] === 'password') return "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre";
+        if (issue.path[0] === 'name') return "Le nom doit contenir au moins 2 caractères et uniquement des lettres, espaces, tirets et apostrophes";
+        return issue.message;
+      });
       return NextResponse.json(
-        { error: "Validation failed", details: validationResult.error.issues },
+        { error: messages.join('. ') },
         { status: 400 }
       );
     }
 
     const { name, email, password } = validationResult.data;
 
+    const normalizedEmail = email.toLowerCase().trim();
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "Email dÃ©jÃ  utilisÃ©" },
+        { error: "Impossible de créer le compte avec ces informations" },
         { status: 400 }
       );
     }
@@ -51,7 +59,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
       },
       select: {

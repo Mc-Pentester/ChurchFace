@@ -84,7 +84,7 @@ export default async function ChurchLivePage({
 
               <div className="mt-4">
                 <a
-                  href={`/church/${slug}/studio/live`}
+                  href={`/church/${slug}/admin/live`}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition"
                 >
                   <Video size={16} />

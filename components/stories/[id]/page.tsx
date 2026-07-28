@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function StoryViewer() {
@@ -9,27 +9,83 @@ export default function StoryViewer() {
   const router = useRouter();
 
   const [story, setStory] = useState<any>(null);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(5000); // Default 5s for images
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     loadStory();
   }, [id]);
 
+  useEffect(() => {
+    if (!story) return;
+
+    // Mark as viewed
+    fetch(`/api/stories/${id}/view`, { method: "POST" });
+
+    // If video, use video duration
+    if (story.videoUrl && videoRef.current) {
+      const handleVideoEnd = () => {
+        console.log("Video ended, navigating to next story");
+        if (story.nextStoryId) {
+          router.push(`/stories/${story.nextStoryId}`);
+        } else {
+          router.back();
+        }
+      };
+
+      const handleVideoLoad = () => {
+        const videoDuration = videoRef.current?.duration || 5000;
+        setDuration(videoDuration * 1000); // Convert to ms
+        console.log("Video loaded, duration:", videoDuration);
+      };
+
+      videoRef.current.addEventListener('loadedmetadata', handleVideoLoad);
+      videoRef.current.addEventListener('ended', handleVideoEnd);
+
+      // Update progress during video playback
+      const progressInterval = setInterval(() => {
+        if (videoRef.current && videoRef.current.duration) {
+          const videoProgress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+          setProgress(videoProgress);
+        }
+      }, 50);
+
+      return () => {
+        clearInterval(progressInterval);
+        if (videoRef.current) {
+          videoRef.current.removeEventListener('loadedmetadata', handleVideoLoad);
+          videoRef.current.removeEventListener('ended', handleVideoEnd);
+        }
+      };
+    }
+
+    // Progress animation (only for images)
+    if (!story.videoUrl) {
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const newProgress = Math.min((elapsed / duration) * 100, 100);
+        setProgress(newProgress);
+
+        if (elapsed >= duration) {
+          clearInterval(interval);
+          if (story.nextStoryId) {
+            router.push(`/stories/${story.nextStoryId}`);
+          } else {
+            router.back();
+          }
+        }
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [story, duration, id, router]);
+
   async function loadStory() {
     const res = await fetch(`/api/stories/${id}`);
-
     const data = await res.json();
-
     setStory(data);
-
-    await fetch(`/api/stories/${id}/view`, {
-      method: "POST",
-    });
-
-    setTimeout(() => {
-      if (data.nextStoryId) {
-        router.push(`/stories/${data.nextStoryId}`);
-      }
-    }, 5000);
   }
 
   if (!story)
@@ -45,7 +101,8 @@ export default function StoryViewer() {
         <div className="h-1 bg-white/20 rounded">
 
           <div
-            className="h-1 bg-white animate-[grow_5s_linear]"
+            className="h-1 bg-white transition-all duration-50"
+            style={{ width: `${progress}%` }}
           />
 
         </div>
@@ -64,9 +121,9 @@ export default function StoryViewer() {
 
         {story.videoUrl && (
           <video
+            ref={videoRef}
             src={story.videoUrl}
             autoPlay
-            controls
             className="max-h-full"
           />
         )}

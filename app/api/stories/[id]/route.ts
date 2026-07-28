@@ -1,9 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  const stories = await prisma.story.findMany({
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  const story = await prisma.story.findUnique({
     where: {
+      id: id,
       expiresAt: {
         gt: new Date(),
       },
@@ -18,11 +24,11 @@ export async function GET() {
         },
       },
     },
-
-    orderBy: {
-      createdAt: "desc",
-    },
   });
 
-  return NextResponse.json(stories);
+  if (!story) {
+    return NextResponse.json({ error: "Story not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(story);
 }

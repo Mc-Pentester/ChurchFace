@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { UploadButton } from "@/lib/uploadthing";
 import ShareMenu from "./ShareMenu";
 import ReportButton from "../moderation/ReportButton";
+import UploadProgress from "@/components/upload/UploadProgress";
 
 
 /**
@@ -18,10 +18,19 @@ type Post = {
   videoUrl?: string | null;
   createdAt?: string;
   hashtags?: string[];
+  generatedType?: string | null;
+  generatedId?: string | null;
 
   author?: {
     id: string;
     name: string;
+  };
+
+  church?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo?: string | null;
   };
 
   comments?: Comment[];
@@ -431,28 +440,13 @@ export default function Feed() {
 
         <div className="flex items-center gap-3 mt-4">
 
-          <UploadButton
+          <UploadProgress
             endpoint="mediaUploader"
-            onClientUploadComplete={(res: any[]) => {
-              const file = res?.[0];
-              const url = file?.ufsUrl || file?.url || file?.fileUrl || "";
-
-              if (!url) return;
-
-              // UploadThing retourne désormais le type MIME dans file.type
-              const type = (file?.type || "").toLowerCase();
-
-              // Fallback sur l'URL si le type est absent
-              const cleanUrl = url.split("?")[0].toLowerCase();
-              const videoExts = /\.(mp4|mov|webm|ogg|mkv|avi|m4v|flv)$/;
-
-              const isVideo =
-                type.startsWith("video/") ||
-                videoExts.test(cleanUrl);
-
+            onUploadComplete={(url, isVideo) => {
               setMediaUrl(url);
               setMediaIsVideo(isVideo);
             }}
+            disabled={isSubmittingPost}
           />
 
           <button
@@ -527,7 +521,20 @@ export default function Feed() {
           )}
 
           {/* MEDIA */}
-          {p.videoUrl ? (
+          {p.generatedType === "CHURCH_LIVE" && p.generatedId ? (
+            <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">LIVE</span>
+                <span className="text-sm font-semibold text-gray-700">Diffusion en direct</span>
+              </div>
+              <a
+                href={`/church/${p.church?.slug}/live`}
+                className="block text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+              >
+                Voir la diffusion →
+              </a>
+            </div>
+          ) : p.videoUrl ? (
             <video
               src={p.videoUrl}
               controls

@@ -37,14 +37,14 @@ export const createEventSchema = z.object({
 });
 
 export const registerSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().min(2).max(100).regex(/^[a-zA-ZÀ-ÿ\s'-]+$/),
   email: z.string().email(),
-  password: z.string().min(8).max(100),
+  password: z.string().min(8).max(100).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/),
 });
 
 export const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1),
+  password: z.string().min(6),
 });
 
 export const updateProfileSchema = z.object({

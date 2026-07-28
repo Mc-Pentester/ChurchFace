@@ -1,20 +1,26 @@
 import Link from "next/link";
 
-type Story = {
-  id: string;
-  content?: string | null;
-  imageUrl?: string | null;
-  createdAt?: string;
-  author?: {
-    name?: string | null;
-    image?: string | null;
-  } | null;
+type StoryGroup = {
+  author: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+  stories: {
+    id: string;
+    content?: string | null;
+    imageUrl?: string | null;
+    videoUrl?: string | null;
+    createdAt?: string;
+    isViewed?: boolean;
+  }[];
+  hasUnviewed: boolean;
 };
 
 const baseUrl =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-async function getStories(): Promise<Story[]> {
+async function getStories(): Promise<StoryGroup[]> {
   try {
     const res = await fetch(`${baseUrl}/api/stories`, {
       cache: "no-store",
@@ -29,7 +35,7 @@ async function getStories(): Promise<Story[]> {
 }
 
 export default async function StoriesPage() {
-  const stories = await getStories();
+  const storyGroups = await getStories();
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -44,41 +50,52 @@ export default async function StoriesPage() {
         </Link>
       </div>
 
-      {stories.length === 0 ? (
+      {storyGroups.length === 0 ? (
         <p className="text-gray-500">Aucune story disponible</p>
       ) : (
         <div className="space-y-4">
-          {stories.map((story) => (
-            <Link
-              key={story.id}
-              href={`/stories/${story.id}`}
-              className="block bg-white rounded-xl shadow p-4"
-            >
-              <div className="flex items-center gap-3 mb-2">
+          {storyGroups.map((group) => (
+            <div key={group.author.id} className="bg-white rounded-xl shadow p-4">
+              <div className="flex items-center gap-3 mb-3">
                 <img
-                  src={story.author?.image || "https://i.pravatar.cc/100"}
-                  className="w-8 h-8 rounded-full"
+                  src={group.author.image || "https://i.pravatar.cc/100"}
+                  className="w-10 h-10 rounded-full"
                   alt="avatar"
                 />
                 <span className="font-semibold">
-                  {story.author?.name || "Utilisateur"}
+                  {group.author.name || "Utilisateur"}
                 </span>
+                {group.hasUnviewed && (
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                    Nouveau
+                  </span>
+                )}
               </div>
 
-              {story.imageUrl && (
-                <img
-                  src={story.imageUrl}
-                  className="rounded-lg mb-2"
-                  alt=""
-                />
-              )}
+              <div className="space-y-3">
+                {group.stories.map((story) => (
+                  <Link
+                    key={story.id}
+                    href={`/stories/${story.id}`}
+                    className="block"
+                  >
+                    {story.imageUrl && (
+                      <img
+                        src={story.imageUrl}
+                        className="rounded-lg mb-2 w-full"
+                        alt=""
+                      />
+                    )}
 
-              {story.content && (
-                <p className="text-gray-800 whitespace-pre-wrap">
-                  {story.content}
-                </p>
-              )}
-            </Link>
+                    {story.content && (
+                      <p className="text-gray-800 whitespace-pre-wrap">
+                        {story.content}
+                      </p>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
