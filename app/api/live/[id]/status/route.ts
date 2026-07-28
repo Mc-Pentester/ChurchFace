@@ -126,7 +126,7 @@ export async function POST(
           where: { id: existingPost.id },
           data: {
             isHidden: true,
-            content: existingPost.content.replace("🔴 En direct", "📺 Replay"),
+            content: existingPost.content?.replace("🔴 En direct", "📺 Replay") || "📺 Replay",
           },
         });
       }
