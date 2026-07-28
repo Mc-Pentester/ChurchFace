@@ -79,6 +79,59 @@ export async function POST(
       },
     });
 
+    // Create or update Post for live stream when status changes to LIVE
+    if (status === "LIVE") {
+      // Check if a post already exists for this live
+      const existingPost = await prisma.post.findFirst({
+        where: {
+          generatedType: "CHURCH_LIVE",
+          generatedId: churchLive.id,
+        },
+      });
+
+      if (!existingPost) {
+        // Create a new post for the live stream
+        await prisma.post.create({
+          data: {
+            content: `🔴 En direct : ${updatedBroadcast.title}`,
+            churchId: churchLive.churchId,
+            generatedType: "CHURCH_LIVE",
+            generatedId: churchLive.id,
+            authorId: userId,
+            hashtags: ["live", "direct"],
+          },
+        });
+      } else {
+        // Update existing post to make it visible
+        await prisma.post.update({
+          where: { id: existingPost.id },
+          data: {
+            isHidden: false,
+            content: `🔴 En direct : ${updatedBroadcast.title}`,
+            createdAt: new Date(), // Bump to top of feed
+          },
+        });
+      }
+    } else if (status === "OFFLINE") {
+      // Hide the post when live ends
+      const existingPost = await prisma.post.findFirst({
+        where: {
+          generatedType: "CHURCH_LIVE",
+          generatedId: churchLive.id,
+        },
+      });
+
+      if (existingPost) {
+        await prisma.post.update({
+          where: { id: existingPost.id },
+          data: {
+            isHidden: true,
+            content: existingPost.content.replace("🔴 En direct", "📺 Replay"),
+          },
+        });
+      }
+    }
+
     return NextResponse.json({ 
       success: true, 
       liveBroadcast: updatedBroadcast,

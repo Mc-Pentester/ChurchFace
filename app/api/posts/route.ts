@@ -34,6 +34,13 @@ export async function GET(req: NextRequest) {
       followedChurchIds = follows.map((f) => f.churchId);
     }
 
+    // Get live church IDs (currently live streams)
+    const liveChurchLives = await prisma.churchLive.findMany({
+      where: { status: "LIVE" },
+      select: { churchId: true },
+    });
+    const liveChurchIds = liveChurchLives.map((l) => l.churchId);
+
     const posts = await prisma.post.findMany({
       take: limit + 1,
       ...(cursor
@@ -53,6 +60,15 @@ export async function GET(req: NextRequest) {
           // Public posts from followed churches
           ...(followedChurchIds.length > 0
             ? [{ churchId: { in: followedChurchIds } }]
+            : []),
+          // Live posts from any church (show live streams even if not followed)
+          ...(liveChurchIds.length > 0
+            ? [
+                {
+                  churchId: { in: liveChurchIds },
+                  generatedType: "CHURCH_LIVE",
+                },
+              ]
             : []),
         ],
       },
