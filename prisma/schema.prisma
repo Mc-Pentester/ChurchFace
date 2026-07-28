@@ -595,11 +595,16 @@ model LiveBroadcast {
   startedAt   DateTime?
   endedAt     DateTime?
 
+  studioConfig       Json?
+  outputDestinations Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author      User         @relation(fields: [authorId], references: [id])
+  author      User           @relation(fields: [authorId], references: [id])
   churchLives ChurchLive[]
+  outputs     StudioOutput[]
+  scenes      StudioScene[]
 }
 
 model Church {
@@ -716,24 +721,27 @@ model ChurchRadio {
 }
 
 model ChurchLive {
-  id              String         @id @default(cuid())
-  churchId        String
-  liveBroadcastId String?
-  title           String?
-  streamUrl       String?
-  thumbnail       String?
-  status          String         @default("SCHEDULED")
-  viewerCount     Int            @default(0)
-  startedAt       DateTime?
-  endedAt         DateTime?
-  createdAt       DateTime       @default(now())
-  description     String?
-  playUrl         String?
-  scheduledEnd    DateTime?
-  scheduledStart  DateTime?
-  streamMode      String?
-  church          Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  broadcast       LiveBroadcast? @relation(fields: [liveBroadcastId], references: [id])
+  id                 String         @id @default(cuid())
+  churchId           String
+  liveBroadcastId    String?
+  title              String?
+  streamUrl          String?
+  thumbnail          String?
+  status             String         @default("SCHEDULED")
+  viewerCount        Int            @default(0)
+  startedAt          DateTime?
+  endedAt            DateTime?
+  createdAt          DateTime       @default(now())
+  description        String?
+  playUrl            String?
+  scheduledEnd       DateTime?
+  scheduledStart     DateTime?
+  streamMode         String?
+  studioConfig       Json?
+  outputDestinations Json?
+  church             Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  broadcast          LiveBroadcast? @relation(fields: [liveBroadcastId], references: [id])
+  scenes             StudioScene[]
 }
 
 model ChurchCourse {
@@ -1078,6 +1086,65 @@ model RadioChatMessage {
   @@index([radioId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model StudioScene {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  order        Int      @default(0)
+  isActive     Boolean  @default(false)
+  broadcastId  String?
+  churchLiveId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sources    StudioSource[]
+  broadcast  LiveBroadcast? @relation(fields: [broadcastId], references: [id])
+  churchLive ChurchLive?    @relation(fields: [churchLiveId], references: [id])
+
+  @@index([broadcastId])
+  @@index([churchLiveId])
+  @@index([order])
+}
+
+model StudioSource {
+  id        String   @id @default(cuid())
+  type      String // CAMERA, SCREEN, IMAGE, VIDEO, PLAYLIST, TEXT, LOGO, BROWSER, AUDIO
+  name      String
+  url       String?
+  settings  Json?
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+  volume    Int      @default(100)
+  muted     Boolean  @default(false)
+  sceneId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scene StudioScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
+  @@index([type])
+}
+
+model StudioOutput {
+  id          String   @id @default(cuid())
+  type        String // CHURCHFACE, YOUTUBE, FACEBOOK, TWITCH, RTMP
+  enabled     Boolean  @default(false)
+  config      Json?
+  streamKey   String?
+  streamUrl   String?
+  status      String   @default("OFFLINE")
+  broadcastId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  broadcast LiveBroadcast? @relation(fields: [broadcastId], references: [id])
+
+  @@index([broadcastId])
+  @@index([type])
+  @@index([enabled])
 }
 
 // model ChurchPlaylist {

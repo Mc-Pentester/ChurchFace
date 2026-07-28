@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import StudioHeader from "@/components/radio/studio/StudioHeader";
 import LiveSidebar from "@/components/live/studio/LiveSidebar";
-import ChurchStudioLive from "@/components/radio/studio/ChurchStudioLive";
+import StudioLive from "@/components/live/studio/StudioLive";
 import StudioRightPanel from "@/components/radio/studio/StudioRightPanel";
 import StudioSchedulePanel from "@/components/radio/studio/StudioSchedulePanel";
 import StudioPlaylistsPanel from "@/components/radio/studio/StudioPlaylistsPanel";
@@ -123,13 +123,16 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
             <StudioPlaylistsPanel radio={activeLive} onRadioUpdate={handleLiveUpdate} />
           </div>
         ) : (
-          <ChurchStudioLive
-            live={churchLive}
-            isLive={isLive}
-            setIsLive={setIsLive}
-            onLiveUpdate={handleLiveUpdate}
-            churchSlug={slug}
-          />
+          <div className="flex-1 min-w-0">
+            {liveBroadcast && (
+              <StudioLive
+                broadcastId={liveBroadcast.id}
+                livekitToken={undefined}
+                livekitUrl={process.env.LIVEKIT_URL}
+                roomName={`studio-${liveBroadcast.id}`}
+              />
+            )}
+          </div>
         )}
         <StudioRightPanel radioId={activeLive?.id} radio={activeLive} onStatsUpdate={handleLiveUpdate} />
       </div>
