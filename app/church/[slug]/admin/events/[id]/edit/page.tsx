@@ -12,7 +12,7 @@ interface PageProps {
 
 export default async function EditEventPage({ params }: PageProps) {
 
-  const { slug, id } = params;
+  const { slug, id } = await params;
 
 
   const church = await prisma.church.findUnique({
