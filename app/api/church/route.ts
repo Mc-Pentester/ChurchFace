@@ -22,6 +22,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // Verify user exists in database
+    const userId = session.user.id;
+    console.log("Creating church for user ID:", userId);
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      console.error("User not found in database:", userId);
+      return NextResponse.json(
+        { error: "User not found in database. Please re-login." },
+        { status: 401 }
+      );
+    }
+
+    console.log("User found in database:", user.id);
+
     // Check if slug is already taken
     const existingChurch = await prisma.church.findUnique({
       where: { slug },
@@ -34,50 +52,56 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create church
-    const church = await prisma.church.create({
-      data: {
-        name,
-        slug,
-        description,
-        slogan,
-        logo,
-        coverImage,
-        website,
-        email,
-        phone,
-        address,
-        city,
-        country,
-      },
-    });
+    // Create church, church member, and church admin in a single transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create church
+      const church = await tx.church.create({
+        data: {
+          name,
+          slug,
+          description,
+          slogan,
+          logo,
+          coverImage,
+          website,
+          email,
+          phone,
+          address,
+          city,
+          country,
+        },
+      });
 
-    // Make the creator the owner of the church
-    await prisma.churchAdmin.create({
-      data: {
-        churchId: church.id,
-        userId: session.user.id,
-        role: "CHURCH_OWNER",
-        appointedAt: new Date(),
-      },
-    });
+      console.log("Church created:", church.id);
 
-    // Also ensure the creator is a member with admin privileges (for member-based checks)
-    try {
-      await prisma.churchMember.create({
+      // Create church member with OWNER role
+      const churchMember = await tx.churchMember.create({
         data: {
           churchId: church.id,
-          userId: session.user.id,
-          role: "ADMIN",
+          userId: userId,
+          role: "OWNER",
           isActive: true,
         },
       });
-    } catch (err) {
-      // ignore unique constraint / race errors
-      console.warn("Failed to create church member for owner:", err);
-    }
 
-    return NextResponse.json({ success: true, church });
+      console.log("ChurchMember created:", churchMember.id);
+
+      // Create church admin with OWNER role
+      const churchAdmin = await tx.churchAdmin.create({
+        data: {
+          churchId: church.id,
+          userId: userId,
+          role: "OWNER",
+          appointedAt: new Date(),
+        },
+      });
+
+      console.log("ChurchAdmin created:", churchAdmin.id);
+
+      return { church, churchMember, churchAdmin };
+    });
+
+    return NextResponse.json({ success: true, church: result.church });
   } catch (error) {
     console.error("Error creating church:", error);
     return NextResponse.json(

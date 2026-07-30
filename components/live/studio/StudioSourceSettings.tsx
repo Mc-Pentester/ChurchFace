@@ -45,23 +45,6 @@ export default function StudioSourceSettings({ source, isOpen, onClose, onSave, 
     onClose();
   };
 
-  const getSourceIcon = () => {
-    switch (source.type) {
-      case "CAMERA": return Camera;
-      case "SCREEN": return Monitor;
-      case "IMAGE": return Image;
-      case "VIDEO": return Video;
-      case "PLAYLIST": return Music;
-      case "TEXT": return Type;
-      case "LOGO": return Image;
-      case "BROWSER": return Globe;
-      case "AUDIO": return Music;
-      default: return Camera;
-    }
-  };
-
-  const Icon = getSourceIcon();
-
   if (!isOpen) return null;
 
   return (
@@ -70,7 +53,11 @@ export default function StudioSourceSettings({ source, isOpen, onClose, onSave, 
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#252535] rounded-lg flex items-center justify-center">
-              <Icon size={20} className="text-emerald-400" />
+              {source.type === "CAMERA" && <Camera size={20} className="text-emerald-400" />}
+              {source.type === "TEXT" && <Type size={20} className="text-emerald-400" />}
+              {source.type === "LOGO" && <Image size={20} className="text-emerald-400" />}
+              {source.type === "BROWSER" && <Globe size={20} className="text-emerald-400" />}
+              {source.type === "AUDIO" && <Music size={20} className="text-emerald-400" />}
             </div>
             <div>
               <h3 className="text-white font-semibold">Paramètres de source</h3>
