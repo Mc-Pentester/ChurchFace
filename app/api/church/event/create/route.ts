@@ -19,6 +19,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Verify church exists
+    const church = await prisma.church.findUnique({
+      where: { id: churchId },
+    });
+
+    if (!church) {
+      return NextResponse.json({ error: "Church not found" }, { status: 404 });
+    }
+
     const hasAccess = await userHasChurchRole(churchId, session.user.id, ["CHURCH_OWNER", "CHURCH_ADMIN", "PASTOR", "ADMIN"]);
 
     if (!hasAccess) {

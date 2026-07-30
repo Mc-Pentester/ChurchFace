@@ -630,6 +630,7 @@ model Church {
   donationEnabled Boolean        @default(false)
   radioEnabled    Boolean        @default(false)
   createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   schedule        String?
   admins          ChurchAdmin[]
   courses         ChurchCourse[]
