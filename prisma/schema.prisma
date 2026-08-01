@@ -765,20 +765,58 @@ model ChurchLive {
   churchId           String
   liveBroadcastId    String?
   title              String?
-  streamUrl          String?
+  description        String?
   thumbnail          String?
-  status             String         @default("SCHEDULED")
+  streamUrl          String?
   viewerCount        Int            @default(0)
+  status             String         @default("SCHEDULED")
+  scheduledStart     DateTime?
+  scheduledEnd       DateTime?
   startedAt          DateTime?
   endedAt            DateTime?
   createdAt          DateTime       @default(now())
-  description        String?
-  playUrl            String?
-  scheduledEnd       DateTime?
-  scheduledStart     DateTime?
+  updatedAt          DateTime       @default(now()) @updatedAt
+  rtmpUrl            String?
   streamMode         String?
+  webrtcUrl          String?
   outputDestinations Json?
   studioConfig       Json?
+  playUrl            String?
+
+  // Stream identifiers
+  streamId           String?  @unique
+  streamKey          String?  @unique
+  ingestUrl          String?
+  playbackUrl        String?
+  rtmpsUrl           String?
+  livekitRoom        String?
+  livekitToken       String?
+
+  // Relay configuration
+  relayEnabled       Boolean  @default(false)
+  relayStatus        String   @default("DISABLED")
+
+  // Encoder configuration
+  encoder            String?
+  ingestProtocol     String?  @default("RTMP")
+  playbackProtocol   String?  @default("WEBRTC")
+
+  // Monitoring data
+  heartbeatAt        DateTime?
+  ingestStatus       String?  @default("OFFLINE")
+  duration           Int?     @default(0)
+  peakViewerCount    Int?     @default(0)
+  bitrate            Int?     @default(0)
+  bandwidth          Int?     @default(0)
+  packetLoss         Float?   @default(0)
+  droppedFrames      Int?     @default(0)
+  cpuUsage           Float?   @default(0)
+
+  // Recording
+  recordingEnabled    Boolean  @default(false)
+  recordingUrl       String?
+  recordingStatus    String?  @default("STOPPED")
+
   church             Church         @relation(fields: [churchId], references: [id], onDelete: Cascade)
   broadcast          LiveBroadcast? @relation(fields: [liveBroadcastId], references: [id])
   scenes             StudioScene[]
