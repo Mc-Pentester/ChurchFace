@@ -770,6 +770,7 @@ model ChurchLive {
   streamUrl          String?
   viewerCount        Int            @default(0)
   status             String         @default("SCHEDULED")
+  scheduledAt        DateTime?
   scheduledStart     DateTime?
   scheduledEnd       DateTime?
   startedAt          DateTime?
