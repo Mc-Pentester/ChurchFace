@@ -83,6 +83,7 @@ class LiveKitService {
   private reconnectAttempts=0;
   private maxReconnectAttempts=5;
   private reconnectDelay=1000;
+  private reconnectTimer:NodeJS.Timeout|null=null;
 
   private studioState:StudioState={
     cameraEnabled:false,
@@ -353,7 +354,7 @@ class LiveKitService {
 
     this.room.on(
       RoomEvent.Disconnected,
-      ()=>{
+      async()=>{
 
         console.log(
           "LiveKit disconnected"
@@ -369,6 +370,36 @@ class LiveKitService {
 
         this.callbacks
         .onDisconnected?.();
+
+        // Attempt reconnection if not intentionally disconnected
+        if (this.mounted && this.currentConfig && this.reconnectAttempts < this.maxReconnectAttempts) {
+          console.log(`Attempting reconnection (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
+          this.setState("reconnecting");
+          
+          this.reconnectTimer = setTimeout(async () => {
+            try {
+              this.reconnectAttempts++;
+              if (this.currentConfig) {
+                await this.connect(this.currentConfig);
+                this.reconnectAttempts = 0; // Reset on successful reconnection
+              }
+            } catch (error) {
+              console.error("Reconnection failed:", error);
+              if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                this.setStatus("error");
+                this.setState("error");
+                errorHandler.connectionError(
+                  "Reconnexion échouée après plusieurs tentatives",
+                  (error as Error).message,
+                  true
+                );
+              }
+            }
+          }, this.reconnectDelay);
+          
+          // Exponential backoff
+          this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
+        }
 
       }
     );
@@ -949,6 +980,14 @@ class LiveKitService {
 
     }
 
+    // Clear reconnection timer
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.reconnectAttempts = 0;
+    this.reconnectDelay = 1000;
 
     this.room=null;
 

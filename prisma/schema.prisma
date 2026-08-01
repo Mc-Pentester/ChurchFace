@@ -604,6 +604,40 @@ model LiveBroadcast {
   studioConfig       Json?
   outputDestinations Json?
 
+  // Stream identifiers
+  streamId           String?  @unique
+  streamKey          String?  @unique
+  ingestUrl          String?
+  playbackUrl        String?
+  rtmpsUrl           String?
+  livekitRoom        String?
+  livekitToken       String?
+
+  // Relay configuration
+  relayEnabled       Boolean  @default(false)
+  relayStatus        String   @default("DISABLED")
+
+  // Encoder configuration
+  encoder            String?
+  ingestProtocol     String?  @default("RTMP")
+  playbackProtocol   String?  @default("WEBRTC")
+
+  // Monitoring data
+  heartbeatAt        DateTime?
+  ingestStatus       String?  @default("OFFLINE")
+  duration           Int?     @default(0)
+  peakViewerCount    Int?     @default(0)
+  bitrate            Int?     @default(0)
+  bandwidth          Int?     @default(0)
+  packetLoss         Float?   @default(0)
+  droppedFrames      Int?     @default(0)
+  cpuUsage           Float?   @default(0)
+
+  // Recording
+  recordingEnabled    Boolean  @default(false)
+  recordingUrl       String?
+  recordingStatus    String?  @default("STOPPED")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

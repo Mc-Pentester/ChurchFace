@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { generateStreamIdentifiers } from "@/lib/stream/streamGenerator";
 
 export const runtime = "nodejs";
 
@@ -43,22 +44,45 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { title, description, streamUrl } = await req.json();
+    const { title, description, streamUrl, streamMode } = await req.json();
 
-    if (!title || !streamUrl) {
+    if (!title) {
       return NextResponse.json(
-        { error: "Title and stream URL are required" },
+        { error: "Title is required" },
         { status: 400 }
       );
     }
 
-    const broadcast = await prisma.liveBroadcast.create({
+    // Create broadcast first to get ID
+    const tempBroadcast = await prisma.liveBroadcast.create({
       data: {
         title,
         description,
-        streamUrl,
-        status: "OFFLINE",
+        streamUrl: streamUrl || "",
+        streamMode: streamMode || "RTMP",
+        status: "SCHEDULED",
         authorId: session.user.id,
+      },
+    });
+
+    // Generate stream identifiers with actual broadcast ID
+    const serverUrl = process.env.CHURCHFACE_SERVER_URL || "live.churchface.com";
+    const streamIdentifiers = generateStreamIdentifiers(serverUrl, tempBroadcast.id);
+
+    // Update broadcast with stream identifiers
+    const broadcast = await prisma.liveBroadcast.update({
+      where: { id: tempBroadcast.id },
+      data: {
+        streamUrl: streamUrl || streamIdentifiers.ingestUrl,
+        streamId: streamIdentifiers.streamId,
+        streamKey: streamIdentifiers.streamKey,
+        ingestUrl: streamIdentifiers.ingestUrl,
+        playbackUrl: streamIdentifiers.playbackUrl,
+        rtmpUrl: streamIdentifiers.rtmpUrl,
+        rtmpsUrl: streamIdentifiers.rtmpsUrl,
+        livekitRoom: streamIdentifiers.liveKitRoom,
+        ingestProtocol: "RTMP",
+        playbackProtocol: "WEBRTC",
       },
     });
 
