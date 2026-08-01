@@ -641,14 +641,6 @@ model LiveBroadcast {
   recordingUrl       String?
   recordingStatus    String?  @default("STOPPED")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  author      User           @relation(fields: [authorId], references: [id])
-  churchLives ChurchLive[]
-  outputs     StudioOutput[]
-  scenes      StudioScene[]
-
 }
 
 model Church {
