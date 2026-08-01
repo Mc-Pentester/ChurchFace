@@ -18,10 +18,16 @@ export interface PrayerRequestWithUser {
   isAnswered: boolean;
   createdAt: string;
   updatedAt: string;
+  churchId?: string;
   user: {
     id: string;
     name: string | null;
     image: string | null;
+  };
+  church?: {
+    id: string;
+    name: string;
+    slug: string;
   };
   _count?: {
     reactions: number;

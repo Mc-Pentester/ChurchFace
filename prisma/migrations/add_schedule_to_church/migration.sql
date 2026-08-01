@@ -1,0 +1,2 @@
+ALTER TABLE "Church"
+ADD COLUMN IF NOT EXISTS "schedule" TEXT;

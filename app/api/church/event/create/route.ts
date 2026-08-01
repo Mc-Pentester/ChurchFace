@@ -15,11 +15,31 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { title, description, startDate, endDate, location, maxAttendees, churchId } = body;
 
+    console.log("Creating event with churchId:", churchId);
+
     if (!title || !startDate || !churchId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const hasAccess = await userHasChurchRole(churchId, session.user.id, ["CHURCH_OWNER", "CHURCH_ADMIN", "PASTOR", "ADMIN"]);
+    // Verify church exists - try by ID first, then by slug
+    let church = await prisma.church.findUnique({
+      where: { id: churchId },
+    });
+
+    if (!church) {
+      church = await prisma.church.findUnique({
+        where: { slug: churchId },
+      });
+    }
+
+    if (!church) {
+      console.error("Church not found for ID:", churchId);
+      return NextResponse.json({ error: "Church not found" }, { status: 404 });
+    }
+
+    console.log("Church found:", church.id, church.slug);
+
+    const hasAccess = await userHasChurchRole(church.id, session.user.id, ["CHURCH_OWNER", "CHURCH_ADMIN", "PASTOR", "ADMIN"]);
 
     if (!hasAccess) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -27,9 +47,11 @@ export async function POST(req: Request) {
 
     // Create event and post atomically in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      console.log("Starting transaction to create event with churchId:", church.id);
+      
       const event = await tx.churchEvent.create({
         data: {
-          churchId,
+          churchId: church.id,
           title,
           description: description || null,
           startDate: new Date(startDate),
@@ -45,9 +67,11 @@ export async function POST(req: Request) {
         },
       });
 
+      console.log("Event created successfully:", event.id);
+
       try {
         await createPostForEntity({
-          churchId,
+          churchId: church.id,
           type: "event",
           entityId: event.id,
           title: `📅 Événement : ${event.title}`,

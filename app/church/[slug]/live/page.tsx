@@ -13,6 +13,9 @@ async function getChurchLive(slug: string) {
       lives: {
         orderBy: { createdAt: "desc" },
         take: 1,
+        include: {
+          broadcast: true,
+        },
       },
     },
   });
@@ -66,7 +69,7 @@ export default async function ChurchLivePage({
                 )}
               </div>
 
-              <LiveVideoPlayer churchLive={churchLive} isLive={isLive} />
+              <LiveVideoPlayer churchLive={churchLive} broadcast={churchLive.broadcast} isLive={isLive} />
             </div>
 
             {/* Live Info */}

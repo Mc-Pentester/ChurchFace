@@ -10,20 +10,35 @@ interface StudioPreviewProps {
 
 export default function StudioPreview({ stream, muted = true, className = "" }: StudioPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
+    // Cancel any pending play request
+    if (playPromiseRef.current) {
+      playPromiseRef.current.catch(() => {});
+      playPromiseRef.current = null;
+    }
+
     if (stream) {
       video.srcObject = stream;
-      video.play().catch(console.error);
+      playPromiseRef.current = video.play().catch((error) => {
+        if (error.name !== 'AbortError') {
+          console.error('Video play error:', error);
+        }
+      });
     } else {
       video.srcObject = null;
     }
 
     return () => {
+      if (playPromiseRef.current) {
+        playPromiseRef.current.catch(() => {});
+      }
       if (video.srcObject) {
+        video.pause();
         video.srcObject = null;
       }
     };

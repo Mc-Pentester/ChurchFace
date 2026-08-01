@@ -7,6 +7,7 @@ import LiveKitPlayer from "@/components/livekit/LiveKitPlayer";
 interface LiveVideoPlayerProps {
   churchLive?: any;
   live?: any;
+  broadcast?: any;
   churchSlug?: string;
   isLive: boolean;
 }
@@ -14,17 +15,35 @@ interface LiveVideoPlayerProps {
 export default function LiveVideoPlayer({
   churchLive,
   live,
+  broadcast,
   churchSlug,
   isLive
 }: LiveVideoPlayerProps) {
   const resolved = churchLive ?? live;
+  const resolvedBroadcast = broadcast ?? resolved?.broadcast;
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
+    // Log debug info
+    setDebugInfo({
+      streamMode: resolved?.streamMode,
+      hasId: !!resolved?.id,
+      hasPlayUrl: !!resolved?.playUrl,
+      playUrl: resolved?.playUrl,
+      status: resolved?.status,
+    });
+
     async function generateToken() {
-      if (!resolved) return;
-      if (resolved?.streamMode === "WEBRTC" && resolved?.id) {
+      if (!resolvedBroadcast) return;
+      // Use WEBRTC if streamMode is WEBRTC or undefined (default to WEBRTC)
+      const shouldUseWebRTC = !resolved?.streamMode || resolved?.streamMode === "WEBRTC";
+      
+      if (shouldUseWebRTC && resolvedBroadcast?.id) {
+        // Use the same room name as the Studio: studio-${broadcastId}
+        const roomName = `studio-${resolvedBroadcast.id}`;
+        console.log("Generating LiveKit token for room:", roomName);
         try {
           setTokenError(null);
           const response = await fetch("/api/livekit/token", {
@@ -33,18 +52,22 @@ export default function LiveVideoPlayer({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              roomName: `church-${churchSlug ?? "default"}-${resolved.id}`,
-              participantName: `viewer-${resolved.id}`,
+              roomName: roomName,
+              participantName: `viewer-${resolvedBroadcast.id}`,
               isPublisher: false,
             }),
           });
+          console.log("Token response status:", response.status);
+          
           if (!response.ok) {
             const text = await response.text();
+            console.error("Token generation failed:", text);
             setTokenError(`Erreur génération token: ${text}`);
             return;
           }
 
           const data = await response.json();
+          console.log("Token response data:", data);
           if (data?.token) {
             setLivekitToken(data.token);
           } else {
@@ -58,7 +81,7 @@ export default function LiveVideoPlayer({
     }
 
     generateToken();
-  }, [resolved?.streamMode, resolved?.id]);
+  }, [resolved?.streamMode, resolvedBroadcast?.id, churchSlug]);
 
   if (!resolved) {
     return (
@@ -70,13 +93,24 @@ export default function LiveVideoPlayer({
 
   return (
     <div className="aspect-video bg-black/50 rounded-lg flex items-center justify-center relative">
-      {resolved?.streamMode === "WEBRTC" && livekitToken ? (
+      {/* Debug info */}
+      {debugInfo && (
+        <div className="absolute top-2 left-2 bg-black/80 text-white text-xs p-2 rounded z-50">
+          <div>streamMode: {debugInfo.streamMode || 'undefined'}</div>
+          <div>hasId: {debugInfo.hasId}</div>
+          <div>hasPlayUrl: {debugInfo.hasPlayUrl}</div>
+          <div>status: {debugInfo.status}</div>
+          <div>livekitToken: {livekitToken ? 'YES' : 'NO'}</div>
+        </div>
+      )}
+
+      {((!resolved?.streamMode || resolved?.streamMode === "WEBRTC") && livekitToken) ? (
         <LiveKitPlayer
           token={livekitToken}
           serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || ""}
-          roomName={`church-${resolved?.id}`}
+          roomName={`studio-${resolvedBroadcast?.id}`}
         />
-      ) : resolved?.streamMode === "WEBRTC" && !livekitToken ? (
+      ) : ((!resolved?.streamMode || resolved?.streamMode === "WEBRTC") && !livekitToken) ? (
         <div className="text-center">
           {tokenError ? (
             <p className="text-red-400 text-sm">{tokenError}</p>
@@ -101,6 +135,9 @@ export default function LiveVideoPlayer({
           </button>
           <p className="text-sm opacity-80">
             {isLive ? "Diffusion en cours" : resolved?.status === "OFFLINE" ? "Diffusion terminée" : "En attente de diffusion"}
+          </p>
+          <p className="text-xs opacity-50 mt-2">
+            streamMode: {resolved?.streamMode || 'N/A'} | playUrl: {resolved?.playUrl ? 'YES' : 'NO'}
           </p>
         </div>
       )}

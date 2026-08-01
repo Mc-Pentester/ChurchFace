@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const filter = searchParams.get("filter") || "recent"; // recent, popular, urgent, answered
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
+  const churchId = searchParams.get("churchId");
   const skip = (page - 1) * limit;
 
   let orderBy: any = { createdAt: "desc" };
@@ -16,6 +17,10 @@ export async function GET(req: Request) {
 
   if (category && category !== "ALL") {
     where.category = category;
+  }
+
+  if (churchId) {
+    where.churchId = churchId;
   }
 
   switch (filter) {
@@ -39,6 +44,7 @@ export async function GET(req: Request) {
       take: limit,
       include: {
         user: { select: { id: true, name: true, image: true } },
+        church: { select: { id: true, name: true, slug: true } },
         _count: { select: { reactions: true, responses: true, verses: true } },
         reactions: {
           take: 3,
@@ -62,7 +68,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { title, content, category, isUrgent } = body;
+  const { title, content, category, isUrgent, churchId } = body;
 
   if (!title?.trim() || !content?.trim() || !category) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -75,9 +81,11 @@ export async function POST(req: Request) {
       category,
       isUrgent: !!isUrgent,
       userId: session.user.id,
+      churchId: churchId || null,
     },
     include: {
       user: { select: { id: true, name: true, image: true } },
+      church: { select: { id: true, name: true, slug: true } },
       _count: { select: { reactions: true, responses: true, verses: true } },
     },
   });

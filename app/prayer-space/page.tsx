@@ -13,8 +13,16 @@ import PrayerDetailModal from "@/components/prayer/PrayerDetailModal";
 import type { PrayerRequestWithUser, PrayerChainWithLinks, PrayerLiveRoomWithCount } from "@/types/prayer";
 
 type Tab = "feed" | "urgent" | "answered" | "chains";
+type PrayerMode = "global" | "church";
 
-export default function PrayerSpacePage() {
+interface PrayerSpaceProps {
+  mode?: PrayerMode;
+  churchId?: string;
+  churchName?: string;
+  showNavbar?: boolean;
+}
+
+export default function PrayerSpacePage({ mode = "global", churchId, churchName, showNavbar = true }: PrayerSpaceProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -35,16 +43,24 @@ export default function PrayerSpacePage() {
     const params = new URLSearchParams();
     if (activeCategory) params.set("category", activeCategory);
     params.set("filter", activeFilter);
-    const res = await fetch(`/api/prayers?${params.toString()}`);
+    if (mode === "church" && churchId) params.set("churchId", churchId);
+    
+    const apiUrl = mode === "church" && churchId
+      ? `/api/church/prayers?${params.toString()}`
+      : `/api/prayers?${params.toString()}`;
+      
+    const res = await fetch(apiUrl);
     const data = await res.json();
     setPrayers(data.prayers || []);
 
-    // Fetch urgent separately for top banner
-    const urgentRes = await fetch(`/api/prayers?filter=urgent&limit=3`);
-    const urgentData = await urgentRes.json();
-    setUrgentPrayers(urgentData.prayers || []);
+    // Fetch urgent separately for top banner (only in global mode)
+    if (mode === "global") {
+      const urgentRes = await fetch(`/api/prayers?filter=urgent&limit=3`);
+      const urgentData = await urgentRes.json();
+      setUrgentPrayers(urgentData.prayers || []);
+    }
     setLoading(false);
-  }, [activeCategory, activeFilter]);
+  }, [activeCategory, activeFilter, mode, churchId]);
 
   const fetchSidebars = useCallback(async () => {
     const [chainRes, roomRes] = await Promise.all([
@@ -59,8 +75,10 @@ export default function PrayerSpacePage() {
 
   useEffect(() => {
     fetchPrayers();
-    fetchSidebars();
-  }, [fetchPrayers, fetchSidebars]);
+    if (mode === "global") {
+      fetchSidebars();
+    }
+  }, [fetchPrayers, fetchSidebars, mode]);
 
   const handlePray = async (id: string) => {
     const res = await fetch("/api/prayers/pray", {
@@ -82,10 +100,14 @@ export default function PrayerSpacePage() {
   };
 
   const handleCreate = async (data: { title: string; content: string; category: string; isUrgent: boolean }) => {
-    await fetch("/api/prayers", {
+    const apiUrl = mode === "church" && churchId
+      ? `/api/church/prayers?churchId=${churchId}`
+      : "/api/prayers";
+      
+    await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, churchId: mode === "church" ? churchId : undefined }),
     });
     setShowForm(false);
     fetchPrayers();
@@ -158,17 +180,25 @@ export default function PrayerSpacePage() {
     return null;
   }
 
+  const pageTitle = mode === "church" && churchName 
+    ? `Prières - ${churchName}` 
+    : "Espace de Prière";
+
+  const pageSubtitle = mode === "church"
+    ? "Partagez vos demandes de prière avec votre communauté"
+    : "Unis dans la foi, forts dans la prière";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
-      {/* Navbar */}
-      <Navbar />
+      {/* Navbar - only show if showNavbar is true */}
+      {showNavbar && <Navbar />}
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">Espace de Prière</h1>
-            <p className="text-xs text-gray-400">Unis dans la foi, forts dans la prière</p>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">{pageTitle}</h1>
+            <p className="text-xs text-gray-400">{pageSubtitle}</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -214,8 +244,8 @@ export default function PrayerSpacePage() {
 
         {/* Center feed */}
         <div className="lg:col-span-6 space-y-4">
-          {/* Urgent banner */}
-          {urgentPrayers.length > 0 && (
+          {/* Urgent banner - only in global mode */}
+          {mode === "global" && urgentPrayers.length > 0 && (
             <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Flame size={18} className="text-red-500" />
@@ -236,8 +266,8 @@ export default function PrayerSpacePage() {
             </div>
           )}
 
-          {/* Mobile-only sidebars */}
-          {mobileTab === "chains" && (
+          {/* Mobile-only sidebars - only in global mode */}
+          {mode === "global" && mobileTab === "chains" && (
             <div className="lg:hidden">
               <div className="bg-white rounded-2xl border p-4 mb-4">
                 <h3 className="font-bold text-gray-800 text-sm mb-3">Chaînes de prière</h3>

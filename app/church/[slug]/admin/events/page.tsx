@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import DeleteEventButton from "./DeleteEventButton";
 
 interface PageProps {
   params: Promise<{
@@ -142,6 +143,11 @@ export default async function AdminEventsPage({ params }: PageProps) {
               >
                 Voir
               </Link>
+
+              <DeleteEventButton
+                eventId={event.id}
+                eventTitle={event.title}
+              />
 
 
             </div>

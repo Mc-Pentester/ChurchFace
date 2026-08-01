@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Square, Pause, Video, VideoOff, Mic, MicOff, MonitorUp, Settings, Circle } from "lucide-react";
+import { Play, Square, Pause, Video, VideoOff, Mic, MicOff, MonitorUp, Settings, Circle, ArrowRight } from "lucide-react";
 
 interface StudioControlsProps {
   isLive: boolean;
@@ -8,6 +8,8 @@ interface StudioControlsProps {
   isCameraEnabled: boolean;
   isMicEnabled: boolean;
   isScreenSharing: boolean;
+  transitionType: "CUT" | "FADE" | "DISSOLVE" | "SLIDE";
+  isTransitioning: boolean;
   onStartLive: () => void;
   onStopLive: () => void;
   onToggleRecording: () => void;
@@ -15,6 +17,8 @@ interface StudioControlsProps {
   onToggleMic: () => void;
   onToggleScreenShare: () => void;
   onOpenSettings: () => void;
+  onTakeToProgram: () => void;
+  onTransitionTypeChange: (type: "CUT" | "FADE" | "DISSOLVE" | "SLIDE") => void;
 }
 
 export default function StudioControls({
@@ -23,6 +27,8 @@ export default function StudioControls({
   isCameraEnabled,
   isMicEnabled,
   isScreenSharing,
+  transitionType,
+  isTransitioning,
   onStartLive,
   onStopLive,
   onToggleRecording,
@@ -30,6 +36,8 @@ export default function StudioControls({
   onToggleMic,
   onToggleScreenShare,
   onOpenSettings,
+  onTakeToProgram,
+  onTransitionTypeChange,
 }: StudioControlsProps) {
   return (
     <div className="bg-[#16161f] rounded-lg p-4 flex flex-col gap-3">
@@ -121,6 +129,38 @@ export default function StudioControls({
         >
           <Settings size={18} />
           <span>Paramètres</span>
+        </button>
+      </div>
+
+      {/* Transition Controls */}
+      <div className="flex flex-col gap-2">
+        <h4 className="text-gray-400 text-xs font-semibold">Transition</h4>
+        <div className="grid grid-cols-4 gap-1">
+          {(["CUT", "FADE", "DISSOLVE", "SLIDE"] as const).map((type) => (
+            <button
+              key={type}
+              onClick={() => onTransitionTypeChange(type)}
+              className={`py-1 px-2 rounded text-xs font-medium transition ${
+                transitionType === type
+                  ? "bg-violet-600 text-white"
+                  : "bg-[#252535] text-gray-400 hover:bg-[#353545]"
+              }`}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onTakeToProgram}
+          disabled={isTransitioning}
+          className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition ${
+            isTransitioning
+              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+              : "bg-violet-600 hover:bg-violet-700 text-white"
+          }`}
+        >
+          <ArrowRight size={18} />
+          <span>{isTransitioning ? "Transition..." : "Take to Program"}</span>
         </button>
       </div>
 

@@ -129,22 +129,28 @@ export async function PATCH(
   }
 
   try {
-    const formData = await req.formData();
+    const contentType = req.headers.get("content-type");
+    let body: any;
+
+    if (contentType?.includes("application/json")) {
+      body = await req.json();
+    } else {
+      body = await req.formData();
+    }
     
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-    const slogan = formData.get("slogan") as string;
-    const email = formData.get("email") as string;
-    const phone = formData.get("phone") as string;
-    const address = formData.get("address") as string;
-    const city = formData.get("city") as string;
-    const country = formData.get("country") as string;
-    const website = formData.get("website") as string;
-    const scheduleStr = formData.get("schedule") as string;
-    const logoFile = formData.get("logo") as File | null;
-    const coverFile = formData.get("coverImage") as File | null;
-    const removeLogo = formData.get("removeLogo") === "true";
-    const removeCover = formData.get("removeCover") === "true";
+    const name = body.name as string;
+    const description = body.description as string;
+    const slogan = body.slogan as string;
+    const newSlug = body.slug as string;
+    const email = body.email as string;
+    const phone = body.phone as string;
+    const address = body.address as string;
+    const city = body.city as string;
+    const country = body.country as string;
+    const website = body.website as string;
+    const scheduleStr = body.schedule as string;
+    const logoUrl = body.logo as string | null;
+    const coverUrl = body.coverImage as string | null;
 
     // Get church by slug
     const church = await prisma.church.findUnique({
@@ -186,31 +192,12 @@ export async function PATCH(
       }
     }
 
-    // Handle image uploads (convert to base64 for simplicity)
-    let logoUrl = church.logo;
-    let coverUrl = church.coverImage;
-
-    if (removeLogo) {
-      logoUrl = null;
-    } else if (logoFile && logoFile.size > 0) {
-      const bytes = await logoFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      logoUrl = `data:${logoFile.type};base64,${buffer.toString("base64")}`;
-    }
-
-    if (removeCover) {
-      coverUrl = null;
-    } else if (coverFile && coverFile.size > 0) {
-      const bytes = await coverFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      coverUrl = `data:${coverFile.type};base64,${buffer.toString("base64")}`;
-    }
-
     // Update church
     const updatedChurch = await prisma.church.update({
       where: { id: church.id },
       data: {
         ...(name && { name }),
+        ...(newSlug && { slug: newSlug }),
         ...(description !== undefined && { description }),
         ...(slogan !== undefined && { slogan }),
         ...(logoUrl !== undefined && { logo: logoUrl }),

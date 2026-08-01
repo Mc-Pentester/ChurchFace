@@ -521,7 +521,22 @@ export default function Feed() {
           )}
 
           {/* MEDIA */}
-          {p.generatedType === "CHURCH_LIVE" && p.generatedId ? (
+          {p.generatedType === "CHURCH_PRAYER" && p.generatedId ? (
+            <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full">🙏 PRIÈRE</span>
+                <span className="text-sm font-semibold text-gray-700">Demande de prière urgente</span>
+              </div>
+              {p.church && (
+                <a
+                  href={`/church/${p.church.slug}/prayers`}
+                  className="block text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                >
+                  Voir les prières de {p.church.name} →
+                </a>
+              )}
+            </div>
+          ) : p.generatedType === "CHURCH_LIVE" && p.generatedId ? (
             <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">LIVE</span>

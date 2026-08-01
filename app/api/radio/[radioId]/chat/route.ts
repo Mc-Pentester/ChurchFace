@@ -104,9 +104,7 @@ export async function POST(
         : "";
 
 
-
     if (!content) {
-
       return NextResponse.json(
         {
           error: "Contenu requis",
@@ -115,10 +113,24 @@ export async function POST(
           status: 400,
         }
       );
-
     }
 
+    // Verify radio exists
+    const radio = await prisma.radio.findUnique({
+      where: { id: radioId },
+      select: { id: true }
+    });
 
+    if (!radio) {
+      return NextResponse.json(
+        {
+          error: "Radio introuvable",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
 
     const message =
       await prisma.radioChatMessage.create({
@@ -127,7 +139,7 @@ export async function POST(
 
           radioId,
 
-          userId: userId || null,
+          userId: userId || null, // Allow anonymous messages (userId can be null)
 
           content,
 
@@ -187,11 +199,15 @@ export async function POST(
       error
     );
 
+    // Return more specific error message
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : "Erreur inconnue";
 
     return NextResponse.json(
       {
-        error:
-          "Erreur envoi message",
+        error: "Erreur envoi message",
+        details: errorMessage,
       },
       {
         status: 500,

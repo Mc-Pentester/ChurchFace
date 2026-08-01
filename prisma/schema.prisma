@@ -606,6 +606,49 @@ model LiveBroadcast {
   author             User           @relation(fields: [authorId], references: [id])
   outputs            StudioOutput[]
   scenes             StudioScene[]
+
+  // Stream identifiers
+  streamId           String?  @unique
+  streamKey          String?  @unique
+  ingestUrl          String?
+  playbackUrl        String?
+  rtmpsUrl           String?
+  livekitRoom        String?
+  livekitToken       String?
+
+  // Relay configuration
+  relayEnabled       Boolean  @default(false)
+  relayStatus        String   @default("DISABLED")
+
+  // Encoder configuration
+  encoder            String?
+  ingestProtocol     String?  @default("RTMP")
+  playbackProtocol   String?  @default("WEBRTC")
+
+  // Monitoring data
+  heartbeatAt        DateTime?
+  ingestStatus       String?  @default("OFFLINE")
+  duration           Int?     @default(0)
+  peakViewerCount    Int?     @default(0)
+  bitrate            Int?     @default(0)
+  bandwidth          Int?     @default(0)
+  packetLoss         Float?   @default(0)
+  droppedFrames      Int?     @default(0)
+  cpuUsage           Float?   @default(0)
+
+  // Recording
+  recordingEnabled    Boolean  @default(false)
+  recordingUrl       String?
+  recordingStatus    String?  @default("STOPPED")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author      User           @relation(fields: [authorId], references: [id])
+  churchLives ChurchLive[]
+  outputs     StudioOutput[]
+  scenes      StudioScene[]
+
 }
 
 model Church {
@@ -625,6 +668,7 @@ model Church {
   donationEnabled Boolean        @default(false)
   radioEnabled    Boolean        @default(false)
   createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   schedule        String?
   admins          ChurchAdmin[]
   courses         ChurchCourse[]
@@ -638,6 +682,8 @@ model Church {
   playlists       Playlist[]
   globalPosts     Post[]
   users           User[]         @relation("UserChurch")
+  prayerRequests  PrayerRequest[]
+
 }
 
 model ChurchMember {
@@ -903,12 +949,16 @@ model PrayerRequest {
   isAnswered    Boolean          @default(false)
   createdAt     DateTime         @default(now())
   prayerChainId String?
+  churchId      String?
   reactions     PrayerReaction[]
   prayerChain   PrayerChain?     @relation(fields: [prayerChainId], references: [id])
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   responses     PrayerResponse[]
   testimony     PrayerTestimony?
   verses        PrayerVerse[]
+  church        Church?          @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId])
 }
 
 model PrayerLiveRoom {
