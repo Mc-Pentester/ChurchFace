@@ -18,9 +18,10 @@ interface StudioSourceSettingsProps {
     cameras: MediaDeviceInfo[];
     microphones: MediaDeviceInfo[];
   };
+  liveKitReady?: boolean;
 }
 
-export default function StudioSourceSettings({ source, isOpen, onClose, onSave, availableDevices }: StudioSourceSettingsProps) {
+export default function StudioSourceSettings({ source, isOpen, onClose, onSave, availableDevices, liveKitReady = false }: StudioSourceSettingsProps) {
   const [name, setName] = useState(source.name);
   const [url, setUrl] = useState(source.url || "");
   const [settings, setSettings] = useState(source.settings || {});
@@ -94,7 +95,10 @@ export default function StudioSourceSettings({ source, isOpen, onClose, onSave, 
               <select
                 value={selectedDeviceId}
                 onChange={(e) => setSelectedDeviceId(e.target.value)}
-                className="w-full bg-[#252535] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
+                disabled={!liveKitReady}
+                className={`w-full bg-[#252535] border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500 ${
+                  !liveKitReady ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <option value="">Sélectionner un périphérique</option>
                 {(source.type === "CAMERA" ? availableDevices?.cameras : availableDevices?.microphones)?.map((device) => (
@@ -103,7 +107,10 @@ export default function StudioSourceSettings({ source, isOpen, onClose, onSave, 
                   </option>
                 ))}
               </select>
-              {(!availableDevices || (source.type === "CAMERA" ? availableDevices.cameras.length === 0 : availableDevices.microphones.length === 0)) && (
+              {!liveKitReady && (
+                <p className="text-amber-500 text-xs mt-1">Connexion caméra en cours...</p>
+              )}
+              {liveKitReady && (!availableDevices || (source.type === "CAMERA" ? availableDevices.cameras.length === 0 : availableDevices.microphones.length === 0)) && (
                 <p className="text-gray-500 text-xs mt-1">Aucun périphérique détecté</p>
               )}
             </div>

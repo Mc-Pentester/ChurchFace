@@ -10,24 +10,47 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "churchId is required" }, { status: 400 });
     }
 
-    const churchRadio = await prisma.churchRadio.findFirst({
-      where: { churchId },
+    // Get church radios
+    const churchRadios = await prisma.churchRadio.findMany({
+      where: { churchId, isActive: true },
       include: {
         radio: {
           include: {
+            user: {
+              select: { id: true, name: true, image: true },
+            },
             playlist: {
               include: {
-                items: true,
+                items: { orderBy: { order: "asc" } },
               },
             },
+          },
+        },
+        playlist: {
+          include: {
+            items: { orderBy: { order: "asc" } },
           },
         },
       },
     });
 
-    const isLive = churchRadio?.radio?.isLive || false;
-    const currentTrack = churchRadio?.radio?.currentTrack || null;
+    // Get global live radios
+    const globalRadios = await prisma.radio.findMany({
+      where: { isLive: true },
+      orderBy: { startedAt: "desc" },
+      include: {
+        user: {
+          select: { id: true, name: true, image: true },
+        },
+        playlist: {
+          include: {
+            items: { orderBy: { order: "asc" } },
+          },
+        },
+      },
+    });
 
+    // Get church playlists
     const playlists = await prisma.playlist.findMany({
       where: { churchId },
       include: {
@@ -37,9 +60,24 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // Combine church radios (with their Radio if exists) and global radios
+    const allRadios = [
+      ...churchRadios
+        .filter((cr) => cr.radio)
+        .map((cr) => ({
+          ...cr.radio,
+          churchRadioId: cr.id,
+          churchStreamUrl: cr.streamUrl,
+          isChurchRadio: true,
+        })),
+      ...globalRadios.map((r) => ({
+        ...r,
+        isChurchRadio: false,
+      })),
+    ];
+
     return NextResponse.json({
-      isLive,
-      currentTrack,
+      radios: allRadios,
       playlists,
     });
   } catch (error) {

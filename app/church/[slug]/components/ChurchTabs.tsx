@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from "react";
 import ChurchFeed from "./ChurchFeed";
+import PrayerSpacePage from "@/app/prayer-space/page";
+import FloatingRadioPlayer from "@/components/radio/FloatingRadioPlayer";
+import PreachingPlayer from "@/components/preaching/PreachingPlayer";
+import PreachingSuggestions from "@/components/preaching/PreachingSuggestions";
+import { Radio as RadioIcon, Headphones, Users } from "lucide-react";
+import { useRadioPlayer } from "@/contexts/RadioPlayerContext";
 
 interface ChurchTabsProps {
   church: any;
@@ -15,9 +21,16 @@ export default function ChurchTabs({ church, churchSlug }: ChurchTabsProps) {
   const [events, setEvents] = useState<any[]>([]);
   const [media, setMedia] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [radios, setRadios] = useState<any[]>([]);
+  const [preachings, setPreachings] = useState<any[]>([]);
+  const [currentPreaching, setCurrentPreaching] = useState<any>(null);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [loadingRadios, setLoadingRadios] = useState(false);
+  const [loadingPreachings, setLoadingPreachings] = useState(false);
+
+  const { openRadio } = useRadioPlayer();
 
   const tabs = [
     { id: "feed" as TabType, label: "Fil d'actualité", icon: "📝" },
@@ -38,6 +51,10 @@ export default function ChurchTabs({ church, churchSlug }: ChurchTabsProps) {
       fetchMedia();
     } else if (activeTab === "members") {
       fetchMembers();
+    } else if (activeTab === "radio") {
+      fetchRadios();
+    } else if (activeTab === "sermons") {
+      fetchPreachings();
     }
   }, [activeTab, churchSlug]);
 
@@ -77,6 +94,36 @@ export default function ChurchTabs({ church, churchSlug }: ChurchTabsProps) {
       console.error("Error fetching members:", error);
     } finally {
       setLoadingMembers(false);
+    }
+  };
+
+  const fetchRadios = async () => {
+    setLoadingRadios(true);
+    try {
+      const response = await fetch(`/api/church/radio?churchId=${church.id}`);
+      const data = await response.json();
+      setRadios(data.radios || []);
+    } catch (error) {
+      console.error("Error fetching radios:", error);
+    } finally {
+      setLoadingRadios(false);
+    }
+  };
+
+  const fetchPreachings = async () => {
+    setLoadingPreachings(true);
+    try {
+      const response = await fetch("/api/preachings?limit=20");
+      const data = await response.json();
+      setPreachings(data.preachings || []);
+      // Set first preaching as current if none selected
+      if (!currentPreaching && data.preachings && data.preachings.length > 0) {
+        setCurrentPreaching(data.preachings[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching preachings:", error);
+    } finally {
+      setLoadingPreachings(false);
     }
   };
 
@@ -138,22 +185,69 @@ export default function ChurchTabs({ church, churchSlug }: ChurchTabsProps) {
           </div>
         );
       case "sermons":
+        if (loadingPreachings) {
+          return (
+            <div className="p-6">
+              <div className="animate-pulse space-y-4">
+                <div className="aspect-video bg-gray-200 rounded-lg"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          );
+        }
+        if (preachings.length === 0) {
+          return (
+            <div className="p-6">
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg">Aucune prédication disponible.</p>
+                <p className="text-sm mt-2">Les prédications publiées apparaîtront ici.</p>
+              </div>
+            </div>
+          );
+        }
+        if (!currentPreaching) {
+          return (
+            <div className="p-6">
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg">Sélectionnez une prédication</p>
+              </div>
+            </div>
+          );
+        }
         return (
-          <div className="p-6">
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg">Prédications</p>
-              <p className="text-sm mt-2">Les prédications seront bientôt disponibles.</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+            {/* Main content - Video Player */}
+            <div className="lg:col-span-2">
+              <PreachingPlayer
+                preaching={currentPreaching}
+                onLike={() => {
+                  // Refresh preaching data to update like count
+                  fetchPreachings();
+                }}
+                onDislike={() => {
+                  // Refresh preaching data
+                  fetchPreachings();
+                }}
+                onBookmark={() => {
+                  // Refresh preaching data
+                  fetchPreachings();
+                }}
+              />
+            </div>
+
+            {/* Right sidebar - Suggestions */}
+            <div className="lg:col-span-1">
+              <PreachingSuggestions
+                currentPreachingId={currentPreaching.id}
+                onSelectPreaching={(preaching) => setCurrentPreaching(preaching)}
+              />
             </div>
           </div>
         );
       case "prayer":
         return (
-          <div className="p-6">
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg">Prières</p>
-              <p className="text-sm mt-2">Les prières seront bientôt disponibles.</p>
-            </div>
-          </div>
+          <PrayerSpacePage mode="church" churchId={church.id} churchName={church.name} showNavbar={false} />
         );
       case "media":
         if (loadingMedia) {
@@ -205,12 +299,70 @@ export default function ChurchTabs({ church, churchSlug }: ChurchTabsProps) {
           </div>
         );
       case "radio":
+        if (loadingRadios) {
+          return (
+            <div className="p-6">
+              <div className="animate-pulse space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+                ))}
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="p-6">
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg">Radio</p>
-              <p className="text-sm mt-2">La radio sera bientôt disponible.</p>
-            </div>
+            {radios.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg">Aucune radio disponible.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {radios.map((radio) => (
+                  <div
+                    key={radio.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              radio.isLive ? "bg-red-500 animate-pulse" : "bg-gray-400"
+                            }`}
+                          />
+                          <h3 className="font-semibold text-gray-900">{radio.title}</h3>
+                          {radio.isChurchRadio && (
+                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                              Église
+                            </span>
+                          )}
+                        </div>
+                        {radio.description && (
+                          <p className="text-sm text-gray-600 mb-2">{radio.description}</p>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Users size={12} />
+                            {radio.listenerCount || 0} auditeurs
+                          </span>
+                          {radio.user && (
+                            <span>Par {radio.user.name}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => openRadio(radio.id)}
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm transition"
+                      >
+                        <Headphones size={14} />
+                        Écouter
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       case "members":
@@ -370,6 +522,9 @@ export default function ChurchTabs({ church, churchSlug }: ChurchTabsProps) {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 min-h-[400px]">
         {renderTab()}
       </div>
+
+      {/* Floating Radio Player */}
+      <FloatingRadioPlayer />
     </div>
   );
 }

@@ -28,7 +28,9 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
   }, [params]);
 
   const generateLiveKitToken = useCallback(async () => {
-    if (!liveBroadcast?.id || !session?.user?.id) return;
+    if (!liveBroadcast?.id || !session?.user?.id) {
+      return;
+    }
 
     try {
       const response = await fetch("/api/livekit/token", {
@@ -41,7 +43,13 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
         }),
       });
 
+      if (!response.ok) {
+        console.error("Token API error:", response.status);
+        return;
+      }
+
       const data = await response.json();
+      
       if (data.token) {
         setLivekitToken(data.token);
       }
@@ -53,14 +61,22 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
   const refreshLive = useCallback(async () => {
     if (!churchLive?.id || !slug) return;
     try {
-      const res = await fetch(`/api/church/${slug}/studio/live`, { cache: "no-store" });
-      const data = await res.json();
-      if (data.liveBroadcast) {
-        setLiveBroadcast(data.liveBroadcast);
-        setIsLive(data.liveBroadcast.status === "LIVE");
+      const res = await fetch(`/api/church/${slug}/studio/live`, { 
+        cache: "no-store",
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.liveBroadcast) {
+          setLiveBroadcast(data.liveBroadcast);
+          setIsLive(data.liveBroadcast.status === "LIVE");
+        }
       }
     } catch (e) {
-      console.error(e);
+      // Silently fail on network errors to avoid console spam
+      if (e instanceof Error && e.name !== 'AbortError') {
+        console.error("Failed to refresh live data:", e.message);
+      }
     }
   }, [churchLive?.id, slug]);
 
@@ -95,7 +111,7 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
 
   useEffect(() => {
     if (!churchLive?.id) return;
-    const iv = setInterval(refreshLive, 8000);
+    const iv = setInterval(refreshLive, 30000); // Reduced to 30 seconds to avoid spam
     return () => clearInterval(iv);
   }, [churchLive?.id, refreshLive]);
 
@@ -154,14 +170,17 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
           </div>
         ) : (
           <div className="flex-1 min-w-0">
-            {liveBroadcast && (
+            {/* Studio Live */}
+            <div className="flex-1 flex flex-col">
               <StudioLive
-                broadcastId={liveBroadcast.id}
+                broadcastId={liveBroadcast?.id}
                 livekitToken={livekitToken}
                 livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
-                roomName={`studio-${liveBroadcast.id}`}
+                roomName={liveBroadcast?.id ? `studio-${liveBroadcast.id}` : undefined}
+                userId={session?.user?.id}
+                userName={session?.user?.name || "Studio Host"}
               />
-            )}
+            </div>
           </div>
         )}
         <StudioRightPanel radioId={activeLive?.id} radio={activeLive} onStatsUpdate={handleLiveUpdate} />

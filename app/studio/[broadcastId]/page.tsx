@@ -42,9 +42,31 @@ export default async function StudioPage({ params }: PageProps) {
     redirect("/live");
   }
 
-  // Generate LiveKit token (in production, this would call the API)
-  const livekitToken = process.env.LIVEKIT_API_KEY ? "mock-token" : undefined;
-  const livekitUrl = process.env.LIVEKIT_URL;
+  // Generate LiveKit token via API
+  let livekitToken: string | undefined;
+  let livekitUrl: string | undefined;
+
+  try {
+    const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/livekit/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roomName: `studio-${broadcastId}`,
+        participantName: session.user.name || 'Studio Host',
+        metadata: JSON.stringify({ userId: session.user.id, role: 'host' }),
+      }),
+      cache: 'no-store',
+    });
+
+    if (tokenResponse.ok) {
+      const tokenData = await tokenResponse.json();
+      livekitToken = tokenData.token;
+      livekitUrl = tokenData.url;
+    }
+  } catch (error) {
+    console.error("Failed to generate LiveKit token:", error);
+  }
+
   const roomName = `studio-${broadcastId}`;
 
   return (

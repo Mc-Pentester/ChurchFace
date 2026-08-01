@@ -21,9 +21,12 @@ export default function LiveKitPlayer({
 
   const [isConnected, setIsConnected] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
+  const [participantCount, setParticipantCount] = useState(0);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const roomRef = useRef<Room | null>(null);
+  const shouldDisconnectRef = useRef(false);
 
 
   useEffect(() => {
@@ -34,13 +37,26 @@ export default function LiveKitPlayer({
         {
           serverUrl,
           roomName,
+          hasToken: !!token,
         }
       );
       return;
     }
 
+    // Prevent multiple connections
+    if (roomRef.current) {
+      console.log("LiveKit: Room already exists, skipping connection");
+      return;
+    }
 
     async function connectRoom() {
+
+      if (isConnecting) {
+        console.log("Already connecting, skipping");
+        return;
+      }
+
+      setIsConnecting(true);
 
       try {
 
@@ -71,11 +87,51 @@ export default function LiveKitPlayer({
             );
 
             setIsConnected(true);
+            
+            // Log participants
+            const participants = Array.from(room.remoteParticipants.values());
+            console.log("Remote participants:", participants.length, participants.map(p => p.identity));
+            setParticipantCount(participants.length);
+
+            // Try to attach existing tracks
+            participants.forEach(participant => {
+              // Get video track publication
+              const videoPublication = participant.getTrackPublication(Track.Source.Camera);
+              if (videoPublication?.track) {
+                console.log("Attaching existing video track from", participant.identity);
+                if (videoRef.current) {
+                  videoPublication.track.attach(videoRef.current);
+                  setHasVideo(true);
+                }
+              }
+            });
 
           }
         );
 
 
+
+        /**
+         * Nouveau participant
+         */
+        room.on(
+          RoomEvent.ParticipantConnected,
+          (participant) => {
+            console.log("Participant connected:", participant.identity);
+            setParticipantCount(prev => prev + 1);
+          }
+        );
+
+        /**
+         * Participant parti
+         */
+        room.on(
+          RoomEvent.ParticipantDisconnected,
+          (participant) => {
+            console.log("Participant disconnected:", participant.identity);
+            setParticipantCount(prev => prev - 1);
+          }
+        );
 
         /**
          * Déconnexion
@@ -90,6 +146,7 @@ export default function LiveKitPlayer({
 
             setIsConnected(false);
             setHasVideo(false);
+            setParticipantCount(0);
 
           }
         );
@@ -122,20 +179,14 @@ export default function LiveKitPlayer({
               setHasVideo(true);
 
 
-              const element =
-                track.attach();
-
-
-              if (
-                videoRef.current &&
-                element instanceof HTMLVideoElement
-              ) {
-
-                videoRef.current.srcObject =
-                  element.srcObject;
-
+              // Attach track directly to video element
+              if (videoRef.current) {
+                track.attach(videoRef.current);
               }
 
+            } else if (track.kind === Track.Kind.Audio) {
+              // Audio tracks are automatically handled by LiveKit
+              console.log("Audio track subscribed");
             }
 
           }
@@ -158,6 +209,10 @@ export default function LiveKitPlayer({
             ) {
 
               setHasVideo(false);
+              // Detach track from video element
+              if (videoRef.current) {
+                track.detach(videoRef.current);
+              }
 
             }
 
@@ -174,7 +229,7 @@ export default function LiveKitPlayer({
           }
         );
 
-
+        setIsConnecting(false);
 
       } catch(error) {
 
@@ -182,6 +237,7 @@ export default function LiveKitPlayer({
           "LiveKit connection error:",
           error
         );
+        setIsConnecting(false);
 
       }
 
@@ -194,15 +250,22 @@ export default function LiveKitPlayer({
 
 
     return () => {
-
-      if(roomRef.current){
-
+      shouldDisconnectRef.current = true;
+      
+      console.log("LiveKitPlayer cleanup called");
+      
+      // Only disconnect if actually connected and not in the middle of reconnection
+      if (roomRef.current && roomRef.current.state === "connected") {
+        console.log("LiveKitPlayer: Disconnecting room");
         roomRef.current.disconnect();
-
         roomRef.current = null;
-
+      } else {
+        console.log("LiveKitPlayer: Room not connected, skipping disconnect");
       }
-
+      
+      setIsConnecting(false);
+      setIsConnected(false);
+      setHasVideo(false);
     };
 
 

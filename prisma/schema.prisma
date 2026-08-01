@@ -644,6 +644,7 @@ model Church {
   radios          ChurchRadio[]
   users           User[]         @relation("UserChurch")
   globalPosts     Post[]
+  prayerRequests  PrayerRequest[]
 }
 
 model ChurchMember {
@@ -914,12 +915,16 @@ model PrayerRequest {
   isAnswered    Boolean          @default(false)
   createdAt     DateTime         @default(now())
   prayerChainId String?
+  churchId      String?
   reactions     PrayerReaction[]
   prayerChain   PrayerChain?     @relation(fields: [prayerChainId], references: [id])
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   responses     PrayerResponse[]
   testimony     PrayerTestimony?
   verses        PrayerVerse[]
+  church        Church?          @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId])
 }
 
 model PrayerLiveRoom {

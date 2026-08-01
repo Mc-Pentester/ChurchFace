@@ -8,23 +8,44 @@ export function usePrayers() {
   const [loading, setLoading] = useState(false);
   const [prayedIds, setPrayedIds] = useState<Set<string>>(new Set());
 
-  const fetchPrayers = useCallback(async (params?: { category?: string | null; filter?: string; page?: number; limit?: number }) => {
+  const fetchPrayers = useCallback(async (params?: { 
+    category?: string | null; 
+    filter?: string; 
+    page?: number; 
+    limit?: number;
+    churchId?: string;
+  }) => {
     setLoading(true);
     const searchParams = new URLSearchParams();
     if (params?.category) searchParams.set("category", params.category);
     if (params?.filter) searchParams.set("filter", params.filter);
     if (params?.page) searchParams.set("page", String(params.page));
     if (params?.limit) searchParams.set("limit", String(params.limit));
+    if (params?.churchId) searchParams.set("churchId", params.churchId);
 
-    const res = await fetch(`/api/prayers?${searchParams.toString()}`);
+    const apiUrl = params?.churchId 
+      ? `/api/church/prayers?${searchParams.toString()}`
+      : `/api/prayers?${searchParams.toString()}`;
+
+    const res = await fetch(apiUrl);
     const data = await res.json();
     setPrayers(data.prayers || []);
     setLoading(false);
     return data;
   }, []);
 
-  const createPrayer = useCallback(async (data: { title: string; content: string; category: string; isUrgent: boolean }) => {
-    const res = await fetch("/api/prayers", {
+  const createPrayer = useCallback(async (data: { 
+    title: string; 
+    content: string; 
+    category: string; 
+    isUrgent: boolean;
+    churchId?: string;
+  }) => {
+    const apiUrl = data.churchId 
+      ? `/api/church/prayers?churchId=${data.churchId}`
+      : "/api/prayers";
+
+    const res = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

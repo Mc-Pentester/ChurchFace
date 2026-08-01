@@ -41,6 +41,38 @@ export async function GET(req: NextRequest) {
     });
     const liveChurchIds = liveChurchLives.map((l) => l.churchId);
 
+    // Get public prayer requests from followed churches
+    const churchPrayers = await prisma.prayerRequest.findMany({
+      where: {
+        churchId: { in: followedChurchIds },
+        isUrgent: true, // Only show urgent prayers in global feed
+      },
+      select: {
+        id: true,
+        churchId: true,
+        title: true,
+        content: true,
+        createdAt: true,
+        church: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+
     const posts = await prisma.post.findMany({
       take: limit + 1,
       ...(cursor
@@ -131,9 +163,34 @@ export async function GET(req: NextRequest) {
     const page = hasMore ? posts.slice(0, limit) : posts;
     const nextCursor = hasMore ? page[page.length - 1]?.id ?? null : null;
 
-    const normalizedPosts = page.map((post: any) => ({
+    // Convert church prayers to post-like objects for the feed
+    const prayerPosts = churchPrayers.map((prayer) => ({
+      id: `prayer-${prayer.id}`, // Prefix to avoid ID collision
+      content: `🙏 Demande de prière urgente: ${prayer.title}\n\n${prayer.content}`,
+      imageUrl: null,
+      videoUrl: null,
+      createdAt: prayer.createdAt,
+      hashtags: ["priere", "urgent"],
+      generatedType: "CHURCH_PRAYER",
+      generatedId: prayer.id,
+      author: {
+        id: prayer.user.id,
+        name: prayer.user.name || "Anonyme",
+      },
+      church: prayer.church,
+      comments: [],
+      likeRelations: [],
+      shares: [],
+    }));
+
+    // Merge posts and prayer posts, then sort by createdAt
+    const allPosts = [...page, ...prayerPosts].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    const normalizedPosts = allPosts.map((post: any) => ({
       ...post,
-      comments: [...post.comments].reverse(),
+      comments: [...(post.comments || [])].reverse(),
     }));
 
     return NextResponse.json({
