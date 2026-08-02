@@ -127,7 +127,6 @@ export class RtmpRelayService {
       this.updateStats();
       return true;
     } catch (error) {
-      console.error("Error stopping relay:", error);
       return false;
     }
   }

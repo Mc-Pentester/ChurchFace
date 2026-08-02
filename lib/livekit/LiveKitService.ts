@@ -263,6 +263,8 @@ class LiveKitService {
     this.setStatus("connecting");
     this.setState("connecting");
 
+    console.log("LiveKit: Starting connection to room", config.roomName);
+
     try{
 
       if(!this.room){
@@ -277,29 +279,13 @@ class LiveKitService {
 
       connectionManager.setRoom(this.room);
 
-      // Create a promise that resolves when connected
-      const connectedPromise = new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error("Timeout waiting for connection"));
-        }, 10000); // 10 seconds timeout
-
-        const onConnected = () => {
-          clearTimeout(timeout);
-          resolve();
-        };
-
-        // Listen for RoomEvent.Connected
-        this.room!.once(RoomEvent.Connected, onConnected);
-      });
-
+      // Connect to LiveKit room - this Promise resolves when connection is established
       await this.room.connect(
         config.serverUrl,
         config.token
       );
 
-      // Wait for connection event
-      await connectedPromise;
-
+      console.log("LiveKit: Connection successful");
       this.setState("connected");
 
     }catch(error){
@@ -326,12 +312,15 @@ class LiveKitService {
 
     if(!this.room)return;
 
+    console.log("LiveKit: Registering room events");
+
+    // RoomEvent.Connected - triggered when connection is established
     this.room.on(
       RoomEvent.Connected,
       async()=>{
 
         console.log(
-          "LiveKit participant ready"
+          "LiveKit: Participant connected"
         );
 
         this.setStatus(
@@ -352,12 +341,13 @@ class LiveKitService {
     );
 
 
+    // RoomEvent.Disconnected - triggered when connection is lost
     this.room.on(
       RoomEvent.Disconnected,
       async()=>{
 
         console.log(
-          "LiveKit disconnected"
+          "LiveKit: Disconnected"
         );
 
         this.setState(
@@ -373,7 +363,7 @@ class LiveKitService {
 
         // Attempt reconnection if not intentionally disconnected
         if (this.mounted && this.currentConfig && this.reconnectAttempts < this.maxReconnectAttempts) {
-          console.log(`Attempting reconnection (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
+          console.log(`LiveKit: Attempting reconnection (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
           this.setState("reconnecting");
           
           this.reconnectTimer = setTimeout(async () => {
@@ -384,7 +374,7 @@ class LiveKitService {
                 this.reconnectAttempts = 0; // Reset on successful reconnection
               }
             } catch (error) {
-              console.error("Reconnection failed:", error);
+              console.error("LiveKit: Reconnection failed:", error);
               if (this.reconnectAttempts >= this.maxReconnectAttempts) {
                 this.setStatus("error");
                 this.setState("error");
@@ -405,53 +395,12 @@ class LiveKitService {
     );
 
 
-    this.room.on(
-      RoomEvent.LocalTrackPublished,
-      (
-        publication
-      )=>{
-
-        console.log(
-          "Track publiée",
-          publication.kind
-        );
-
-        this.checkMediaReady();
-
-      }
-    );
-
-
-    this.room.on(
-      RoomEvent.ParticipantConnected,
-      participant=>{
-
-        this.callbacks
-        .onParticipantJoined?.(
-          participant
-        );
-
-      }
-    );
-
-
-    this.room.on(
-      RoomEvent.ParticipantDisconnected,
-      participant=>{
-
-        this.callbacks
-        .onParticipantLeft?.(
-          participant
-        );
-
-      }
-    );
-
-
+    // RoomEvent.Reconnecting - triggered when reconnection starts
     this.room.on(
       RoomEvent.Reconnecting,
       ()=>{
 
+        console.log("LiveKit: Reconnecting...");
         this.setState(
           "reconnecting"
         );
@@ -460,12 +409,13 @@ class LiveKitService {
     );
 
 
+    // RoomEvent.Reconnected - triggered when reconnection succeeds
     this.room.on(
       RoomEvent.Reconnected,
       async()=>{
 
         console.log(
-          "LiveKit reconnected"
+          "LiveKit: Reconnected"
         );
 
         this.setState(
@@ -477,26 +427,172 @@ class LiveKitService {
       }
     );
 
+
+    // RoomEvent.ConnectionQualityChanged - monitor network quality
+    this.room.on(
+      RoomEvent.ConnectionQualityChanged,
+      (quality)=>{
+
+        console.log("LiveKit: Connection quality changed", quality);
+
+      }
+    );
+
+
+    // RoomEvent.LocalTrackPublished - track successfully published
+    this.room.on(
+      RoomEvent.LocalTrackPublished,
+      (
+        publication
+      )=>{
+
+        console.log(
+          "LiveKit: Track published",
+          publication.kind
+        );
+
+        this.checkMediaReady();
+
+      }
+    );
+
+
+    // RoomEvent.LocalTrackUnpublished - track unpublished
+    this.room.on(
+      RoomEvent.LocalTrackUnpublished,
+      (publication)=>{
+
+        console.log(
+          "LiveKit: Track unpublished",
+          publication.kind
+        );
+
+      }
+    );
+
+
+    // RoomEvent.TrackSubscribed - remote track subscribed
+    this.room.on(
+      RoomEvent.TrackSubscribed,
+      (track, publication, participant)=>{
+
+        console.log(
+          "LiveKit: Track subscribed",
+          { kind: track.kind, participant: participant.identity }
+        );
+
+      }
+    );
+
+
+    // RoomEvent.TrackUnsubscribed - remote track unsubscribed
+    this.room.on(
+      RoomEvent.TrackUnsubscribed,
+      (track, publication, participant)=>{
+
+        console.log(
+          "LiveKit: Track unsubscribed",
+          { kind: track.kind, participant: participant.identity }
+        );
+
+      }
+    );
+
+
+    // RoomEvent.ParticipantConnected - new participant joined
+    this.room.on(
+      RoomEvent.ParticipantConnected,
+      participant=>{
+
+        console.log("LiveKit: Participant joined", participant.identity);
+        this.callbacks
+        .onParticipantJoined?.(
+          participant
+        );
+
+      }
+    );
+
+
+    // RoomEvent.ParticipantDisconnected - participant left
+    this.room.on(
+      RoomEvent.ParticipantDisconnected,
+      participant=>{
+
+        console.log("LiveKit: Participant left", participant.identity);
+        this.callbacks
+        .onParticipantLeft?.(
+          participant
+        );
+
+      }
+    );
+
+
+    // RoomEvent.MediaDevicesChanged - device change detected
+    this.room.on(
+      RoomEvent.MediaDevicesChanged,
+      ()=>{
+
+        console.log("LiveKit: Media devices changed");
+
+      }
+    );
+
+
+    // RoomEvent.SignalConnected - signaling connection established
+    this.room.on(
+      RoomEvent.SignalConnected,
+      ()=>{
+
+        console.log("LiveKit: Signal connected");
+
+      }
+    );
+
+
+    // RoomEvent.SignalReconnecting - signaling reconnection
+    this.room.on(
+      RoomEvent.SignalReconnecting,
+      ()=>{
+
+        console.log("LiveKit: Signal reconnecting");
+
+      }
+    );
+
+
+    // RoomEvent.SignalReconnected - signaling reconnected
+    this.room.on(
+      RoomEvent.SignalConnected,
+      ()=>{
+
+        console.log("LiveKit: Signal reconnected");
+
+      }
+    );
+
+
+    // RoomEvent.RoomMetadataChanged - room metadata updated
+    this.room.on(
+      RoomEvent.RoomMetadataChanged,
+      (metadata)=>{
+
+        console.log("LiveKit: Room metadata changed", metadata);
+
+      }
+    );
+
   }
 
 
   async startStudio(config: LiveKitConfig){
-    // Create a promise that resolves when participant is ready
-    const participantReadyPromise = new Promise<void>((resolve) => {
-      const checkParticipant = () => {
-        if (this.room?.localParticipant) {
-          resolve();
-        } else {
-          setTimeout(checkParticipant, 50);
-        }
-      };
-      checkParticipant();
-    });
+    console.log("LiveKit: Starting studio with config", { roomName: config.roomName });
     
     await this.connect(config);
     
-    // Wait for participant to be available
-    await participantReadyPromise;
+    // Wait for participant to be available via event listener
+    // No manual polling needed - RoomEvent.Connected will trigger participant_ready
     
     await this.enableCameraAndMicrophone();
     return this.getStudioStatus();
@@ -834,6 +930,8 @@ class LiveKitService {
       };
 
 
+      this.callbacks.onMicEnabledChange?.(true);
+
       return true;
 
 
@@ -841,6 +939,182 @@ class LiveKitService {
 
       console.error(
         "Microphone switch error",
+        error
+      );
+
+      return false;
+
+    }
+
+  }
+
+
+
+  async toggleCamera(enabled:boolean):Promise<boolean>{
+
+    const participant=
+      this.room?.localParticipant;
+
+
+    if(!participant)return false;
+
+
+    try{
+
+      await participant.setCameraEnabled(enabled);
+
+      this.studioState={
+        ...this.studioState,
+        cameraEnabled:enabled
+      };
+
+      this.callbacks.onCameraEnabledChange?.(enabled);
+
+      return true;
+
+
+    }catch(error){
+
+      console.error(
+        "Camera toggle error",
+        error
+      );
+
+      return false;
+
+    }
+
+  }
+
+
+
+  async toggleMicrophone(enabled:boolean):Promise<boolean>{
+
+    const participant=
+      this.room?.localParticipant;
+
+
+    if(!participant)return false;
+
+
+    try{
+
+      await participant.setMicrophoneEnabled(enabled);
+
+      this.studioState={
+        ...this.studioState,
+        microphoneEnabled:enabled
+      };
+
+      this.callbacks.onMicEnabledChange?.(enabled);
+
+      return true;
+
+
+    }catch(error){
+
+      console.error(
+        "Microphone toggle error",
+        error
+      );
+
+      return false;
+
+    }
+
+  }
+
+
+
+  async startScreenShare():Promise<boolean>{
+
+    const participant=
+      this.room?.localParticipant;
+
+
+    if(!participant)return false;
+
+
+    try{
+
+      const stream=await navigator.mediaDevices.getDisplayMedia({
+        video:true,
+        audio:true
+      });
+
+      const videoTrack=stream.getVideoTracks()[0];
+      const audioTrack=stream.getAudioTracks()?.[0];
+
+      if(videoTrack){
+
+        const localVideoTrack=new LocalVideoTrack(videoTrack);
+        await participant.publishTrack(localVideoTrack);
+
+        if(audioTrack){
+
+          const localAudioTrack=new LocalAudioTrack(audioTrack);
+          await participant.publishTrack(localAudioTrack);
+
+        }
+
+        this.studioState={
+          ...this.studioState,
+          screenSharing:true
+        };
+
+        return true;
+
+      }
+
+      return false;
+
+
+    }catch(error){
+
+      console.error(
+        "Screen share start error",
+        error
+      );
+
+      return false;
+
+    }
+
+  }
+
+
+
+  async stopScreenShare():Promise<boolean>{
+
+    const participant=
+      this.room?.localParticipant;
+
+
+    if(!participant)return false;
+
+
+    try{
+
+      const screenPublication=participant.getTrackPublication(Track.Source.ScreenShare);
+
+      if(screenPublication&&screenPublication.track){
+
+        await participant.unpublishTrack(screenPublication.track);
+
+      }
+
+      this.studioState={
+        ...this.studioState,
+        screenSharing:false
+      };
+
+      return true;
+
+
+    }catch(error){
+
+      console.error(
+        "Screen share stop error",
         error
       );
 
@@ -923,19 +1197,30 @@ class LiveKitService {
 
   async disconnect(){
 
-    console.log(
-      "LiveKit disconnect"
-    );
+    console.log("LiveKit: Disconnecting");
 
+    // Clear reconnection timer
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.reconnectAttempts = 0;
+    this.reconnectDelay = 1000;
 
     try{
 
       this.previewVideoTrack?.stop();
-
       this.previewAudioTrack?.stop();
+
+      this.previewVideoTrack = null;
+      this.previewAudioTrack = null;
 
 
       if(this.room){
+
+        // Remove all event listeners to prevent memory leaks
+        this.room.removeAllListeners();
 
         await this.room.disconnect();
 
@@ -947,7 +1232,7 @@ class LiveKitService {
     }catch(error){
 
       console.error(
-        "Disconnect error",
+        "LiveKit: Disconnect error",
         error
       );
 

@@ -970,8 +970,6 @@ export default function StudioLive({
             isCameraEnabled={isCameraEnabled}
             isMicEnabled={isMicEnabled}
             isScreenSharing={isScreenSharing}
-            transitionType={transitionType}
-            isTransitioning={isTransitioning}
             onStartLive={handleStartLive}
             onStopLive={handleStopLive}
             onToggleRecording={handleToggleRecording}
@@ -979,8 +977,6 @@ export default function StudioLive({
             onToggleMic={handleToggleMic}
             onToggleScreenShare={handleToggleScreenShare}
             onOpenSettings={handleOpenSettings}
-            onTakeToProgram={handleTakeToProgram}
-            onTransitionTypeChange={setTransitionType}
           />
 
           {/* Audio Mixer */}
