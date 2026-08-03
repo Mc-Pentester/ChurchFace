@@ -22,30 +22,38 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
 
   const loadStudioData = async (churchSlug: string) => {
     try {
-      const res = await fetch(`/api/church/${churchSlug}/studio/live`);
-      if (res.ok) {
-        const data = await res.json();
-        setBroadcastData(data);
-        
-        // Generate LiveKit token
+      // Résoudre le contexte via BroadcastContextService
+      const contextRes = await fetch("/api/studio/context", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          churchSlug,
+          userId: session?.user?.id,
+          userRole: (session?.user as any)?.role,
+          userName: session?.user?.name,
+        }),
+      });
+
+      if (contextRes.ok) {
+        const context = await contextRes.json();
+        setBroadcastData(context);
+
+        // Générer le token LiveKit
         const tokenRes = await fetch("/api/livekit/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            roomName: `church_${churchSlug}_live`,
-            participantName: session?.user?.name || "host",
-            isPublisher: true,
+            roomName: context.livekitConfig.roomName,
+            participantName: context.ownerName,
+            isPublisher: context.permissions.canPublish,
           }),
         });
-        
+
         if (tokenRes.ok) {
           const tokenData = await tokenRes.json();
           setLivekitToken(tokenData.token);
           setLivekitUrl(tokenData.url);
-          setRoomName(`church_${churchSlug}_live`);
-        } else {
-          const errorData = await tokenRes.json();
-          console.error("Failed to generate LiveKit token:", errorData);
+          setRoomName(context.livekitConfig.roomName);
         }
       }
     } catch (error) {
@@ -63,15 +71,14 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
     );
   }
 
-  // Check if user is admin
-  const userRole = session?.user?.role;
-  if (userRole !== "ADMIN") {
+  // Vérifier les permissions via le BroadcastContext
+  if (!broadcastData?.permissions?.canPublish) {
     return (
       <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🔒</div>
           <h1 className="text-white text-2xl font-bold mb-2">Accès refusé</h1>
-          <p className="text-gray-400">Vous devez être administrateur pour accéder au studio live.</p>
+          <p className="text-gray-400">Vous n'avez pas les permissions nécessaires pour accéder au studio live.</p>
         </div>
       </div>
     );
@@ -79,11 +86,11 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
 
   return (
     <StudioPro
-      broadcastId={broadcastData?.churchLive?.id}
-      churchId={broadcastData?.church?.id}
-      churchSlug={slug}
-      churchName={broadcastData?.church?.name}
-      broadcastName={broadcastData?.churchLive?.title}
+      broadcastId={broadcastData?.broadcastId}
+      ownerId={broadcastData?.ownerId}
+      ownerType={broadcastData?.ownerType}
+      ownerName={broadcastData?.ownerName}
+      broadcastName={broadcastData?.broadcastName}
       livekitToken={livekitToken}
       livekitUrl={livekitUrl}
       roomName={roomName}

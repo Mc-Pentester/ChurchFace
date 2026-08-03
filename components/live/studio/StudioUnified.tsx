@@ -51,8 +51,9 @@ export type StudioPanel =
 interface StudioUnifiedProps {
   broadcastId?: string;
   mode?: StudioMode;
-  churchId?: string;
-  churchSlug?: string;
+  ownerId?: string;
+  ownerType?: "USER" | "CHURCH" | "GLOBAL";
+  ownerName?: string;
   livekitToken?: string;
   livekitUrl?: string;
   roomName?: string;
@@ -63,8 +64,9 @@ interface StudioUnifiedProps {
 export default function StudioUnified({
   broadcastId,
   mode = "VIDEO",
-  churchId,
-  churchSlug,
+  ownerId,
+  ownerType,
+  ownerName,
   livekitToken,
   livekitUrl,
   roomName,

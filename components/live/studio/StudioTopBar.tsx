@@ -14,8 +14,10 @@ import {
   Clock, 
   Wifi, 
   Activity,
-  MoreHorizontal
+  MoreHorizontal,
+  ExternalLink
 } from "lucide-react";
+import { OwnerType } from "@/types/broadcast";
 
 export type StudioMode = "RADIO" | "VIDEO";
 
@@ -23,7 +25,11 @@ interface StudioTopBarProps {
   mode: StudioMode;
   onModeChange: (mode: StudioMode) => void;
   broadcastName?: string;
-  churchName?: string;
+  churchName?: string; // @deprecated Use ownerName instead
+  ownerName?: string;
+  ownerType?: OwnerType;
+  ownerId?: string;
+  broadcastId?: string;
   isLive: boolean;
   elapsedTime: number;
   viewerCount: number;
@@ -43,6 +49,10 @@ export default function StudioTopBar({
   onModeChange,
   broadcastName,
   churchName,
+  ownerName,
+  ownerType,
+  ownerId,
+  broadcastId,
   isLive,
   elapsedTime,
   viewerCount,
@@ -57,6 +67,14 @@ export default function StudioTopBar({
   onToggleFullscreen,
 }: StudioTopBarProps) {
   const [showMenu, setShowMenu] = useState(false);
+  
+  // Mapping de compatibilité
+  const effectiveOwnerName = ownerName || churchName;
+  
+  // Warnings pour props dépréciés
+  if (churchName && !ownerName) {
+    console.warn("StudioTopBar: 'churchName' prop is deprecated. Use 'ownerName' instead.");
+  }
 
   const formatElapsedTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -96,6 +114,21 @@ export default function StudioTopBar({
       default:
         return "text-gray-500";
     }
+  };
+
+  const handleOpenPublicPage = () => {
+    if (!broadcastId) return;
+
+    let url = "";
+    if (ownerType === "CHURCH" && ownerId) {
+      // Pour les églises, on utilise le slug
+      url = `/church/${ownerId}/live`;
+    } else {
+      // Pour les users et autres, on utilise l'ID du broadcast
+      url = `/live/${broadcastId}`;
+    }
+
+    window.open(url, "_blank");
   };
 
   return (
@@ -229,6 +262,16 @@ export default function StudioTopBar({
           className="p-2.5 bg-[#1a1a2e] text-gray-400 hover:bg-[#2a2a4a] hover:text-white rounded-lg transition"
         >
           <Maximize size={20} />
+        </button>
+
+        {/* Open Public Page */}
+        <button
+          onClick={handleOpenPublicPage}
+          disabled={!broadcastId}
+          className="p-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Ouvrir la page publique"
+        >
+          <ExternalLink size={20} />
         </button>
 
         {/* More Menu */}

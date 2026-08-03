@@ -21,6 +21,7 @@ model User {
   isSuspended                Boolean                     @default(false)
   suspendedAt                DateTime?
   churchId                   String?
+  permissions                Json?                        @default("{}")
   accounts                   Account[]
   adminLogs                  AdminLog[]
   audioTracks                AudioTrack[]
@@ -590,6 +591,8 @@ model LiveBroadcast {
   thumbnail          String?
   streamUrl          String
   authorId           String
+  ownerType          String         @default("USER") // "USER" | "CHURCH" | "GLOBAL"
+  ownerId            String?
   viewerCount        Int            @default(0)
   status             String         @default("SCHEDULED")
   scheduledAt        DateTime?
@@ -640,6 +643,7 @@ model LiveBroadcast {
   recordingEnabled    Boolean  @default(false)
   recordingUrl       String?
   recordingStatus    String?  @default("STOPPED")
+  replayUrl          String?
 
 }
 
@@ -679,14 +683,15 @@ model Church {
 }
 
 model ChurchMember {
-  id       String   @id @default(cuid())
-  churchId String
-  userId   String
-  role     String   @default("MEMBER")
-  joinedAt DateTime @default(now())
-  isActive Boolean  @default(true)
-  church   Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  churchId              String
+  userId                String
+  role                  String   @default("MEMBER")
+  joinedAt              DateTime @default(now())
+  isActive              Boolean  @default(true)
+  notificationPreferences Json?   @default("{}")
+  church                Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([churchId, userId])
 }
@@ -1206,6 +1211,7 @@ model StudioSource {
 
 model StudioOutput {
   id          String         @id @default(cuid())
+  name        String
   type        String
   enabled     Boolean        @default(false)
   config      Json?

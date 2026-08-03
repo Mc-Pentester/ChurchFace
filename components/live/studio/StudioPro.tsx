@@ -11,7 +11,7 @@ import StudioTransitions from "./StudioTransitions";
 import StudioAudioMixer from "./StudioAudioMixer";
 import StudioChat from "./StudioChat";
 import StudioStats from "./StudioStats";
-import StudioMultistream from "./StudioMultistream";
+import StudioOutputs from "./StudioOutputs";
 import StudioControls from "./StudioControls";
 import { TransitionType, getTransitionEffect, TransitionConfig } from "@/lib/transitions/TransitionTypes";
 import { useStudioLayout } from "@/hooks/useStudioLayout";
@@ -22,12 +22,24 @@ import { liveKitService } from "@/lib/livekit/LiveKitService";
 import { egressService } from "@/lib/livekit/EgressService";
 import { rtmpRelayService } from "@/lib/rtmp/RtmpRelayService";
 import { Mic, Music, MonitorUp } from "lucide-react";
+import { OwnerType } from "@/types/broadcast";
 
 interface StudioProProps {
-  broadcastId?: string;
+  // Props existants (dépréciés mais conservés pour compatibilité)
+  /** @deprecated Use ownerId instead */
   churchId?: string;
+  /** @deprecated Use ownerType instead */
   churchSlug?: string;
+  /** @deprecated Use ownerName instead */
   churchName?: string;
+  
+  // Nouveaux props génériques
+  ownerId?: string;
+  ownerType?: OwnerType;
+  ownerName?: string;
+  
+  // Props inchangés
+  broadcastId?: string;
   broadcastName?: string;
   livekitToken?: string;
   livekitUrl?: string;
@@ -41,6 +53,9 @@ export default function StudioPro({
   churchId,
   churchSlug,
   churchName,
+  ownerId,
+  ownerType,
+  ownerName,
   broadcastName,
   livekitToken,
   livekitUrl,
@@ -49,6 +64,22 @@ export default function StudioPro({
   userName,
 }: StudioProProps) {
   const { data: session } = useSession();
+  
+  // Mapping de compatibilité pour les anciens props
+  const effectiveOwnerId = ownerId || churchId;
+  const effectiveOwnerType = ownerType || (churchId ? "CHURCH" : "USER");
+  const effectiveOwnerName = ownerName || churchName;
+  
+  // Warnings pour props dépréciés
+  if (churchId && !ownerId) {
+    console.warn("StudioPro: 'churchId' prop is deprecated. Use 'ownerId' instead.");
+  }
+  if (churchSlug && !ownerType) {
+    console.warn("StudioPro: 'churchSlug' prop is deprecated. Use 'ownerType' instead.");
+  }
+  if (churchName && !ownerName) {
+    console.warn("StudioPro: 'churchName' prop is deprecated. Use 'ownerName' instead.");
+  }
   
   // Studio State
   const [mode, setMode] = useState<StudioMode>("VIDEO");
@@ -75,7 +106,7 @@ export default function StudioPro({
   const rtmpRelayRef = useRef(rtmpRelayService);
 
   // Layout
-  const { layout, updatePanel, togglePanelVisibility, togglePanelCollapsed, resetLayout, switchMode } = useStudioLayout(userId, mode);
+  const { layout, updatePanel, togglePanelVisibility, togglePanelCollapsed, resetLayout, switchMode } = useStudioLayout(effectiveOwnerId, mode);
 
   // Scene Engine
   const sceneEngine = useSceneEngine({
@@ -437,6 +468,10 @@ export default function StudioPro({
         onModeChange={handleModeChange}
         broadcastName={broadcastName}
         churchName={churchName}
+        ownerName={effectiveOwnerName}
+        ownerType={effectiveOwnerType}
+        ownerId={ownerId}
+        broadcastId={broadcastId}
         isLive={isLive}
         elapsedTime={elapsedTime}
         viewerCount={viewerCount}
@@ -477,48 +512,13 @@ export default function StudioPro({
 
                 {/* Transitions Panel */}
                 <div className="bg-[#16161f] rounded-lg shadow-xl flex flex-col items-center justify-start gap-2 px-2 py-3 w-20 overflow-hidden">
-                  <div className="text-white text-xs font-semibold mb-1">TRANSITION</div>
-                  <button
-                    onClick={handleTransitionExecute}
-                    disabled={isTransitioning}
-                    className={`w-full px-2 py-2 rounded text-xs font-semibold transition ${
-                      isTransitioning
-                        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                        : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    }`}
-                  >
-                    {isTransitioning ? "..." : "TAKE"}
-                  </button>
-                  <div className="flex flex-col gap-1 w-full">
-                    {["CUT", "FADE", "BLACK", "DISSOLVE", "SLIDE", "SWIPE L", "SWIPE R", "ZOOM"].map((label, idx) => {
-                      const types = ["CUT", "FADE", "FADE_TO_BLACK", "CROSS_DISSOLVE", "SLIDE", "SWIPE_LEFT", "SWIPE_RIGHT", "ZOOM"] as TransitionType[];
-                      return (
-                        <button
-                          key={types[idx]}
-                          onClick={() => setCurrentTransition(types[idx])}
-                          className={`w-full px-2 py-1 rounded text-xs transition ${
-                            currentTransition === types[idx]
-                              ? "bg-emerald-600/20 text-emerald-400"
-                              : "bg-[#252535] text-gray-300 hover:bg-[#353545]"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center gap-1 w-full">
-                    <span className="text-gray-400 text-xs">{transitionDuration}ms</span>
-                    <input
-                      type="range"
-                      min={100}
-                      max={2000}
-                      step={100}
-                      value={transitionDuration}
-                      onChange={(e) => setTransitionDuration(parseInt(e.target.value))}
-                      className="flex-1 h-1 accent-emerald-500"
-                    />
-                  </div>
+                  <StudioTransitions
+                    currentTransition={currentTransition}
+                    onTransitionChange={setCurrentTransition}
+                    onTransitionExecute={handleTransitionExecute}
+                    transitionDuration={transitionDuration}
+                    onDurationChange={setTransitionDuration}
+                  />
                 </div>
 
                 {/* Program Panel */}
@@ -635,20 +635,14 @@ export default function StudioPro({
                 />
               </div>
 
-              {/* Multistreaming Panel */}
+              {/* Stats Panel */}
+              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-32 w-full overflow-hidden">
+                <StudioStats broadcastId={broadcastId || ""} isLive={isLive} />
+              </div>
+
+              {/* Outputs Panel */}
               <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-64 w-full overflow-hidden">
-                <StudioMultistream
-                  isLive={isLive}
-                  onDestinationAdd={(dest) => {
-                    rtmpRelayRef.current.addDestination(dest);
-                  }}
-                  onDestinationRemove={(id) => {
-                    rtmpRelayRef.current.removeDestination(id);
-                  }}
-                  onDestinationToggle={(id, enabled) => {
-                    rtmpRelayRef.current.updateDestination(id, { enabled });
-                  }}
-                />
+                <StudioOutputs broadcastId={broadcastId || ""} />
               </div>
             </div>
           </div>

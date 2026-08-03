@@ -275,11 +275,11 @@ const DEFAULT_RADIO_LAYOUT: StudioLayout = {
   ],
 };
 
-export function useStudioLayout(userId?: string, mode: "RADIO" | "VIDEO" = "VIDEO") {
+export function useStudioLayout(contextId?: string, mode: "RADIO" | "VIDEO" = "VIDEO") {
   const [layout, setLayout] = useState<StudioLayout>(() => {
     // Try to load saved layout from localStorage
-    if (typeof window !== "undefined" && userId) {
-      const saved = localStorage.getItem(`studio_layout_${userId}_${mode}`);
+    if (typeof window !== "undefined" && contextId) {
+      const saved = localStorage.getItem(`studio_layout_${contextId}_${mode}`);
       if (saved) {
         try {
           return JSON.parse(saved);
@@ -299,10 +299,10 @@ export function useStudioLayout(userId?: string, mode: "RADIO" | "VIDEO" = "VIDE
 
   // Save layout to localStorage
   useEffect(() => {
-    if (typeof window !== "undefined" && userId) {
-      localStorage.setItem(`studio_layout_${userId}_${mode}`, JSON.stringify(layout));
+    if (typeof window !== "undefined" && contextId) {
+      localStorage.setItem(`studio_layout_${contextId}_${mode}`, JSON.stringify(layout));
     }
-  }, [layout, userId, mode]);
+  }, [layout, contextId, mode]);
 
   const updatePanel = useCallback((panelId: StudioPanelId, updates: Partial<StudioPanel>) => {
     setLayout(prev => ({

@@ -13,6 +13,9 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "lint": "eslint",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test"
   },
   "dependencies": {

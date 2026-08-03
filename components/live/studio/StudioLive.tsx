@@ -493,10 +493,10 @@ export default function StudioLive({
       startRecording(programStream);
     }
 
-    // Update ChurchLive status to LIVE
+    // Update broadcast status to LIVE
     try {
-      await fetch(`/api/live/${broadcastId}/status`, {
-        method: 'POST',
+      await fetch(`/api/live/${broadcastId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'LIVE' })
       });
@@ -509,12 +509,12 @@ export default function StudioLive({
     setIsLive(false);
     stopRecording();
 
-    // Update ChurchLive status to OFFLINE
+    // Update broadcast status to OFFLINE/ENDED
     try {
-      await fetch(`/api/live/${broadcastId}/status`, {
-        method: 'POST',
+      await fetch(`/api/live/${broadcastId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'OFFLINE' })
+        body: JSON.stringify({ status: 'ENDED' })
       });
     } catch (error) {
       console.error('Failed to update live status:', error);
@@ -1054,7 +1054,7 @@ export default function StudioLive({
 
           {/* Sermons Panel */}
           <div className="h-96">
-            <StudioSermons churchId="default-church" onSermonSelect={handleSermonSelect} />
+            <StudioSermons ownerId={broadcastId} onSermonSelect={handleSermonSelect} />
           </div>
         </div>
       </div>

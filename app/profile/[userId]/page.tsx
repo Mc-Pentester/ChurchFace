@@ -5,6 +5,10 @@ import { useSession } from "next-auth/react";
 import { UserPlus, UserCheck, UserMinus, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
+import GoLiveButton from "@/components/mobilelive/GoLiveButton";
+import MobileLiveSetup from "@/components/mobilelive/MobileLiveSetup";
+import MobileLiveInterface from "@/components/mobilelive/MobileLiveInterface";
+import { MobileLiveSession } from "@/lib/mobilelive/MobileLiveTypes";
 
 type UserProfile = {
   id: string;
@@ -24,6 +28,8 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>("NONE");
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showMobileLiveSetup, setShowMobileLiveSetup] = useState(false);
+  const [mobileLiveSession, setMobileLiveSession] = useState<MobileLiveSession | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -136,6 +142,19 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   const isOwnProfile = session?.user?.id === user.id;
 
+  const handleMobileLiveStart = (sessionId: string) => {
+    setShowMobileLiveSetup(false);
+    // Fetch the session data
+    fetch(`/api/mobilelive/session/${sessionId}`)
+      .then(res => res.json())
+      .then(data => setMobileLiveSession(data))
+      .catch(console.error);
+  };
+
+  const handleMobileLiveEnd = () => {
+    setMobileLiveSession(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
       <Navbar />
@@ -154,6 +173,18 @@ export default function UserProfilePage({ params }: { params: { userId: string }
               {user.bio && <p className="mt-2 text-gray-700 text-sm">{user.bio}</p>}
             </div>
           </div>
+
+        {isOwnProfile && (
+          <div className="flex gap-2 pt-4 border-t">
+            <GoLiveButton
+              context="PERSONAL"
+              ownerId={user.id}
+              ownerType="USER"
+              onOpenSetup={() => setShowMobileLiveSetup(true)}
+              className="flex-1"
+            />
+          </div>
+        )}
 
         {!isOwnProfile && (
           <div className="flex gap-2 pt-4 border-t">
@@ -205,6 +236,27 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           </div>
         )}
       </div>
+
+      {/* Mobile Live Setup Modal */}
+      {showMobileLiveSetup && (
+        <MobileLiveSetup
+          context="PERSONAL"
+          ownerId={user.id}
+          ownerType="USER"
+          ownerName={user.name || "User"}
+          onClose={() => setShowMobileLiveSetup(false)}
+          onStart={handleMobileLiveStart}
+        />
+      )}
+
+      {/* Mobile Live Interface */}
+      {mobileLiveSession && (
+        <MobileLiveInterface
+          sessionId={mobileLiveSession.id}
+          session={mobileLiveSession}
+          onEnd={handleMobileLiveEnd}
+        />
+      )}
     </div>
     </div>
   );
