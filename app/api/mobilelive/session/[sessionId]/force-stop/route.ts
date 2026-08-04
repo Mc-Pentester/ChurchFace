@@ -44,6 +44,9 @@ export async function POST(
       if (broadcast.authorId === session.user.id) return true;
       // Les admins de l'église peuvent arrêter les lives d'église
       if (broadcast.ownerType === "CHURCH") {
+        if (!broadcast.ownerId) {
+          return false;
+        }
         const churchAdmin = await prisma.churchAdmin.findFirst({
           where: {
             userId: session.user.id,

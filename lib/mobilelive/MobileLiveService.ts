@@ -160,10 +160,10 @@ export class MobileLiveService {
         // Vérifier les préférences de notification de l'utilisateur
         const user = await prisma.user.findUnique({
           where: { id: follower.senderId },
-          select: { notificationPreferences: true },
+          select: { permissions: true },
         });
 
-        const preferences = (user?.notificationPreferences as any) || {};
+        const preferences = (user?.permissions as any) || {};
         const shouldNotify = preferences.liveNotifications !== false;
 
         if (shouldNotify) {
@@ -192,10 +192,10 @@ export class MobileLiveService {
         // Vérifier les préférences de notification
         const user = await prisma.user.findUnique({
           where: { id: follower.userId },
-          select: { notificationPreferences: true },
+          select: { permissions: true },
         });
 
-        const preferences = (user?.notificationPreferences as any) || {};
+        const preferences = (user?.permissions as any) || {};
         const shouldNotify = preferences.churchLiveNotifications !== false;
 
         if (shouldNotify) {
@@ -368,15 +368,11 @@ export class MobileLiveService {
         data: {
           content: `Replay du live : ${broadcast.title}`,
           authorId: broadcast.authorId,
-          type: "VIDEO",
-          mediaUrl: broadcast.recordingUrl || "",
-          thumbnailUrl: broadcast.thumbnail,
-          metadata: {
-            broadcastId: sessionId,
-            isReplay: true,
-            originalLiveTitle: broadcast.title,
-            originalLiveDescription: broadcast.description,
-          },
+          generatedType: "VIDEO",
+          generatedId: sessionId,
+          videoUrl: broadcast.recordingUrl || "",
+          imageUrl: broadcast.thumbnail,
+          hashtags: ["live", "replay"],
         },
       });
 

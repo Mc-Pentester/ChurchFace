@@ -140,6 +140,9 @@ export class MobileLivePermissionService {
 
     // Pour les lives d'église, les admins de l'église peuvent arrêter
     if (broadcast.ownerType === "CHURCH") {
+      if (!broadcast.ownerId) {
+        return false;
+      }
       const churchAdmin = await prisma.churchAdmin.findFirst({
         where: {
           userId,
@@ -188,6 +191,9 @@ export class MobileLivePermissionService {
 
     // Pour les lives d'église, les admins de l'église peuvent modérer
     if (broadcast.ownerType === "CHURCH") {
+      if (!broadcast.ownerId) {
+        return false;
+      }
       const churchAdmin = await prisma.churchAdmin.findFirst({
         where: {
           userId,
