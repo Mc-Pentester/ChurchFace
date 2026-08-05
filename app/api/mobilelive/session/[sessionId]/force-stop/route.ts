@@ -50,7 +50,7 @@ export async function POST(
         const churchAdmin = await prisma.churchAdmin.findFirst({
           where: {
             userId: session.user.id,
-            churchId: broadcast.ownerId,
+            churchId: broadcast.ownerId ?? undefined,
           },
         });
         return !!churchAdmin;

@@ -146,7 +146,7 @@ export class MobileLivePermissionService {
       const churchAdmin = await prisma.churchAdmin.findFirst({
         where: {
           userId,
-          churchId: broadcast.ownerId,
+          churchId: broadcast.ownerId ?? undefined,
         },
       });
 
@@ -197,7 +197,7 @@ export class MobileLivePermissionService {
       const churchAdmin = await prisma.churchAdmin.findFirst({
         where: {
           userId,
-          churchId: broadcast.ownerId,
+          churchId: broadcast.ownerId ?? undefined,
         },
       });
 

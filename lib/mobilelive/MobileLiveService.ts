@@ -163,7 +163,7 @@ export class MobileLiveService {
           select: { permissions: true },
         });
 
-        const preferences = (user?.permissions as any) || {};
+        const preferences = (user?.permissions as any)?.notificationPreferences || {};
         const shouldNotify = preferences.liveNotifications !== false;
 
         if (shouldNotify) {
@@ -195,7 +195,7 @@ export class MobileLiveService {
           select: { permissions: true },
         });
 
-        const preferences = (user?.permissions as any) || {};
+        const preferences = (user?.permissions as any)?.notificationPreferences || {};
         const shouldNotify = preferences.churchLiveNotifications !== false;
 
         if (shouldNotify) {
