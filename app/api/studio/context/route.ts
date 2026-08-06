@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BroadcastContextService } from "@/lib/broadcast/BroadcastContextService";
+import { StudioPermissionService } from "@/lib/studio/StudioPermissionService";
 import { ResolveContextParams } from "@/types/broadcast";
 
 export const runtime = "nodejs";
 
 /**
- * POST - Résoudre le contexte de diffusion
+ * POST - Résoudre le contexte de diffusion avec vérification des permissions
  */
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +18,21 @@ export async function POST(req: NextRequest) {
       userRole: body.userRole,
       userName: body.userName,
     };
+
+    // Vérifier les permissions d'accès au Studio
+    const accessCheck = await StudioPermissionService.canAccessStudio({
+      userId: body.userId,
+      userRole: body.userRole,
+      churchSlug: body.churchSlug,
+      broadcastId: body.broadcastId,
+    });
+
+    if (!accessCheck.authorized) {
+      return NextResponse.json(
+        { error: "Access denied", reason: accessCheck.reason },
+        { status: 403 }
+      );
+    }
 
     const context = await BroadcastContextService.resolveContext(params);
 
