@@ -48,15 +48,17 @@ export type StudioPanel =
 interface StudioLiveUnifiedProps {
   broadcastId?: string;
   mode?: StudioMode;
-  churchId?: string;
-  churchSlug?: string;
+  ownerId?: string;
+  ownerType?: "USER" | "CHURCH" | "GLOBAL";
+  ownerName?: string;
 }
 
 export default function StudioLiveUnified({
   broadcastId,
   mode = "VIDEO",
-  churchId,
-  churchSlug,
+  ownerId,
+  ownerType,
+  ownerName,
 }: StudioLiveUnifiedProps) {
   const { data: session } = useSession();
   
@@ -674,10 +676,10 @@ export default function StudioLiveUnified({
                     <div className="text-gray-400 text-sm mb-2">Mode</div>
                     <div className="text-white">{mode}</div>
                   </div>
-                  {churchId && (
+                  {ownerId && (
                     <div className="bg-[#2a2a4a] p-4 rounded-lg">
-                      <div className="text-gray-400 text-sm mb-2">Église</div>
-                      <div className="text-white">{churchSlug}</div>
+                      <div className="text-gray-400 text-sm mb-2">Propriétaire</div>
+                      <div className="text-white">{ownerName || ownerType}</div>
                     </div>
                   )}
                 </div>

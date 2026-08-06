@@ -73,11 +73,17 @@ export function useOverlayEngine(initialConfig?: Partial<OverlayEngineConfig>) {
   const draggedOverlayRef = useRef<{ overlayId: string; offsetX: number; offsetY: number } | null>(null);
   const resizedOverlayRef = useRef<{ overlayId: string; handle: string; startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
   const timerIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const overlaysRef = useRef<Overlay[]>([]);
+
+  // Keep overlaysRef in sync with overlays state
+  useEffect(() => {
+    overlaysRef.current = overlays;
+  }, [overlays]);
 
   // Timer management
   useEffect(() => {
     // Start timers for running overlays
-    overlays.forEach(overlay => {
+    overlaysRef.current.forEach(overlay => {
       if (overlay.type === "TIMER" && overlay.timerData?.isRunning) {
         const existingInterval = timerIntervalsRef.current.get(overlay.id);
         if (existingInterval) return;
@@ -127,7 +133,7 @@ export function useOverlayEngine(initialConfig?: Partial<OverlayEngineConfig>) {
 
     // Cleanup intervals for overlays that no longer exist or are not running
     const activeOverlayIds = new Set(
-      overlays
+      overlaysRef.current
         .filter(o => 
           (o.type === "TIMER" && o.timerData?.isRunning) ||
           (o.type === "COUNTDOWN")
@@ -146,7 +152,7 @@ export function useOverlayEngine(initialConfig?: Partial<OverlayEngineConfig>) {
       timerIntervalsRef.current.forEach(interval => clearInterval(interval));
       timerIntervalsRef.current.clear();
     };
-  }, [overlays.map(o => ({ id: o.id, type: o.type, timerData: o.timerData, countdownData: o.countdownData }))]);
+  }, []);
 
   // Overlay management
   const addOverlay = useCallback((overlay: Omit<Overlay, "id">) => {
@@ -174,7 +180,7 @@ export function useOverlayEngine(initialConfig?: Partial<OverlayEngineConfig>) {
   }, []);
 
   const duplicateOverlay = useCallback((overlayId: string) => {
-    const overlay = overlays.find(o => o.id === overlayId);
+    const overlay = overlaysRef.current.find(o => o.id === overlayId);
     if (!overlay) return;
     const newOverlay = {
       ...overlay,
@@ -184,7 +190,7 @@ export function useOverlayEngine(initialConfig?: Partial<OverlayEngineConfig>) {
     };
     setOverlays(prev => [...prev, newOverlay]);
     return newOverlay;
-  }, [overlays]);
+  }, []);
 
   // Verse overlay
   const addVerseOverlay = useCallback((verseData: Overlay["verseData"], position = { x: 50, y: 50 }) => {

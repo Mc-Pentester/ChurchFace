@@ -24,6 +24,12 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Vérifier si l'utilisateur a le rôle ADMIN global
+  const userRole = (session.user as any).role;
+  if (userRole !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden - Admin role required" }, { status: 403 });
+  }
+
   try {
     const church = await prisma.church.findUnique({
       where: { slug },
@@ -34,12 +40,6 @@ export async function GET(
 
     if (!church) {
       return NextResponse.json({ error: "Church not found" }, { status: 404 });
-    }
-
-    // Vérifier si l'utilisateur est admin de l'église
-    const isAdmin = church.admins.some(admin => admin.userId === session.user.id);
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let churchLive = await prisma.churchLive.findFirst({
@@ -113,6 +113,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Vérifier si l'utilisateur a le rôle ADMIN global
+  const userRole = (session.user as any).role;
+  if (userRole !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden - Admin role required" }, { status: 403 });
+  }
+
   try {
     const body = await req.json();
     const church = await prisma.church.findUnique({
@@ -124,12 +130,6 @@ export async function PATCH(
 
     if (!church) {
       return NextResponse.json({ error: "Church not found" }, { status: 404 });
-    }
-
-    // Vérifier si l'utilisateur est admin de l'église
-    const isAdmin = church.admins.some(admin => admin.userId === session.user.id);
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Use transaction to update ChurchLive and create post atomically

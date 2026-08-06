@@ -110,15 +110,13 @@ export default function StudioSourcesPanel({
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {onSourceSettings && (
-                    <button
-                      onClick={() => onSourceSettings(source.id)}
-                      className="p-1.5 bg-gray-700 text-gray-400 hover:text-white rounded transition"
-                      aria-label="Settings"
-                    >
-                      <Settings size={14} />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onSourceSettings?.(source.id)}
+                    className="p-1.5 bg-gray-700 text-gray-400 hover:text-white rounded transition"
+                    aria-label="Settings"
+                  >
+                    <Settings size={14} />
+                  </button>
                   <button
                     onClick={() => onSourceToggleVisibility(source.id)}
                     className={`p-1.5 rounded transition ${

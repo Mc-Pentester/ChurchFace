@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { type, enabled, config, streamKey, streamUrl, broadcastId } = await req.json();
+    const { type, enabled, config, streamKey, streamUrl, broadcastId, name } = await req.json();
 
     if (!type || !broadcastId) {
       return NextResponse.json(
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
 
     const output = await prisma.studioOutput.create({
       data: {
+        name: name ?? `${type} Output`,
         type,
         enabled: enabled ?? false,
         config,

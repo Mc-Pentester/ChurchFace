@@ -14,11 +14,11 @@ interface Sermon {
 }
 
 interface StudioSermonsProps {
-  churchId: string;
+  ownerId?: string;
   onSermonSelect: (sermon: Sermon) => void;
 }
 
-export default function StudioSermons({ churchId, onSermonSelect }: StudioSermonsProps) {
+export default function StudioSermons({ ownerId, onSermonSelect }: StudioSermonsProps) {
   const [sermons, setSermons] = useState<Sermon[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSermon, setSelectedSermon] = useState<Sermon | null>(null);

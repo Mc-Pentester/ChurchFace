@@ -4,6 +4,10 @@ import Image from "next/image";
 import { CheckBadgeIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import LiveVideoPlayer from "../live/components/LiveVideoPlayer";
+import GoLiveButton from "@/components/mobilelive/GoLiveButton";
+import MobileLiveSetup from "@/components/mobilelive/MobileLiveSetup";
+import MobileLiveInterface from "@/components/mobilelive/MobileLiveInterface";
+import { MobileLiveSession } from "@/lib/mobilelive/MobileLiveTypes";
 
 interface ChurchHeroProps {
   church: any;
@@ -13,6 +17,8 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
   const [isFollowing, setIsFollowing] = useState(church.isFollowing || false);
   const [showCoverModal, setShowCoverModal] = useState(false);
   const [isProcessingFollow, setIsProcessingFollow] = useState(false);
+  const [showMobileLiveSetup, setShowMobileLiveSetup] = useState(false);
+  const [mobileLiveSession, setMobileLiveSession] = useState<MobileLiveSession | null>(null);
   const activeLive = church.lives?.[0];
   const isLive = activeLive?.status === "LIVE";
 
@@ -42,6 +48,18 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
     } finally {
       setIsProcessingFollow(false);
     }
+  };
+
+  const handleMobileLiveStart = (sessionId: string) => {
+    setShowMobileLiveSetup(false);
+    fetch(`/api/mobilelive/session/${sessionId}`)
+      .then(res => res.json())
+      .then(data => setMobileLiveSession(data))
+      .catch(console.error);
+  };
+
+  const handleMobileLiveEnd = () => {
+    setMobileLiveSession(null);
   };
 
   return (
@@ -192,6 +210,15 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-2">
+            {church.isAdmin && (
+              <GoLiveButton
+                context="CHURCH"
+                ownerId={church.id}
+                ownerType="CHURCH"
+                onOpenSetup={() => setShowMobileLiveSetup(true)}
+                variant="primary"
+              />
+            )}
             {isLive && (
               <a
                 href={`/church/${church.slug}/live`}
@@ -224,6 +251,27 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
           </div>
         </div>
       </div>
+
+      {/* Mobile Live Setup Modal */}
+      {showMobileLiveSetup && (
+        <MobileLiveSetup
+          context="CHURCH"
+          ownerId={church.id}
+          ownerType="CHURCH"
+          ownerName={church.name}
+          onClose={() => setShowMobileLiveSetup(false)}
+          onStart={handleMobileLiveStart}
+        />
+      )}
+
+      {/* Mobile Live Interface */}
+      {mobileLiveSession && (
+        <MobileLiveInterface
+          sessionId={mobileLiveSession.id}
+          session={mobileLiveSession}
+          onEnd={handleMobileLiveEnd}
+        />
+      )}
     </div>
   );
 }

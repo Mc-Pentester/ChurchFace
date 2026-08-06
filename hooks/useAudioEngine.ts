@@ -75,6 +75,12 @@ export function useAudioEngine(initialConfig?: Partial<AudioEngineConfig>) {
   const animationFrameRef = useRef<number | null>(null);
   const lastUpdateTimeRef = useRef<number>(0);
   const previousLevelsRef = useRef<Map<string, { peak: number; rms: number }>>(new Map());
+  const channelsRef = useRef<AudioChannel[]>([]);
+
+  // Keep channelsRef in sync with channels state
+  useEffect(() => {
+    channelsRef.current = channels;
+  }, [channels]);
 
   // Initialize Audio Context
   useEffect(() => {
@@ -219,8 +225,8 @@ export function useAudioEngine(initialConfig?: Partial<AudioEngineConfig>) {
           if (channel.solo) {
             // Solo: no attenuation
           } else {
-            // Check if any channel is soloed
-            const anySolo = prev.some(c => c.solo && c.id !== channel.id);
+            // Check if any channel is soloed using ref to avoid dependency
+            const anySolo = channelsRef.current.some(c => c.solo && c.id !== channel.id);
             if (anySolo) {
               channelPeak = 0;
               channelRms = 0;
@@ -338,7 +344,6 @@ export function useAudioEngine(initialConfig?: Partial<AudioEngineConfig>) {
 
       return { inputs, outputs };
     } catch (error) {
-      console.error("Error getting audio devices:", error);
       return { inputs: [], outputs: [] };
     }
   }, []);

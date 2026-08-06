@@ -229,10 +229,19 @@ const StudioLiveKitRoom = forwardRef<StudioLiveKitRoomRef, StudioLiveKitRoomProp
     };
   }, [token, serverUrl, roomName, initialCameraEnabled, initialMicEnabled]);
 
-  // Camera controls - toggle not implemented in new architecture
-  const toggleCamera = useCallback(async () => {
-    console.warn("LiveKit: toggleCamera not implemented in new architecture");
-  }, []);
+  // Camera controls
+  const toggleCamera = useCallback(async (enabled: boolean) => {
+    if (!isLiveKitReady) {
+      console.warn("LiveKit: Cannot toggle camera - LiveKit not ready");
+      return false;
+    }
+    try {
+      return await liveKitService.toggleCamera(enabled);
+    } catch (error) {
+      console.error("LiveKit: Toggle camera error:", error);
+      return false;
+    }
+  }, [isLiveKitReady]);
 
   const switchCamera = useCallback(async (deviceId: string) => {
     if (!isLiveKitReady) {
@@ -247,10 +256,19 @@ const StudioLiveKitRoom = forwardRef<StudioLiveKitRoomRef, StudioLiveKitRoomProp
     }
   }, [isLiveKitReady]);
 
-  // Microphone controls - toggle not implemented in new architecture
-  const toggleMute = useCallback(async () => {
-    console.warn("LiveKit: toggleMute not implemented in new architecture");
-  }, []);
+  // Microphone controls
+  const toggleMicrophone = useCallback(async (enabled: boolean) => {
+    if (!isLiveKitReady) {
+      console.warn("LiveKit: Cannot toggle microphone - LiveKit not ready");
+      return false;
+    }
+    try {
+      return await liveKitService.toggleMicrophone(enabled);
+    } catch (error) {
+      console.error("LiveKit: Toggle microphone error:", error);
+      return false;
+    }
+  }, [isLiveKitReady]);
 
   const switchMicrophone = useCallback(async (deviceId: string) => {
     if (!isLiveKitReady) {
@@ -265,14 +283,32 @@ const StudioLiveKitRoom = forwardRef<StudioLiveKitRoomRef, StudioLiveKitRoomProp
     }
   }, [isLiveKitReady]);
 
-  // Screen share controls - not implemented in new architecture
+  // Screen share controls
   const startScreenShare = useCallback(async () => {
-    console.warn("LiveKit: startScreenShare not implemented in new architecture");
-  }, []);
+    if (!isLiveKitReady) {
+      console.warn("LiveKit: Cannot start screen share - LiveKit not ready");
+      return false;
+    }
+    try {
+      return await liveKitService.startScreenShare();
+    } catch (error) {
+      console.error("LiveKit: Start screen share error:", error);
+      return false;
+    }
+  }, [isLiveKitReady]);
 
   const stopScreenShare = useCallback(async () => {
-    console.warn("LiveKit: stopScreenShare not implemented in new architecture");
-  }, []);
+    if (!isLiveKitReady) {
+      console.warn("LiveKit: Cannot stop screen share - LiveKit not ready");
+      return false;
+    }
+    try {
+      return await liveKitService.stopScreenShare();
+    } catch (error) {
+      console.error("LiveKit: Stop screen share error:", error);
+      return false;
+    }
+  }, [isLiveKitReady]);
 
   // Disconnect
   const disconnect = useCallback(async () => {
@@ -287,13 +323,17 @@ const StudioLiveKitRoom = forwardRef<StudioLiveKitRoomRef, StudioLiveKitRoomProp
   // Expose control functions via ref for parent components
   useImperativeHandle(ref, () => ({
     disconnect,
+    toggleCamera,
     switchCamera,
+    toggleMicrophone,
     switchMicrophone,
+    startScreenShare,
+    stopScreenShare,
     room: liveKitService.getRoom(),
     localParticipant: liveKitService.getLocalParticipant(),
     getState: () => liveKitService.getState(),
     isLiveKitReady: () => isLiveKitReady,
-  }), [disconnect, switchCamera, switchMicrophone, isLiveKitReady]);
+  }), [disconnect, toggleCamera, switchCamera, toggleMicrophone, switchMicrophone, startScreenShare, stopScreenShare, isLiveKitReady]);
 
   return null; // This component manages the connection but doesn't render anything
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface SceneSource {
   id: string;
@@ -57,6 +57,22 @@ export function useSceneEngine(initialConfig?: Partial<SceneEngineConfig>) {
   const draggedSourceRef = useRef<{ sourceId: string; offsetX: number; offsetY: number } | null>(null);
   const resizedSourceRef = useRef<{ sourceId: string; handle: string; startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
   const sceneOrderRef = useRef(0);
+  const scenesRef = useRef<Scene[]>([]);
+  const activeSceneIdRef = useRef<string | null>(null);
+  const configRef = useRef<SceneEngineConfig>(config);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    scenesRef.current = scenes;
+  }, [scenes]);
+
+  useEffect(() => {
+    activeSceneIdRef.current = activeSceneId;
+  }, [activeSceneId]);
+
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const activeScene = scenes.find(s => s.id === activeSceneId);
 
@@ -83,10 +99,10 @@ export function useSceneEngine(initialConfig?: Partial<SceneEngineConfig>) {
 
   const deleteScene = useCallback((sceneId: string) => {
     setScenes(prev => prev.filter(scene => scene.id !== sceneId));
-    if (activeSceneId === sceneId) {
+    if (activeSceneIdRef.current === sceneId) {
       setActiveSceneId(null);
     }
-  }, [activeSceneId]);
+  }, []);
 
   const setActiveScene = useCallback((sceneId: string) => {
     setScenes(prev => prev.map(scene => ({
@@ -161,20 +177,20 @@ export function useSceneEngine(initialConfig?: Partial<SceneEngineConfig>) {
   }, []);
 
   const onDrag = useCallback((deltaX: number, deltaY: number) => {
-    if (!draggedSourceRef.current || !activeSceneId) return;
+    if (!draggedSourceRef.current || !activeSceneIdRef.current) return;
     const { sourceId, offsetX, offsetY } = draggedSourceRef.current;
     
     let newX = deltaX - offsetX;
     let newY = deltaY - offsetY;
 
     // Snap to grid
-    if (config.snapToGrid) {
-      newX = Math.round(newX / config.gridSize) * config.gridSize;
-      newY = Math.round(newY / config.gridSize) * config.gridSize;
+    if (configRef.current.snapToGrid) {
+      newX = Math.round(newX / configRef.current.gridSize) * configRef.current.gridSize;
+      newY = Math.round(newY / configRef.current.gridSize) * configRef.current.gridSize;
     }
 
-    updateSource(activeSceneId, sourceId, { x: newX, y: newY });
-  }, [activeSceneId, config.snapToGrid, config.gridSize, updateSource]);
+    updateSource(activeSceneIdRef.current, sourceId, { x: newX, y: newY });
+  }, [updateSource]);
 
   const endDrag = useCallback(() => {
     draggedSourceRef.current = null;
@@ -186,7 +202,7 @@ export function useSceneEngine(initialConfig?: Partial<SceneEngineConfig>) {
   }, []);
 
   const onResize = useCallback((deltaX: number, deltaY: number) => {
-    if (!resizedSourceRef.current || !activeSceneId) return;
+    if (!resizedSourceRef.current || !activeSceneIdRef.current) return;
     const { sourceId, handle, startX, startY, startWidth, startHeight } = resizedSourceRef.current;
 
     let newWidth = startWidth;
@@ -198,17 +214,17 @@ export function useSceneEngine(initialConfig?: Partial<SceneEngineConfig>) {
     if (handle.includes("n")) newHeight = startHeight - (deltaY - startY);
 
     // Snap to grid
-    if (config.snapToGrid) {
-      newWidth = Math.round(newWidth / config.gridSize) * config.gridSize;
-      newHeight = Math.round(newHeight / config.gridSize) * config.gridSize;
+    if (configRef.current.snapToGrid) {
+      newWidth = Math.round(newWidth / configRef.current.gridSize) * configRef.current.gridSize;
+      newHeight = Math.round(newHeight / configRef.current.gridSize) * configRef.current.gridSize;
     }
 
     // Minimum size
     newWidth = Math.max(50, newWidth);
     newHeight = Math.max(50, newHeight);
 
-    updateSource(activeSceneId, sourceId, { width: newWidth, height: newHeight });
-  }, [activeSceneId, config.snapToGrid, config.gridSize, updateSource]);
+    updateSource(activeSceneIdRef.current, sourceId, { width: newWidth, height: newHeight });
+  }, [updateSource]);
 
   const endResize = useCallback(() => {
     resizedSourceRef.current = null;
@@ -216,7 +232,7 @@ export function useSceneEngine(initialConfig?: Partial<SceneEngineConfig>) {
 
   // Alignment
   const alignSource = useCallback((sceneId: string, sourceId: string, alignment: "left" | "center" | "right" | "top" | "middle" | "bottom") => {
-    const scene = scenes.find(s => s.id === sceneId);
+    const scene = scenesRef.current.find(s => s.id === sceneId);
     if (!scene) return;
     const source = scene.sources.find(s => s.id === sourceId);
     if (!source) return;
@@ -229,57 +245,57 @@ export function useSceneEngine(initialConfig?: Partial<SceneEngineConfig>) {
         newX = 0;
         break;
       case "center":
-        newX = (config.canvasWidth - source.width) / 2;
+        newX = (configRef.current.canvasWidth - source.width) / 2;
         break;
       case "right":
-        newX = config.canvasWidth - source.width;
+        newX = configRef.current.canvasWidth - source.width;
         break;
       case "top":
         newY = 0;
         break;
       case "middle":
-        newY = (config.canvasHeight - source.height) / 2;
+        newY = (configRef.current.canvasHeight - source.height) / 2;
         break;
       case "bottom":
-        newY = config.canvasHeight - source.height;
+        newY = configRef.current.canvasHeight - source.height;
         break;
     }
 
     updateSource(sceneId, sourceId, { x: newX, y: newY });
-  }, [scenes, config.canvasWidth, config.canvasHeight, updateSource]);
+  }, [updateSource]);
 
   // Z-index management
   const bringToFront = useCallback((sceneId: string, sourceId: string) => {
-    const scene = scenes.find(s => s.id === sceneId);
+    const scene = scenesRef.current.find(s => s.id === sceneId);
     if (!scene) return;
     const maxZIndex = Math.max(...scene.sources.map(s => s.zIndex), 0);
     updateSource(sceneId, sourceId, { zIndex: maxZIndex + 1 });
-  }, [scenes, updateSource]);
+  }, [updateSource]);
 
   const sendToBack = useCallback((sceneId: string, sourceId: string) => {
-    const scene = scenes.find(s => s.id === sceneId);
+    const scene = scenesRef.current.find(s => s.id === sceneId);
     if (!scene) return;
     const minZIndex = Math.min(...scene.sources.map(s => s.zIndex), 0);
     updateSource(sceneId, sourceId, { zIndex: minZIndex - 1 });
-  }, [scenes, updateSource]);
+  }, [updateSource]);
 
   // Lock/Unlock
   const toggleLock = useCallback((sceneId: string, sourceId: string) => {
-    const scene = scenes.find(s => s.id === sceneId);
+    const scene = scenesRef.current.find(s => s.id === sceneId);
     if (!scene) return;
     const source = scene.sources.find(s => s.id === sourceId);
     if (!source) return;
     updateSource(sceneId, sourceId, { isLocked: !source.isLocked });
-  }, [scenes, updateSource]);
+  }, [updateSource]);
 
   // Visibility
   const toggleVisibility = useCallback((sceneId: string, sourceId: string) => {
-    const scene = scenes.find(s => s.id === sceneId);
+    const scene = scenesRef.current.find(s => s.id === sceneId);
     if (!scene) return;
     const source = scene.sources.find(s => s.id === sourceId);
     if (!source) return;
     updateSource(sceneId, sourceId, { isVisible: !source.isVisible });
-  }, [scenes, updateSource]);
+  }, [updateSource]);
 
   // Config management
   const updateConfig = useCallback((updates: Partial<SceneEngineConfig>) => {
