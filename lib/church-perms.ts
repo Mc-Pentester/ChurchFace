@@ -1,61 +1,70 @@
 import { prisma } from "@/lib/prisma";
-
-function normalizeChurchRole(role?: string | null) {
-  if (!role) return null;
-
-  switch (role) {
-    case "OWNER":
-      return "CHURCH_OWNER";
-
-    case "ADMIN":
-      return "CHURCH_ADMIN";
-
-    default:
-      return role;
-  }
-}
+import { normalizeChurchRole } from "@/lib/church-role";
 
 
+/**
+ * Récupère le rôle administrateur d'un utilisateur
+ * dans une église donnée.
+ */
 export async function getChurchAdminRole(
   churchId: string,
   userId: string
-) {
-  const admin = await prisma.churchAdmin.findUnique({
-    where: {
-      churchId_userId: {
-        churchId,
-        userId,
+): Promise<string | null> {
+
+  const admin =
+    await prisma.churchAdmin.findUnique({
+      where: {
+        churchId_userId: {
+          churchId,
+          userId,
+        },
       },
-    },
-    select: {
-      role: true,
-    },
-  });
+      select: {
+        role: true,
+      },
+    });
+
 
   return normalizeChurchRole(admin?.role);
 }
 
 
+
+/**
+ * Vérifie si un utilisateur possède
+ * un rôle autorisé dans une église.
+ */
 export async function userHasChurchRole(
   churchId: string,
   userId: string,
   allowedRoles: string[]
-) {
-
-  const role = await getChurchAdminRole(
-    churchId,
-    userId
-  );
+): Promise<boolean> {
 
 
-  if (role && allowedRoles.includes(role)) {
+  /**
+   * 1. Vérification ChurchAdmin
+   */
+  const churchRole =
+    await getChurchAdminRole(
+      churchId,
+      userId
+    );
+
+
+  if (
+    churchRole &&
+    allowedRoles.includes(churchRole)
+  ) {
     return true;
   }
 
 
-  // OWNER = accès complet administration église
+
+  /**
+   * OWNER possède tous les droits administrateur église
+   */
   if (
-    role === "CHURCH_OWNER" &&
+    churchRole === "CHURCH_OWNER" &&
     (
       allowedRoles.includes("CHURCH_ADMIN") ||
       allowedRoles.includes("ADMIN")
@@ -65,34 +74,44 @@ export async function userHasChurchRole(
   }
 
 
-  // ADMIN membre église
-  if (allowedRoles.includes("ADMIN")) {
+
+  /**
+   * 2. Vérification ChurchMember ADMIN
+   */
+  if (
+    allowedRoles.includes("ADMIN")
+  ) {
 
     const member =
       await prisma.churchMember.findFirst({
-        where:{
+        where: {
           churchId,
           userId,
-          role:"ADMIN",
+          role: "ADMIN",
         },
       });
 
-    if(member) {
+
+    if (member) {
       return true;
     }
   }
 
 
-  // rôle global utilisateur
+
+  /**
+   * 3. Vérification rôle global utilisateur
+   */
   const user =
     await prisma.user.findUnique({
-      where:{
-        id:userId,
+      where: {
+        id: userId,
       },
-      select:{
-        role:true,
+      select: {
+        role: true,
       },
     });
+
 
 
   if (
@@ -103,18 +122,24 @@ export async function userHasChurchRole(
   }
 
 
+
   return false;
 }
 
 
 
+/**
+ * Middleware permission église.
+ * Lance une erreur 403 si accès refusé.
+ */
 export async function requireChurchRoleOrThrow(
-  churchId:string,
-  userId:string,
-  allowedRoles:string[]
-){
+  churchId: string,
+  userId: string,
+  allowedRoles: string[]
+): Promise<void> {
 
-  const ok =
+
+  const authorized =
     await userHasChurchRole(
       churchId,
       userId,
@@ -122,13 +147,19 @@ export async function requireChurchRoleOrThrow(
     );
 
 
-  if(!ok){
+  if (!authorized) {
 
-    const e:any =
-      new Error("Forbidden");
+    const error =
+      new Error(
+        "Forbidden"
+      ) as Error & {
+        status?: number;
+      };
 
-    e.status = 403;
 
-    throw e;
+    error.status = 403;
+
+
+    throw error;
   }
 }
