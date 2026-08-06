@@ -59,15 +59,51 @@ export class BroadcastContextService {
       
       if (!broadcast) {
         // Créer un nouveau broadcast pour l'église
-        broadcast = await prisma.liveBroadcast.create({
-          data: {
-            title: `${church.name} - Live`,
-            description: "Diffusion en direct",
-            streamUrl: "",
-            authorId: userId,
-            ownerType: "CHURCH",
-            status: "SCHEDULED",
+        const userExists =
+        await prisma.user.findUnique({
+          where:{
+            id:userId
           },
+          select:{
+            id:true
+          }
+        });
+
+
+        if(!userExists){
+
+        throw new Error(
+          `Studio context impossible: user ${userId} inexistant`
+        );
+
+        }
+
+
+        broadcast =
+        await prisma.liveBroadcast.create({
+
+        data:{
+
+          title:
+          `${church.name} - Live`,
+
+          description:
+          "Diffusion en direct",
+
+
+          authorId:
+          userExists.id,
+
+
+          ownerType:
+          "CHURCH",
+
+
+          ownerId:
+          church.id,
+
+        }
+
         });
       }
       

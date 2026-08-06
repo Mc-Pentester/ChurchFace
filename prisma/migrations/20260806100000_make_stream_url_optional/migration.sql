@@ -1,0 +1,2 @@
+ALTER TABLE "LiveBroadcast"
+ALTER COLUMN "streamUrl" DROP NOT NULL;

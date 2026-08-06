@@ -2,58 +2,87 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
-import { getServerSession } from "next-auth";
-import type { NextAuthOptions } from "next-auth";
+import {
+  getServerSession,
+} from "next-auth";
+
+import type {
+  NextAuthOptions,
+} from "next-auth";
+
 
 
 const STUDIO_ROLES = [
+
   "ADMIN",
+
   "SUPER_ADMIN",
+
   "RADIO_HOST",
+
   "CHURCH_ADMIN",
+
+  "CHURCH_OWNER",
+
 ];
+
+
 
 
 
 export const authOptions: NextAuthOptions = {
 
-  adapter: PrismaAdapter(prisma),
+
+  adapter:
+    PrismaAdapter(prisma),
+
 
 
   session: {
-    strategy: "jwt",
+
+    strategy:"jwt",
+
   },
 
 
-  providers: [
+
+  providers:[
+
 
     CredentialsProvider({
 
-      name: "credentials",
+      name:"credentials",
 
-      credentials: {
 
-        email: {
-          label: "Email",
-          type: "text",
+      credentials:{
+
+
+        email:{
+          label:"Email",
+          type:"text",
         },
 
-        password: {
-          label: "Password",
-          type: "password",
+
+        password:{
+          label:"Password",
+          type:"password",
         },
 
       },
 
 
-      async authorize(credentials) {
+
+      async authorize(credentials){
 
 
-        if (
+
+        if(
           !credentials?.email ||
           !credentials.password
-        ) {
+        ){
+
           return null;
+
         }
 
 
@@ -61,79 +90,99 @@ export const authOptions: NextAuthOptions = {
         const user =
           await prisma.user.findUnique({
 
-            where: {
-              email: credentials.email,
+            where:{
+              email:
+                credentials.email,
             },
 
           });
 
 
 
-        if (!user) {
+        if(!user){
+
           return null;
+
         }
 
 
 
         const validPassword =
           await bcrypt.compare(
+
             credentials.password,
+
             user.password
+
           );
 
 
 
-        if (!validPassword) {
+        if(!validPassword){
+
           return null;
+
         }
+
 
 
 
         return {
 
-          id: user.id,
+          id:user.id,
 
-          email: user.email,
+          email:user.email,
 
-          name: user.name,
+          name:user.name,
 
-          image: user.image,
+          image:user.image,
 
-          role: user.role,
+          role:user.role,
 
-          churchId: user.churchId,
+          churchId:user.churchId,
 
         };
 
       },
 
+
     }),
+
 
   ],
 
 
 
-  callbacks: {
+
+
+  callbacks:{
+
 
 
     async jwt({
+
       token,
+
       user,
-    }) {
+
+    }){
+
 
 
       /**
        * Première connexion
        */
-      if (user) {
+      if(user){
 
 
         token.id =
           user.id;
 
 
+
         token.role =
           user.role ?? "USER";
+
 
 
         token.churchId =
@@ -152,30 +201,39 @@ export const authOptions: NextAuthOptions = {
 
 
 
+
+
+
       /**
-       * Rafraîchissement rôle toutes les 5 minutes
+       * Synchronisation rôle Prisma
+       * toutes les 5 minutes
        */
       const lastCheck =
-        Number(token.roleCheckedAt ?? 0);
+        Number(
+          token.roleCheckedAt ?? 0
+        );
 
 
 
-      const REFRESH_INTERVAL =
+      const REFRESH =
         5 * 60 * 1000;
 
 
 
-      if (
+
+      if(
         token.id &&
-        Date.now() - lastCheck > REFRESH_INTERVAL
-      ) {
+        Date.now() - lastCheck > REFRESH
+      ){
+
 
 
         const dbUser =
           await prisma.user.findUnique({
 
             where:{
-              id: token.id as string,
+              id:
+                token.id as string,
             },
 
 
@@ -191,11 +249,13 @@ export const authOptions: NextAuthOptions = {
 
 
 
+
         if(dbUser){
 
 
           token.role =
             dbUser.role;
+
 
 
           token.churchId =
@@ -209,27 +269,37 @@ export const authOptions: NextAuthOptions = {
         token.roleCheckedAt =
           Date.now();
 
+
       }
 
 
 
+
+
       return token;
+
 
     },
 
 
 
 
-    /**
-     * Session envoyée au frontend
-     */
+
+
+
+
     async session({
+
       session,
+
       token,
-    }) {
+
+    }){
+
 
 
       if(session.user){
+
 
 
         session.user.id =
@@ -238,37 +308,53 @@ export const authOptions: NextAuthOptions = {
 
 
         session.user.role =
-          (token.role as string) ?? "USER";
+          (token.role as string)
+          ?? "USER";
 
 
 
-        (session.user as typeof session.user & {
-          churchId?: string | null;
-        }).churchId = token.churchId ?? null;
+        (
+          session.user as typeof session.user &
+          {
+            churchId?:string|null;
+          }
+
+        ).churchId =
+          token.churchId as
+          string|null;
+
 
 
       }
 
 
 
+
       return session;
+
 
     },
 
 
-  },
-
-
-
-  pages: {
-
-    signIn: "/login",
 
   },
+
+
+
+
+  pages:{
+
+
+    signIn:"/login",
+
+
+  },
+
 
 
   secret:
     process.env.NEXTAUTH_SECRET,
+
 
 };
 
@@ -276,14 +362,43 @@ export const authOptions: NextAuthOptions = {
 
 
 
+
+
 /**
- * Accès Radio Studio
+ * Helper NextAuth centralisé
+ *
+ * Utilisé dans les API routes :
+ *
+ * const session = await auth()
+ */
+export async function auth(){
+
+  return await getServerSession(
+    authOptions
+  );
+
+}
+
+
+
+
+
+
+
+
+
+/**
+ * Accès Studio global
+ *
+ * Compatible StudioPermissionService
  */
 export async function requireStudioAccess(){
 
 
+
   const session =
-    await getServerSession(authOptions);
+    await auth();
+
 
 
 
@@ -292,9 +407,15 @@ export async function requireStudioAccess(){
 
 
 
+
   if(!userId){
+
     return null;
+
   }
+
+
+
 
 
 
@@ -308,13 +429,18 @@ export async function requireStudioAccess(){
 
       select:{
 
+
         id:true,
+
 
         email:true,
 
+
         name:true,
 
+
         image:true,
+
 
         role:true,
 
@@ -323,26 +449,29 @@ export async function requireStudioAccess(){
 
 
         churchAdmins:{
+
           select:{
+
             churchId:true,
+
+            role:true,
+
           },
+
         },
 
+
       },
+
 
     });
 
 
 
+
+
+
   if(!user){
-    return null;
-  }
-
-
-
-  if(
-    !STUDIO_ROLES.includes(user.role)
-  ){
 
     return null;
 
@@ -350,28 +479,67 @@ export async function requireStudioAccess(){
 
 
 
-  const churchId =
-    user.churchId ??
-    user.churchAdmins[0]?.churchId ??
-    null;
+
+
+
+  const hasStudioRole =
+    STUDIO_ROLES.includes(
+      user.role
+    );
+
+
+
+
+
+  if(!hasStudioRole){
+
+
+    return null;
+
+
+  }
+
+
+
+
+
+  const churchAdmin =
+    user.churchAdmins[0];
+
+
 
 
 
   return {
 
+
     id:user.id,
+
 
     email:user.email,
 
+
     name:user.name,
+
 
     image:user.image,
 
+
     role:user.role,
 
-    churchId,
+
+    churchId:
+
+      user.churchId ??
+
+      churchAdmin?.churchId ??
+
+      null,
+
+
 
   };
+
 
 }
 
@@ -379,13 +547,21 @@ export async function requireStudioAccess(){
 
 
 
+
+
+
+
 /**
- * Permission gestion radio
+ * Gestion Radio
  */
 export async function canManageRadio(
+
   radioId:string,
+
   userId:string
+
 ){
+
 
 
   const radio =
@@ -404,15 +580,27 @@ export async function canManageRadio(
 
 
 
+
+
   if(!radio){
+
     return false;
+
   }
 
 
 
-  if(radio.userId === userId){
+
+
+  if(
+    radio.userId === userId
+  ){
+
     return true;
+
   }
+
+
 
 
 
@@ -428,16 +616,27 @@ export async function canManageRadio(
         role:true,
       },
 
+
     });
 
 
 
+
+
   return (
-    user?.role === "ADMIN" ||
+
+    user?.role === "ADMIN"
+
+    ||
+
     user?.role === "SUPER_ADMIN"
+
   );
 
+
 }
+
+
 
 
 
@@ -451,8 +650,10 @@ export async function canManageRadio(
 export async function requireAdmin(){
 
 
+
   const session =
-    await getServerSession(authOptions);
+    await auth();
+
 
 
 
@@ -461,9 +662,15 @@ export async function requireAdmin(){
 
 
 
+
   if(!userId){
+
     return null;
+
   }
+
+
+
 
 
 
@@ -477,28 +684,46 @@ export async function requireAdmin(){
 
       select:{
 
+
         id:true,
+
 
         email:true,
 
+
         name:true,
+
 
         image:true,
 
+
         role:true,
 
+
       },
+
 
     });
 
 
 
+
+
+
   if(
-    !user ||
+
+    !user
+
+    ||
+
     ![
+
       "ADMIN",
+
       "SUPER_ADMIN",
+
     ].includes(user.role)
+
   ){
 
     return null;
@@ -507,6 +732,10 @@ export async function requireAdmin(){
 
 
 
+
+
+
   return user;
+
 
 }
