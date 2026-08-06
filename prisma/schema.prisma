@@ -589,7 +589,7 @@ model LiveBroadcast {
   title              String
   description        String?
   thumbnail          String?
-  streamUrl          String
+  streamUrl          String?
   authorId           String
   ownerType          String         @default("USER") // "USER" | "CHURCH" | "GLOBAL"
   ownerId            String?

@@ -126,7 +126,14 @@ export async function POST(req: NextRequest) {
 
     };
 
-
+    console.log(
+      "CREATING STUDIO CONTEXT WITH USER:",
+      {
+        userId: params.userId,
+        userRole: params.userRole,
+        userName: params.userName
+      }
+    );
 
     const context =
       await BroadcastContextService.resolveContext(
