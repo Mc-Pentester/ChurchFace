@@ -1,42 +1,86 @@
+import { prisma } from "@/lib/prisma";
+import { normalizeChurchRole } from "@/lib/church-role";
+
+
 /**
  * Studio Permission Service
  *
  * Centralise toutes les règles d'accès au Studio ChurchFace.
  *
  * Règles :
- * - ADMIN global : accès complet
- * - ChurchAdmin OWNER : accès Studio de son église
- * - ChurchAdmin ADMIN : accès Studio de son église
- * - USER : accès uniquement à ses propres broadcasts
+ *
+ * - SUPER_ADMIN / ADMIN global :
+ *      accès complet
+ *
+ * - ChurchAdmin OWNER :
+ *      accès Studio de son église
+ *
+ * - ChurchAdmin ADMIN :
+ *      accès Studio de son église
+ *
+ * - ChurchMember ADMIN :
+ *      accès Studio de son église
+ *
+ * - USER :
+ *      uniquement ses propres broadcasts
  */
-
-import { prisma } from "@/lib/prisma";
-import { normalizeChurchRole } from "@/lib/church-role";
 
 
 export interface StudioAccessParams {
-  userId: string;
-  userRole?: string;
-  churchSlug?: string;
-  broadcastId?: string;
+
+  userId:string;
+
+  userRole?:string;
+
+  churchSlug?:string;
+
+  broadcastId?:string;
+
 }
+
 
 
 export interface StudioAccessResult {
-  authorized: boolean;
-  reason?: string;
-  churchId?: string;
-  churchRole?: string;
+
+  authorized:boolean;
+
+  reason?:string;
+
+  churchId?:string;
+
+  churchRole?:string;
+
 }
+
+
+
+
+
+function canManageChurchStudio(
+  role?:string|null
+){
+
+  return (
+    role === "CHURCH_OWNER" ||
+    role === "CHURCH_ADMIN"
+  );
+
+}
+
+
 
 
 
 export class StudioPermissionService {
 
 
+
+  /**
+   * Vérifie si un utilisateur peut accéder au Studio
+   */
   static async canAccessStudio(
-    params: StudioAccessParams
-  ): Promise<StudioAccessResult> {
+    params:StudioAccessParams
+  ):Promise<StudioAccessResult>{
 
 
     const {
@@ -49,60 +93,103 @@ export class StudioPermissionService {
 
 
     /**
-     * 1 - Administrateur global ChurchFace
+     * Sécurité obligatoire
      */
-    if (
-      userRole === "ADMIN" ||
-      userRole === "SUPER_ADMIN"
-    ) {
+    if(!userId){
 
       return {
-        authorized: true,
-        reason: "Global administrator",
+
+        authorized:false,
+
+        reason:"Missing user id",
+
       };
+
     }
 
 
 
+
+
     /**
-     * 2 - Contexte église
+     * 1 - Administrateur global ChurchFace
      */
-    if (churchSlug) {
+    if(
+      userRole === "ADMIN" ||
+      userRole === "SUPER_ADMIN"
+    ){
+
+      return {
+
+        authorized:true,
+
+        reason:"Global administrator",
+
+      };
+
+    }
+
+
+
+
+
+    /**
+     * 2 - Contexte Église
+     */
+    if(churchSlug){
 
 
       const church =
         await prisma.church.findUnique({
+
           where:{
-            slug: churchSlug,
+            slug:churchSlug,
           },
+
         });
 
 
 
-      if (!church) {
+      if(!church){
 
         return {
+
           authorized:false,
+
           reason:"Church not found",
+
         };
 
       }
 
 
 
+
+
+      /**
+       * Vérification ChurchAdmin
+       */
       const churchAdmin =
         await prisma.churchAdmin.findUnique({
+
           where:{
+
             churchId_userId:{
+
               churchId:church.id,
+
               userId,
+
             },
+
           },
+
         });
 
 
 
-      if (churchAdmin) {
+
+      if(churchAdmin){
 
 
         const churchRole =
@@ -112,11 +199,11 @@ export class StudioPermissionService {
 
 
 
-        if (
-          churchRole === "CHURCH_OWNER" ||
-          churchRole === "CHURCH_ADMIN"
-        ) {
-
+        if(
+          canManageChurchStudio(
+            churchRole
+          )
+        ){
 
           return {
 
@@ -138,50 +225,111 @@ export class StudioPermissionService {
 
 
 
-      return {
-        authorized:false,
-        reason:"Not a church administrator",
-      };
-
-    }
 
 
+      /**
+       * Vérification ChurchMember ADMIN
+       */
+      const memberAdmin =
+        await prisma.churchMember.findFirst({
 
-
-    /**
-     * 3 - Contexte broadcast
-     */
-    if (broadcastId) {
-
-
-      const broadcast =
-        await prisma.liveBroadcast.findUnique({
           where:{
-            id:broadcastId,
+
+            churchId:church.id,
+
+            userId,
+
+            role:"ADMIN",
+
           },
+
         });
 
 
 
-      if (!broadcast) {
+
+      if(memberAdmin){
+
 
         return {
-          authorized:false,
-          reason:"Broadcast not found",
+
+          authorized:true,
+
+          reason:"Church member ADMIN",
+
+          churchId:
+            church.id,
+
+          churchRole:
+            "CHURCH_ADMIN",
+
         };
 
       }
 
 
 
+
+
+      return {
+
+        authorized:false,
+
+        reason:"Not a church administrator",
+
+      };
+
+
+    }
+
+
+
+
+
+
+    /**
+     * 3 - Contexte Broadcast
+     */
+    if(broadcastId){
+
+
+
+      const broadcast =
+        await prisma.liveBroadcast.findUnique({
+
+          where:{
+            id:broadcastId,
+          },
+
+        });
+
+
+
+
+      if(!broadcast){
+
+        return {
+
+          authorized:false,
+
+          reason:"Broadcast not found",
+
+        };
+
+      }
+
+
+
+
+
+
       /**
        * Broadcast personnel utilisateur
        */
-      if (
+      if(
         broadcast.ownerType === "USER" &&
         broadcast.authorId === userId
-      ) {
-
+      ){
 
         return {
 
@@ -196,28 +344,40 @@ export class StudioPermissionService {
 
 
 
+
+
       /**
        * Broadcast appartenant à une église
        */
-      if (
+      if(
         broadcast.ownerType === "CHURCH" &&
         broadcast.ownerId
-      ) {
+      ){
+
 
 
         const churchAdmin =
           await prisma.churchAdmin.findUnique({
+
             where:{
+
               churchId_userId:{
-                churchId:broadcast.ownerId,
+
+                churchId:
+                  broadcast.ownerId,
+
                 userId,
+
               },
+
             },
+
           });
 
 
 
-        if (churchAdmin) {
+
+        if(churchAdmin){
 
 
           const churchRole =
@@ -226,11 +386,12 @@ export class StudioPermissionService {
             );
 
 
-          if (
-            churchRole === "CHURCH_OWNER" ||
-            churchRole === "CHURCH_ADMIN"
-          ) {
 
+          if(
+            canManageChurchStudio(
+              churchRole
+            )
+          ){
 
             return {
 
@@ -250,7 +411,49 @@ export class StudioPermissionService {
 
         }
 
+
+
+
+        const memberAdmin =
+          await prisma.churchMember.findFirst({
+
+            where:{
+
+              churchId:
+                broadcast.ownerId,
+
+              userId,
+
+              role:"ADMIN",
+
+            },
+
+          });
+
+
+
+        if(memberAdmin){
+
+          return {
+
+            authorized:true,
+
+            reason:"Church member ADMIN",
+
+            churchId:
+              broadcast.ownerId,
+
+            churchRole:
+              "CHURCH_ADMIN",
+
+          };
+
+        }
+
+
       }
+
+
 
 
 
@@ -262,13 +465,15 @@ export class StudioPermissionService {
 
       };
 
+
     }
 
 
 
 
+
     /**
-     * Aucun contexte
+     * Aucun contexte fourni
      */
     return {
 
@@ -278,18 +483,21 @@ export class StudioPermissionService {
 
     };
 
+
   }
 
 
 
 
 
+
+
   /**
-   * Retourne le contexte Studio complet
+   * Retourne le contexte complet du Studio
    */
   static async getStudioContext(
-    params: StudioAccessParams
-  ) {
+    params:StudioAccessParams
+  ){
 
 
     const access =
@@ -297,7 +505,8 @@ export class StudioPermissionService {
 
 
 
-    if (!access.authorized) {
+
+    if(!access.authorized){
 
       throw new Error(
         access.reason || "Access denied"
@@ -308,17 +517,21 @@ export class StudioPermissionService {
 
 
 
-    if (
+
+
+    if(
       params.churchSlug &&
       access.churchId
-    ) {
+    ){
 
 
       const church =
         await prisma.church.findUnique({
+
           where:{
             id:access.churchId,
           },
+
         });
 
 
@@ -346,7 +559,9 @@ export class StudioPermissionService {
 
 
 
-    if (params.broadcastId) {
+
+
+    if(params.broadcastId){
 
 
       const broadcast =
@@ -389,8 +604,11 @@ export class StudioPermissionService {
 
 
 
+
     return access;
 
+
   }
+
 
 }

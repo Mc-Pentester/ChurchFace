@@ -1,47 +1,162 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
 import { BroadcastContextService } from "@/lib/broadcast/BroadcastContextService";
 import { StudioPermissionService } from "@/lib/studio/StudioPermissionService";
 import { ResolveContextParams } from "@/types/broadcast";
 
+
 export const runtime = "nodejs";
 
+
 /**
- * POST - Résoudre le contexte de diffusion avec vérification des permissions
+ * POST - Résoudre le contexte Studio avec permissions
  */
 export async function POST(req: NextRequest) {
+
   try {
-    const body = await req.json();
-    const params: ResolveContextParams = {
-      broadcastId: body.broadcastId,
-      churchSlug: body.churchSlug,
-      userId: body.userId,
-      userRole: body.userRole,
-      userName: body.userName,
-    };
 
-    // Vérifier les permissions d'accès au Studio
-    const accessCheck = await StudioPermissionService.canAccessStudio({
-      userId: body.userId,
-      userRole: body.userRole,
-      churchSlug: body.churchSlug,
-      broadcastId: body.broadcastId,
-    });
+    const session =
+      await getServerSession(authOptions);
 
-    if (!accessCheck.authorized) {
+
+
+    if (!session?.user?.id) {
+
       return NextResponse.json(
-        { error: "Access denied", reason: accessCheck.reason },
-        { status: 403 }
+        {
+          error:"Unauthorized",
+          reason:"No session"
+        },
+        {
+          status:401
+        }
       );
+
     }
 
-    const context = await BroadcastContextService.resolveContext(params);
+
+
+    const body =
+      await req.json();
+
+
+
+    const userId =
+      session.user.id;
+
+
+
+    const userRole =
+      session.user.role ?? "USER";
+
+
+
+    console.log(
+      "STUDIO CONTEXT USER:",
+      {
+        id:userId,
+        role:userRole,
+        church:body.churchSlug
+      }
+    );
+
+    console.log("========== STUDIO CONTEXT DEBUG ==========");
+
+    console.log("SESSION USER ID:", session?.user?.id);
+
+    console.log("SESSION ROLE:", session?.user?.role);
+
+    console.log("BODY:", body);
+
+    console.log("CHURCH SLUG:", body.churchSlug);
+
+    console.log("BROADCAST ID:", body.broadcastId);
+
+    console.log("==========================================");
+
+    const accessCheck =
+      await StudioPermissionService.canAccessStudio({
+
+        userId,
+
+        userRole,
+
+        churchSlug:
+          body.churchSlug,
+
+        broadcastId:
+          body.broadcastId,
+
+      });
+
+
+
+    if(!accessCheck.authorized){
+
+      return NextResponse.json(
+        {
+          error:"Access denied",
+          reason:accessCheck.reason
+        },
+        {
+          status:403
+        }
+      );
+
+    }
+
+
+
+    const params: ResolveContextParams = {
+
+      broadcastId:
+        body.broadcastId,
+
+      churchSlug:
+        body.churchSlug,
+
+      userId,
+
+      userRole,
+
+      userName:
+        session.user.name ?? "",
+
+    };
+
+
+
+    const context =
+      await BroadcastContextService.resolveContext(
+        params
+      );
+
+
 
     return NextResponse.json(context);
-  } catch (error) {
-    console.error("Error resolving broadcast context:", error);
-    return NextResponse.json(
-      { error: "Failed to resolve broadcast context" },
-      { status: 500 }
+
+
+
+  } catch(error){
+
+
+    console.error(
+      "Error resolving studio context:",
+      error
     );
+
+
+    return NextResponse.json(
+      {
+        error:"Failed to resolve broadcast context"
+      },
+      {
+        status:500
+      }
+    );
+
   }
+
 }
