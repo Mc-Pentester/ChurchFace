@@ -328,6 +328,44 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Store media in gallery if image or video was uploaded
+    if (imageUrl || videoUrl) {
+      // Create or get "Posts" album
+      let postsAlbum = await prisma.album.findFirst({
+        where: {
+          userId,
+          type: "POST",
+        },
+      });
+
+      if (!postsAlbum) {
+        postsAlbum = await prisma.album.create({
+          data: {
+            userId,
+            name: "Publications",
+            type: "POST",
+            visibility: "PUBLIC",
+          },
+        });
+      }
+
+      // Determine media type
+      const mediaType = videoUrl ? "VIDEO" : "PHOTO";
+
+      // Create media entry
+      await prisma.media.create({
+        data: {
+          userId,
+          albumId: postsAlbum.id,
+          type: mediaType,
+          url: imageUrl || videoUrl,
+          thumbnail: null,
+          caption: content || `Publication du ${new Date().toLocaleDateString("fr-FR")}`,
+          visibility: "PUBLIC",
+        },
+      });
+    }
+
     // Return the created post (not a non-existent `posts` variable).
     return NextResponse.json({ post });
   } catch (error) {

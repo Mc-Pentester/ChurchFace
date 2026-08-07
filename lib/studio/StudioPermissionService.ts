@@ -293,7 +293,6 @@ export class StudioPermissionService {
     if(broadcastId){
 
 
-
       const broadcast =
         await prisma.liveBroadcast.findUnique({
 
@@ -302,8 +301,6 @@ export class StudioPermissionService {
           },
 
         });
-
-
 
 
       if(!broadcast){
@@ -320,31 +317,15 @@ export class StudioPermissionService {
 
 
 
-
-
-
-      /**
-       * Broadcast personnel utilisateur
-       */
-      if(
-        broadcast.ownerType === "USER" &&
-        broadcast.authorId === userId
-      ){
-
-        return {
-
-          authorized:true,
-
-          reason:"Broadcast owner",
-
-        };
-
+      if (broadcast.ownerType === "USER") {
+        // Broadcast personnel : vérifier que l'utilisateur est l'auteur
+        if (broadcast.authorId === userId) {
+          return {
+            authorized: true,
+            reason: "Personal broadcast owner",
+          };
+        }
       }
-
-
-
-
-
 
       /**
        * Broadcast appartenant à une église
@@ -571,10 +552,6 @@ export class StudioPermissionService {
             id:params.broadcastId,
           },
 
-          include:{
-            author:true,
-          },
-
         });
 
 
@@ -594,9 +571,6 @@ export class StudioPermissionService {
 
         ownerId:
           broadcast?.ownerId,
-
-        authorId:
-          broadcast?.authorId,
 
       };
 

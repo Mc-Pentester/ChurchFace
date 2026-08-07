@@ -69,7 +69,7 @@ export default function StudioSourcesPanel({
           </button>
 
           {showAddMenu && (
-            <div className="absolute right-0 top-full mt-2 bg-[#252535] rounded-lg shadow-xl border border-gray-700 z-10 w-48">
+            <div className="absolute right-0 top-full mt-2 bg-[#252535] rounded-lg shadow-xl border border-gray-700 z-10 w-48 max-h-64 overflow-y-auto">
               {SOURCE_TYPES.map((sourceType) => {
                 const Icon = sourceType.icon;
                 return (

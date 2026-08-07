@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { Track, createLocalVideoTrack } from "livekit-client";
 import StudioTopBar, { StudioMode } from "./StudioTopBar";
 import StudioScenesPanel from "./StudioScenesPanel";
 import StudioSourcesPanel from "./StudioSourcesPanel";
@@ -13,6 +14,8 @@ import StudioChat from "./StudioChat";
 import StudioStats from "./StudioStats";
 import StudioOutputs from "./StudioOutputs";
 import StudioControls from "./StudioControls";
+import StudioMonitoring from "./StudioMonitoring";
+import StudioOverlays from "./StudioOverlays";
 import { TransitionType, getTransitionEffect, TransitionConfig } from "@/lib/transitions/TransitionTypes";
 import { useStudioLayout } from "@/hooks/useStudioLayout";
 import { useSceneEngine } from "@/hooks/useSceneEngine";
@@ -21,6 +24,7 @@ import { useOverlayEngine } from "@/hooks/useOverlayEngine";
 import { liveKitService } from "@/lib/livekit/LiveKitService";
 import { egressService } from "@/lib/livekit/EgressService";
 import { rtmpRelayService } from "@/lib/rtmp/RtmpRelayService";
+import { monitoringService } from "@/lib/livekit/MonitoringService";
 import { Mic, Music, MonitorUp } from "lucide-react";
 import { OwnerType } from "@/types/broadcast";
 
@@ -151,6 +155,13 @@ export default function StudioPro({
   useEffect(() => {
     elapsedTimeRef.current = elapsedTime;
   }, [elapsedTime]);
+
+  // Set broadcastId for monitoring service
+  useEffect(() => {
+    if (broadcastId) {
+      monitoringService.setBroadcastId(broadcastId);
+    }
+  }, [broadcastId]);
 
   // Handle mode change
   const handleModeChange = useCallback((newMode: StudioMode) => {
@@ -389,19 +400,11 @@ export default function StudioPro({
         token: livekitToken,
         serverUrl: livekitUrl,
         roomName: roomName,
-        initialCameraEnabled: true,
-        initialMicEnabled: true,
       });
-
-      // Start RTMP relays if configured
-      const destinations = rtmpRelayRef.current.getEnabledDestinations();
-      for (const dest of destinations) {
-        await rtmpRelayRef.current.startRelay(dest.id, livekitUrl);
-      }
 
       setLiveKitStatus("CONNECTED");
       setIsLive(true);
-      startTimeRef.current = Date.now();
+      setElapsedTime(0);
     } catch (error) {
       console.error("Failed to start streaming:", error);
       setLiveKitStatus("ERROR");
@@ -411,46 +414,114 @@ export default function StudioPro({
   // Handle streaming stop
   const handleStopStreaming = useCallback(async () => {
     try {
-      // Stop RTMP relays
-      const destinations = rtmpRelayRef.current.getAllDestinations();
-      for (const dest of destinations) {
-        await rtmpRelayRef.current.stopRelay(dest.id);
-      }
-
-      // Disconnect from LiveKit
-      if (liveKitRoomRef.current) {
-        await liveKitService.disconnect();
-        liveKitRoomRef.current = null;
-      }
-
+      await liveKitService.disconnect();
+      
       setLiveKitStatus("DISCONNECTED");
       setIsLive(false);
       setElapsedTime(0);
+      
+      liveKitRoomRef.current = null;
     } catch (error) {
       console.error("Failed to stop streaming:", error);
     }
   }, []);
 
-  const handleStartRecording = useCallback(async () => {
-    if (!broadcastId) return;
+  // Handle camera toggle
+  const handleToggleCamera = useCallback(async () => {
+    try {
+      const room = liveKitService.getRoom();
+      if (room) {
+        const participant = room.localParticipant;
+        const videoTrack = participant.getTrackPublication(Track.Source.Camera);
+        if (videoTrack) {
+          if (videoTrack.isMuted) {
+            await videoTrack.unmute();
+          } else {
+            await videoTrack.mute();
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to toggle camera:", error);
+    }
+  }, []);
+
+  // Handle microphone toggle
+  const handleToggleMic = useCallback(async () => {
+    try {
+      const room = liveKitService.getRoom();
+      if (room) {
+        const participant = room.localParticipant;
+        const audioTrack = participant.getTrackPublication(Track.Source.Microphone);
+        if (audioTrack) {
+          if (audioTrack.isMuted) {
+            await audioTrack.unmute();
+          } else {
+            await audioTrack.mute();
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to toggle microphone:", error);
+    }
+  }, []);
+
+  // Handle screen share toggle
+  const handleToggleScreenShare = useCallback(async () => {
+    try {
+      const room = liveKitService.getRoom();
+      if (room) {
+        const participant = room.localParticipant;
+        const screenTrack = participant.getTrackPublication(Track.Source.ScreenShare);
+        
+        if (screenTrack && screenTrack.track) {
+          // Stop screen share
+          await screenTrack.track.stop();
+          await participant.unpublishTrack(screenTrack.track);
+        } else {
+          // Start screen share
+          const screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { width: 1920, height: 1080 },
+            audio: false,
+          });
+          
+          const screenTrack = await createLocalVideoTrack();
+          await participant.publishTrack(screenTrack, {
+            name: "screen_share",
+            source: Track.Source.ScreenShare,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to toggle screen share:", error);
+    }
+  }, []);
+
+  // Handle settings open
+  const handleOpenSettings = useCallback(() => {
+    // TODO: Implement settings modal
+    console.log("Open settings");
+  }, []);
+
+  // Handle recording toggle
+  const handleToggleRecording = useCallback(async () => {
+    if (!broadcastId || !roomName) return;
 
     try {
-      const config = egressService.createFileRecordingConfig(roomName || broadcastId);
-      const recording = await egressService.startRecording(config);
-      setIsRecording(true);
+      if (isRecording) {
+        // Stop recording
+        await egressService.stopRecording(broadcastId);
+        setIsRecording(false);
+      } else {
+        // Start recording
+        const config = egressService.createFileRecordingConfig(roomName);
+        await egressService.startRecording(config);
+        setIsRecording(true);
+      }
     } catch (error) {
-      // Silently handle error
+      console.error("Failed to toggle recording:", error);
     }
-  }, [broadcastId, roomName]);
-
-  const handleStopRecording = useCallback(async () => {
-    // Implementation for stopping recording
-    setIsRecording(false);
-  }, []);
-
-  const handleOpenSettings = useCallback(() => {
-    // Open settings modal
-  }, []);
+  }, [broadcastId, roomName, isRecording]);
 
   const handleToggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
@@ -468,6 +539,7 @@ export default function StudioPro({
         onModeChange={handleModeChange}
         broadcastName={broadcastName}
         churchName={churchName}
+        churchSlug={churchSlug}
         ownerName={effectiveOwnerName}
         ownerType={effectiveOwnerType}
         ownerId={ownerId}
@@ -479,8 +551,8 @@ export default function StudioPro({
         liveKitStatus={liveKitStatus}
         onStartStreaming={handleStartStreaming}
         onStopStreaming={handleStopStreaming}
-        onStartRecording={handleStartRecording}
-        onStopRecording={handleStopRecording}
+        onStartRecording={handleToggleRecording}
+        onStopRecording={handleToggleRecording}
         isRecording={isRecording}
         onOpenSettings={handleOpenSettings}
         onToggleFullscreen={handleToggleFullscreen}
@@ -490,7 +562,7 @@ export default function StudioPro({
       <div className="flex-1 relative overflow-hidden">
         {/* VIDEO Mode Panels */}
         {mode === "VIDEO" && (
-          <div className="grid grid-cols-[250px_1fr_300px_300px] gap-4 h-full p-4 overflow-hidden">
+          <div className="grid grid-cols-[250px_1fr_210px_300px] gap-4 h-full p-4 overflow-hidden">
             {/* Column 1: Empty or future use */}
             <div className="flex flex-col gap-4 overflow-hidden">
               <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 flex items-center justify-center text-gray-500 text-sm">
@@ -502,7 +574,7 @@ export default function StudioPro({
             </div>
 
             {/* Column 2: Preview, Program, Transitions, Scenes, Sources, Audio Mixer */}
-            <div className="flex flex-col gap-4 overflow-hidden">
+            <div className="flex flex-col gap-4 overflow-hidden flex-1">
               {/* Preview and Program side by side with transitions in middle */}
               <div className="flex gap-2 h-80">
                 {/* Preview Panel */}
@@ -511,7 +583,7 @@ export default function StudioPro({
                 </div>
 
                 {/* Transitions Panel */}
-                <div className="bg-[#16161f] rounded-lg shadow-xl flex flex-col items-center justify-start gap-2 px-2 py-3 w-20 overflow-hidden">
+                <div className="bg-[#16161f] rounded-lg shadow-xl flex flex-col items-center justify-start gap-2 px-2 py-3 w-24 overflow-hidden">
                   <StudioTransitions
                     currentTransition={currentTransition}
                     onTransitionChange={setCurrentTransition}
@@ -580,29 +652,43 @@ export default function StudioPro({
                 )}
               </div>
 
-              {/* Audio Mixer Panel */}
-              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-20 overflow-hidden">
-                <StudioAudioMixer
-                  channels={audioEngine.channels.map(c => ({
-                    id: c.id,
-                    name: c.name,
-                    volume: c.volume,
-                    muted: c.muted,
-                    solo: c.solo,
-                    peak: c.peak * 100,
-                    color: c.color,
-                    icon: c.icon === "Mic" ? Mic : c.icon === "Music" ? Music : MonitorUp,
-                  }))}
-                  onChannelUpdate={(channelId, updates) => {
-                    const { icon, ...rest } = updates;
-                    audioEngine.updateChannel(channelId, rest);
-                  }}
-                />
+              {/* Audio Mixer and Overlays side by side */}
+              <div className="flex gap-2 flex-1 min-h-0">
+                {/* Audio Mixer Panel */}
+                <div className="flex-1 bg-[#16161f] rounded-lg shadow-xl overflow-hidden flex flex-col">
+                  <StudioAudioMixer
+                    channels={audioEngine.channels.map(c => ({
+                      id: c.id,
+                      name: c.name,
+                      volume: c.volume,
+                      muted: c.muted,
+                      solo: c.solo,
+                      peak: c.peak * 100,
+                      color: c.color,
+                      icon: c.icon === "Mic" ? Mic : c.icon === "Music" ? Music : MonitorUp,
+                    }))}
+                    onChannelUpdate={(channelId, updates) => {
+                      const { icon, ...rest } = updates;
+                      audioEngine.updateChannel(channelId, rest);
+                    }}
+                  />
+                </div>
+
+                {/* Overlays Panel */}
+                <div className="flex-1 bg-[#16161f] rounded-lg shadow-xl overflow-hidden flex flex-col">
+                  <StudioOverlays
+                    overlays={overlayEngine.overlays}
+                    onOverlayAdd={(overlay) => overlayEngine.addOverlay(overlay)}
+                    onOverlayUpdate={(overlayId, updates) => overlayEngine.updateOverlay(overlayId, updates)}
+                    onOverlayDelete={(overlayId) => overlayEngine.deleteOverlay(overlayId)}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Column 3: Controls */}
-            <div className="flex flex-col gap-4 overflow-hidden">
+            {/* Column 3: Controls, Monitoring */}
+            <div className="flex flex-col gap-4 overflow-hidden w-[210px]">
+              {/* Controls Panel */}
               <div className="bg-[#16161f] rounded-lg shadow-xl p-4 flex flex-col gap-3 overflow-hidden">
                 <StudioControls
                   isLive={isLive}
@@ -619,12 +705,17 @@ export default function StudioPro({
                   onOpenSettings={handleOpenSettings}
                 />
               </div>
+
+              {/* Monitoring Panel */}
+              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-48 overflow-hidden">
+                <StudioMonitoring />
+              </div>
             </div>
 
             {/* Column 4: Chat & Multistreaming */}
-            <div className="flex flex-col gap-4 w-full overflow-hidden">
+            <div className="flex flex-col gap-4 overflow-hidden w-80">
               {/* Chat Panel */}
-              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-64 w-full overflow-hidden">
+              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-64 overflow-hidden">
                 <StudioChat
                   broadcastId={broadcastId || ""}
                   userId={userId || ""}
@@ -636,12 +727,12 @@ export default function StudioPro({
               </div>
 
               {/* Stats Panel */}
-              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-32 w-full overflow-hidden">
+              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-32 overflow-hidden">
                 <StudioStats broadcastId={broadcastId || ""} isLive={isLive} />
               </div>
 
               {/* Outputs Panel */}
-              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-64 w-full overflow-hidden">
+              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 min-h-64 overflow-hidden">
                 <StudioOutputs broadcastId={broadcastId || ""} />
               </div>
             </div>

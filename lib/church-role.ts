@@ -11,6 +11,12 @@ export function normalizeChurchRole(
     case "ADMIN":
       return "CHURCH_ADMIN";
 
+    case "BROADCAST_MANAGER":
+      return "BROADCAST_MANAGER";
+
+    case "STUDIO_OPERATOR":
+      return "STUDIO_OPERATOR";
+
     default:
       return role;
   }

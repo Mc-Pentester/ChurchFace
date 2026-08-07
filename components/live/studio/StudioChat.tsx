@@ -331,7 +331,7 @@ export default function StudioChat({
 
               {/* Moderator dropdown menu */}
               {showModeratorMenu === msg.id && (
-                <div className="absolute top-10 right-2 bg-[#252535] rounded-lg shadow-xl border border-gray-700 z-20 w-40">
+                <div className="absolute top-10 right-2 bg-[#252535] rounded-lg shadow-xl border border-gray-700 z-20 w-40 max-h-64 overflow-y-auto">
                   <button
                     onClick={() => handleDeleteMessage(msg.id)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-400 hover:bg-[#353545] rounded-t-lg"

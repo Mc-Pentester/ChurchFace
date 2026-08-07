@@ -5,22 +5,14 @@ import { Play, Pause } from "lucide-react";
 import LiveKitPlayer from "@/components/livekit/LiveKitPlayer";
 
 interface LiveVideoPlayerProps {
-  churchLive?: any;
-  live?: any;
   broadcast?: any;
-  churchSlug?: string;
   isLive: boolean;
 }
 
 export default function LiveVideoPlayer({
-  churchLive,
-  live,
   broadcast,
-  churchSlug,
   isLive
 }: LiveVideoPlayerProps) {
-  const resolved = churchLive ?? live;
-  const resolvedBroadcast = broadcast ?? resolved?.broadcast;
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -28,21 +20,22 @@ export default function LiveVideoPlayer({
   useEffect(() => {
     // Log debug info
     setDebugInfo({
-      streamMode: resolved?.streamMode,
-      hasId: !!resolved?.id,
-      hasPlayUrl: !!resolved?.playUrl,
-      playUrl: resolved?.playUrl,
-      status: resolved?.status,
+      streamMode: broadcast?.streamMode,
+      hasId: !!broadcast?.id,
+      hasPlayUrl: !!broadcast?.playbackUrl,
+      playUrl: broadcast?.playbackUrl,
+      status: broadcast?.status,
+      hasLivekitRoom: !!broadcast?.livekitRoom,
     });
 
     async function generateToken() {
-      if (!resolvedBroadcast) return;
+      if (!broadcast) return;
       // Use WEBRTC if streamMode is WEBRTC or undefined (default to WEBRTC)
-      const shouldUseWebRTC = !resolved?.streamMode || resolved?.streamMode === "WEBRTC";
+      const shouldUseWebRTC = !broadcast?.streamMode || broadcast?.streamMode === "WEBRTC";
       
-      if (shouldUseWebRTC && resolvedBroadcast?.id) {
+      if (shouldUseWebRTC && broadcast?.id) {
         // Use the same room name as the Studio: studio-${broadcastId}
-        const roomName = `studio-${resolvedBroadcast.id}`;
+        const roomName = broadcast?.livekitRoom || `studio-${broadcast.id}`;
         console.log("Generating LiveKit token for room:", roomName);
         try {
           setTokenError(null);
@@ -53,7 +46,7 @@ export default function LiveVideoPlayer({
             },
             body: JSON.stringify({
               roomName: roomName,
-              participantName: `viewer-${resolvedBroadcast.id}`,
+              participantName: `viewer-${broadcast.id}`,
               isPublisher: false,
             }),
           });
@@ -81,9 +74,9 @@ export default function LiveVideoPlayer({
     }
 
     generateToken();
-  }, [resolved?.streamMode, resolvedBroadcast?.id, churchSlug]);
+  }, [broadcast?.streamMode, broadcast?.id, broadcast?.livekitRoom]);
 
-  if (!resolved) {
+  if (!broadcast) {
     return (
       <div className="aspect-video bg-black/50 rounded-lg flex items-center justify-center">
         <p className="text-white">Aucune diffusion disponible</p>
@@ -104,13 +97,13 @@ export default function LiveVideoPlayer({
         </div>
       )}
 
-      {((!resolved?.streamMode || resolved?.streamMode === "WEBRTC") && livekitToken) ? (
+      {((!broadcast?.streamMode || broadcast?.streamMode === "WEBRTC") && livekitToken) ? (
         <LiveKitPlayer
           token={livekitToken}
           serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || ""}
-          roomName={`studio-${resolvedBroadcast?.id}`}
+          roomName={broadcast?.livekitRoom || `studio-${broadcast?.id}`}
         />
-      ) : ((!resolved?.streamMode || resolved?.streamMode === "WEBRTC") && !livekitToken) ? (
+      ) : ((!broadcast?.streamMode || broadcast?.streamMode === "WEBRTC") && !livekitToken) ? (
         <div className="text-center">
           {tokenError ? (
             <p className="text-red-400 text-sm">{tokenError}</p>
@@ -121,9 +114,9 @@ export default function LiveVideoPlayer({
             </>
           )}
         </div>
-      ) : resolved?.playUrl ? (
+      ) : broadcast?.playbackUrl ? (
         <iframe
-          src={resolved.playUrl}
+          src={broadcast.playbackUrl}
           className="w-full h-full rounded-lg"
           allowFullScreen
           allow="autoplay; encrypted-media"
@@ -134,10 +127,10 @@ export default function LiveVideoPlayer({
             {isLive ? <Pause size={32} /> : <Play size={32} className="ml-1" />}
           </button>
           <p className="text-sm opacity-80">
-            {isLive ? "Diffusion en cours" : resolved?.status === "OFFLINE" ? "Diffusion terminée" : "En attente de diffusion"}
+            {isLive ? "Diffusion en cours" : broadcast?.status === "OFFLINE" ? "Diffusion terminée" : "En attente de diffusion"}
           </p>
           <p className="text-xs opacity-50 mt-2">
-            streamMode: {resolved?.streamMode || 'N/A'} | playUrl: {resolved?.playUrl ? 'YES' : 'NO'}
+            streamMode: {broadcast?.streamMode || 'N/A'} | playUrl: {broadcast?.playbackUrl ? 'YES' : 'NO'}
           </p>
         </div>
       )}

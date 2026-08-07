@@ -60,7 +60,38 @@ export interface OverlayEngineConfig {
 }
 
 export function useOverlayEngine(initialConfig?: Partial<OverlayEngineConfig>) {
-  const [overlays, setOverlays] = useState<Overlay[]>([]);
+  const [overlays, setOverlays] = useState<Overlay[]>([
+    {
+      id: "default-overlay",
+      type: "VERSE",
+      name: "Overlay verse",
+      content: "Ainsi la foi vient de ce qu'on entend, et ce qu'on entend vient de la parole de Christ.",
+      x: 50,
+      y: 50,
+      width: 300,
+      height: 100,
+      opacity: 1,
+      isVisible: true,
+      isLocked: false,
+      zIndex: 1,
+      rotation: 0,
+      style: {
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        textColor: "#ffffff",
+        fontSize: 16,
+        fontFamily: "Arial",
+        fontWeight: "normal",
+        padding: 20,
+        borderRadius: 8,
+      },
+      verseData: {
+        book: "Romains",
+        chapter: 10,
+        verseStart: 17,
+        text: "Ainsi la foi vient de ce qu'on entend, et ce qu'on entend vient de la parole de Christ.",
+      },
+    },
+  ]);
   const [config, setConfig] = useState<OverlayEngineConfig>({
     canvasWidth: 1920,
     canvasHeight: 1080,

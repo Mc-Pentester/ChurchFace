@@ -14,7 +14,6 @@ BEGIN
         WHERE table_name = 'LiveBroadcast' AND column_name = 'ownerType'
     ) THEN
         ALTER TABLE "LiveBroadcast" ADD COLUMN "ownerType" TEXT DEFAULT 'USER';
-        UPDATE "LiveBroadcast" SET "ownerType" = 'USER' WHERE "ownerType" IS NULL;
     END IF;
     
     IF NOT EXISTS (
@@ -22,7 +21,18 @@ BEGIN
         WHERE table_name = 'LiveBroadcast' AND column_name = 'ownerId'
     ) THEN
         ALTER TABLE "LiveBroadcast" ADD COLUMN "ownerId" TEXT;
-        UPDATE "LiveBroadcast" SET "ownerId" = "authorId" WHERE "ownerId" IS NULL;
+        
+        -- Copy authorId only if it still exists
+        IF EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = 'LiveBroadcast'
+            AND column_name = 'authorId'
+        ) THEN
+            UPDATE "LiveBroadcast"
+            SET "ownerId" = "authorId"
+            WHERE "ownerId" IS NULL;
+        END IF;
     END IF;
     
     -- Recording fields (Priority 1 - Critical)

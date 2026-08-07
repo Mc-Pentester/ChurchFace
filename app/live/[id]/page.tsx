@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { Play, Radio, Users, MessageCircle, Heart, Share2, Clock, Calendar } from "lucide-react";
 import type { LiveBroadcast } from "@/types/preaching";
 
-export default function LivePage({ params }: { params: { id: string } }) {
+export default function LivePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const [broadcast, setBroadcast] = useState<LiveBroadcast | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [viewerCount, setViewerCount] = useState(0);
@@ -19,11 +20,11 @@ export default function LivePage({ params }: { params: { id: string } }) {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [params.id, broadcast?.status]);
+  }, [resolvedParams.id, broadcast?.status]);
 
   const fetchBroadcast = async () => {
     try {
-      const res = await fetch(`/api/live/${params.id}`);
+      const res = await fetch(`/api/live/${resolvedParams.id}`);
       const data = await res.json();
       setBroadcast(data);
       setViewerCount(data.viewerCount || 0);

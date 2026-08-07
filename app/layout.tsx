@@ -4,7 +4,7 @@ import "./globals.css";
 import Providers from "./providers";
 import ChatPopupWrapper from "@/components/layout/ChatPopupWrapper";
 import RadioPlayerWrapper from "@/components/radio/RadioPlayerWrapper";
-import HomeButton from "@/components/layout/HomeButton";
+
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import NotificationToast from "@/components/notifications/NotificationToast";
 
@@ -45,7 +45,7 @@ export default function RootLayout({
         <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
 
         <Providers>
-          <HomeButton />
+          
           {children}
           {/* Espace pour la nav mobile fixed */}
           <div className="h-20 lg:hidden" />
