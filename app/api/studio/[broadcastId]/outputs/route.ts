@@ -33,6 +33,14 @@ export async function POST(
     const { broadcastId } = await params;
     const body = await request.json();
 
+    // Empêcher de créer une sortie primaire manuellement
+    if (body.isPrimary === true) {
+      return NextResponse.json(
+        { error: "Cannot manually set isPrimary. Use NATIVE_CHURCHFACE type for primary output." },
+        { status: 400 }
+      );
+    }
+
     const output = await BroadcastOutputService.createOutput({
       broadcastId,
       type: body.type,

@@ -49,9 +49,7 @@ export default function StudioTransitions({
   };
 
   return (
-    <div className="bg-[#16161f] rounded-lg p-4 flex flex-col gap-3">
-      <div className="text-white text-xs font-semibold mb-1">TRANSITION</div>
-      
+    <div className="bg-[#16161f] rounded-lg p-2 flex flex-col gap-2">
       {/* Transition Type Selector */}
       <div className="relative">
         <button
@@ -66,48 +64,48 @@ export default function StudioTransitions({
         </button>
 
         {showMenu && (
-          <div className="absolute left-0 top-full mt-2 bg-[#252535] rounded-lg shadow-xl border border-gray-700 z-10 w-56">
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 bg-[#252535] rounded-lg shadow-xl border border-gray-700 z-10 w-[120px] overflow-hidden max-h-64 overflow-y-auto">
             {/* Base Transitions */}
-            <div className="p-2">
-              <div className="text-gray-500 text-xs font-semibold mb-1 px-2">STANDARD</div>
+            <div className="p-1.5">
+              <div className="text-gray-500 text-[10px] font-semibold mb-1 px-1">STANDARD</div>
               {BASE_TRANSITIONS.map((transition) => {
                 const Icon = transition.icon;
                 return (
                   <button
                     key={transition.type}
                     onClick={() => handleTransitionSelect(transition.type)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-left transition rounded ${
+                    className={`w-full flex items-center gap-1.5 px-1.5 py-1 text-left transition rounded text-[10px] whitespace-nowrap ${
                       currentTransition === transition.type
                         ? "bg-emerald-600/20 text-emerald-400"
                         : "text-gray-300 hover:bg-[#353545]"
                     }`}
                   >
-                    <Icon size={16} />
-                    <span className="text-sm">{transition.label}</span>
+                    <Icon size={10} />
+                    <span>{transition.label}</span>
                   </button>
                 );
               })}
             </div>
 
             {/* Advanced Transitions */}
-            <div className="border-t border-gray-700 p-2">
-              <div className="text-gray-500 text-xs font-semibold mb-1 px-2">ADVANCED</div>
+            <div className="border-t border-gray-700 p-1.5">
+              <div className="text-gray-500 text-[10px] font-semibold mb-1 px-1">ADVANCED</div>
               {ADVANCED_TRANSITIONS.map((transition) => {
                 const Icon = transition.icon;
                 return (
                   <button
                     key={transition.type}
                     onClick={() => handleTransitionSelect(transition.type)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-left transition rounded ${
+                    className={`w-full flex items-center gap-1.5 px-1.5 py-1 text-left transition rounded text-[10px] whitespace-nowrap ${
                       currentTransition === transition.type
                         ? "bg-violet-600/20 text-violet-400"
                         : "text-gray-300 hover:bg-[#353545]"
                     }`}
                   >
-                    <Icon size={16} />
-                    <span className="text-sm">{transition.label}</span>
+                    <Icon size={10} />
+                    <span>{transition.label}</span>
                     {transition.requiresConfig && (
-                      <span className="text-xs text-yellow-500">⚙</span>
+                      <span className="text-[8px] text-yellow-500 ml-auto">⚙</span>
                     )}
                   </button>
                 );

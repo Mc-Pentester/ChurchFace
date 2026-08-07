@@ -75,6 +75,9 @@ export class BroadcastOutputService {
   static async createOutput(params: CreateOutputParams): Promise<BroadcastOutput> {
     const { broadcastId, type, name, rtmpUrl, streamKey, enabled = false, config } = params;
 
+    // Si c'est une destination ChurchFace, elle doit être primaire
+    const isPrimary = type === "NATIVE_CHURCHFACE";
+
     // Générer une stream key si non fournie
     const finalStreamKey = streamKey || generateStreamKey();
 
@@ -86,9 +89,11 @@ export class BroadcastOutputService {
         broadcastId,
         type,
         name,
+        platform: isPrimary ? "CHURCHFACE" : config?.platform || null,
         streamUrl: rtmpUrl,
         streamKey: encryptedStreamKey,
-        enabled,
+        enabled: isPrimary ? true : enabled,
+        isPrimary,
         config: config || {},
         status: "OFFLINE",
       },
@@ -152,12 +157,56 @@ export class BroadcastOutputService {
     });
 
     if (output && output.enabled) {
-      await this.stopOutput(id);
+      await this.disableOutput(id);
     }
 
     await prisma.studioOutput.delete({
       where: { id },
     });
+  }
+
+  /**
+   * Désactive une destination de diffusion
+   */
+  static async disableOutput(id: string): Promise<BroadcastOutput> {
+    const output = await prisma.studioOutput.findUnique({
+      where: { id },
+    });
+
+    if (!output) {
+      throw new Error("Output not found");
+    }
+
+    // Empêcher la désactivation de la sortie primaire (ChurchFace)
+    // Utiliser le type comme vérification temporaire jusqu'à ce que isPrimary soit disponible
+    if (output.type === "NATIVE_CHURCHFACE") {
+      throw new Error("Cannot disable primary ChurchFace output");
+    }
+
+    // Arrêter le relay RTMP
+    await rtmpRelayService.removeDestination(id);
+
+    const updated = await prisma.studioOutput.update({
+      where: { id },
+      data: {
+        enabled: false,
+        status: "OFFLINE",
+      },
+    });
+
+    return {
+      id: updated.id,
+      type: updated.type as OutputType,
+      name: (updated as any).name,
+      enabled: updated.enabled,
+      rtmpUrl: updated.streamUrl || undefined,
+      streamKey: output.streamKey ? decrypt(output.streamKey) : undefined,
+      status: updated.status as OutputStatus,
+      config: updated.config as Record<string, any>,
+      broadcastId: updated.broadcastId || "",
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
   }
 
   /**
@@ -196,10 +245,24 @@ export class BroadcastOutputService {
         enabled: true,
       });
 
-      await prisma.studioOutput.update({
+      const finalUpdate = await prisma.studioOutput.update({
         where: { id },
         data: { status: "ACTIVE" },
       });
+
+      return {
+        id: finalUpdate.id,
+        type: finalUpdate.type as OutputType,
+        name: (finalUpdate as any).name,
+        enabled: finalUpdate.enabled,
+        rtmpUrl: finalUpdate.streamUrl || undefined,
+        streamKey: output.streamKey ? decrypt(output.streamKey) : undefined,
+        status: finalUpdate.status as OutputStatus,
+        config: finalUpdate.config as Record<string, any>,
+        broadcastId: finalUpdate.broadcastId || "",
+        createdAt: finalUpdate.createdAt,
+        updatedAt: finalUpdate.updatedAt,
+      };
     } catch (error) {
       await prisma.studioOutput.update({
         where: { id },
@@ -207,58 +270,22 @@ export class BroadcastOutputService {
       });
       throw error;
     }
-
-    return {
-      id: updated.id,
-      type: updated.type as OutputType,
-      name: (updated as any).name,
-      enabled: updated.enabled,
-      rtmpUrl: updated.streamUrl || undefined,
-      streamKey: output.streamKey ? decrypt(output.streamKey) : undefined,
-      status: updated.status as OutputStatus,
-      config: updated.config as Record<string, any>,
-      broadcastId: updated.broadcastId || "",
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
   }
 
   /**
-   * Désactive une destination de diffusion
+   * Force l'activation de la sortie primaire (ChurchFace) si elle est désactivée
    */
-  static async disableOutput(id: string): Promise<BroadcastOutput> {
-    const output = await prisma.studioOutput.findUnique({
-      where: { id },
-    });
-
-    if (!output) {
-      throw new Error("Output not found");
-    }
-
-    // Arrêter le relay RTMP
-    await rtmpRelayService.removeDestination(id);
-
-    const updated = await prisma.studioOutput.update({
-      where: { id },
-      data: {
-        enabled: false,
-        status: "OFFLINE",
+  static async ensurePrimaryOutputActive(broadcastId: string): Promise<void> {
+    const primaryOutput = await prisma.studioOutput.findFirst({
+      where: {
+        broadcastId,
+        type: "NATIVE_CHURCHFACE",
       },
     });
 
-    return {
-      id: updated.id,
-      type: updated.type as OutputType,
-      name: (updated as any).name,
-      enabled: updated.enabled,
-      rtmpUrl: updated.streamUrl || undefined,
-      streamKey: output.streamKey ? decrypt(output.streamKey) : undefined,
-      status: updated.status as OutputStatus,
-      config: updated.config as Record<string, any>,
-      broadcastId: updated.broadcastId || "",
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
+    if (primaryOutput && !primaryOutput.enabled) {
+      await this.enableOutput(primaryOutput.id);
+    }
   }
 
   /**
@@ -349,11 +376,39 @@ export class BroadcastOutputService {
   }
 
   /**
-   * Désactive toutes les destinations d'un broadcast
+   * Active toutes les destinations secondaires (non-primaires) pour le multistreaming
+   * La destination principale ChurchFace reste toujours active
+   */
+  static async enableMultistreaming(broadcastId: string): Promise<BroadcastOutput[]> {
+    // S'assurer que la destination principale est active
+    await this.ensurePrimaryOutput(broadcastId);
+
+    // Activer toutes les destinations secondaires activées
+    const secondaryOutputs = await prisma.studioOutput.findMany({
+      where: {
+        broadcastId,
+        isPrimary: false,
+        enabled: true,
+      },
+    });
+
+    const results = await Promise.all(
+      secondaryOutputs.map((output) => this.enableOutput(output.id))
+    );
+
+    return results;
+  }
+
+  /**
+   * Désactive toutes les destinations d'un broadcast (sauf la primaire ChurchFace)
    */
   static async disableAllOutputs(broadcastId: string): Promise<BroadcastOutput[]> {
     const outputs = await prisma.studioOutput.findMany({
-      where: { broadcastId, enabled: true },
+      where: { 
+        broadcastId, 
+        enabled: true,
+        type: { not: "NATIVE_CHURCHFACE" }, // Ne jamais désactiver ChurchFace
+      },
     });
 
     const results = await Promise.all(
@@ -391,16 +446,54 @@ export class BroadcastOutputService {
       };
     }
 
-    // Créer la destination native
+    // Générer les credentials ChurchFace
+    const churchfaceStreamKey = generateStreamKey();
+    const churchfaceRtmpUrl = process.env.CHURCHFACE_RTMP_URL || "rtmp://live.churchface.com/live";
+
+    // Créer la destination native - toujours primaire et activée
     return this.createOutput({
       broadcastId,
       type: "NATIVE_CHURCHFACE",
       name: "ChurchFace Native",
+      rtmpUrl: churchfaceRtmpUrl,
+      streamKey: churchfaceStreamKey,
       enabled: true,
       config: {
-        platform: "churchface",
+        platform: "CHURCHFACE",
         autoEnable: true,
+        isRelaySource: true, // Cette sortie est la source pour le relay
       },
     });
+  }
+
+  /**
+   * S'assure que ChurchFace est toujours la destination principale
+   */
+  static async ensurePrimaryOutput(broadcastId: string): Promise<BroadcastOutput> {
+    // Créer la sortie native si elle n'existe pas
+    const nativeOutput = await this.createNativeOutput(broadcastId);
+
+    // S'assurer qu'elle est marquée comme primaire
+    if (!nativeOutput) {
+      throw new Error("Failed to create primary ChurchFace output");
+    }
+
+    // Désactiver toutes les autres sorties marquées comme primaires
+    await prisma.studioOutput.updateMany({
+      where: {
+        broadcastId,
+        id: { not: nativeOutput.id },
+        isPrimary: true,
+      },
+      data: { isPrimary: false },
+    });
+
+    // S'assurer que la sortie native est bien primaire
+    await prisma.studioOutput.update({
+      where: { id: nativeOutput.id },
+      data: { isPrimary: true, enabled: true },
+    });
+
+    return nativeOutput;
   }
 }

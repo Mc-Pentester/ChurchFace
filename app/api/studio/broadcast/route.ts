@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const broadcasts = await BroadcastContextService.listBroadcasts({
-      authorId: session.user.id,
+      ownerId: session.user.id,
     });
 
     return NextResponse.json({ broadcasts });
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const broadcast = await BroadcastContextService.createBroadcast({
       title,
       ownerType: ownerType || "USER",
-      ownerId: ownerId || session.user.id,
+      ownerId: session.user.id,
       authorId: session.user.id,
     });
 
@@ -93,7 +93,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Broadcast not found" }, { status: 404 });
     }
 
-    if (broadcast.authorId !== session.user.id) {
+    if (broadcast.ownerId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

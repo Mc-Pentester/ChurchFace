@@ -90,14 +90,11 @@ export class BroadcastContextService {
           description:
           "Diffusion en direct",
 
-
           authorId:
           userExists.id,
 
-
           ownerType:
           "CHURCH",
-
 
           ownerId:
           church.id,
@@ -127,18 +124,20 @@ export class BroadcastContextService {
       };
     } else if (broadcastId) {
       // Contexte global ou utilisateur - déterminer via le broadcast
-      const broadcast = await prisma.liveBroadcast.findUnique({
-        where: { id: broadcastId },
-        include: { author: true },
-      });
+      const broadcast =
+    await prisma.liveBroadcast.findUnique({
+
+    where:{ id:broadcastId },
+
+    });
       
       if (!broadcast) {
         throw new Error("Broadcast not found");
       }
       
       ownerType = (broadcast.ownerType as any as OwnerType) || "USER";
-      ownerId = broadcast.authorId;
-      ownerName = broadcast.author.name || "Unknown";
+      ownerId = broadcast.ownerId || userId;
+      ownerName = userName || "Unknown";
       
       return {
         ownerType,
@@ -170,8 +169,8 @@ export class BroadcastContextService {
           title: `${ownerName} - Live`,
           description: "Diffusion en direct",
           streamUrl: "",
-          authorId: userId,
           ownerType: "USER",
+          ownerId: userId,
           status: "SCHEDULED",
         },
       });
@@ -349,8 +348,8 @@ export class BroadcastContextService {
         title,
         description: "",
         streamUrl: "",
-        authorId,
         ownerType,
+        ownerId: authorId,
         status: "SCHEDULED",
       },
     });
@@ -363,7 +362,6 @@ export class BroadcastContextService {
     const broadcast = await prisma.liveBroadcast.findUnique({
       where: { id: broadcastId },
       include: {
-        author: true,
         outputs: true,
         scenes: {
           include: {
@@ -397,18 +395,15 @@ export class BroadcastContextService {
     }
     
     if (ownerId) {
-      where.authorId = ownerId;
+      where.ownerId = ownerId;
     }
     
     if (authorId) {
-      where.authorId = authorId;
+      where.ownerId = authorId;
     }
     
     return await prisma.liveBroadcast.findMany({
       where,
-      include: {
-        author: true,
-      },
       orderBy: {
         createdAt: "desc",
       },

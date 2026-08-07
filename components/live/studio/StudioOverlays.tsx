@@ -1,33 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Type, Image, Clock, Layers, Plus, Trash2, Eye, EyeOff, Lock, Unlock } from "lucide-react";
-
-interface Overlay {
-  id: string;
-  type: "TEXT" | "IMAGE" | "TIMER" | "LOGO";
-  name: string;
-  content: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fontSize?: number;
-  fontFamily?: string;
-  color?: string;
-  backgroundColor?: string;
-  opacity?: number;
-  zIndex: number;
-  isVisible: boolean;
-  isLocked: boolean;
-}
+import { Type, Image, Clock, Layers, Plus, Trash2, Eye, EyeOff, Lock, Unlock, BookOpen, Megaphone, Layout, MessageSquare, Timer as TimerIcon } from "lucide-react";
+import { Overlay } from "@/hooks/useOverlayEngine";
 
 interface StudioOverlaysProps {
   overlays: Overlay[];
-  onOverlayAdd: (overlay: Overlay) => void;
+  onOverlayAdd: (overlay: Omit<Overlay, "id">) => void;
   onOverlayUpdate: (overlayId: string, updates: Partial<Overlay>) => void;
   onOverlayDelete: (overlayId: string) => void;
 }
+
+const OVERLAY_TYPES = [
+  { type: "VERSE" as const, label: "Verset", icon: BookOpen },
+  { type: "ANNOUNCEMENT" as const, label: "Annonce", icon: Megaphone },
+  { type: "LOWER_THIRD" as const, label: "Lower Third", icon: Layout },
+  { type: "TITLE" as const, label: "Titre", icon: Type },
+  { type: "LOGO" as const, label: "Logo", icon: Layers },
+  { type: "TIMER" as const, label: "Timer", icon: Clock },
+  { type: "COUNTDOWN" as const, label: "Countdown", icon: TimerIcon },
+  { type: "BANNER" as const, label: "Bannière", icon: Layout },
+  { type: "CHAT" as const, label: "Chat", icon: MessageSquare },
+  { type: "CUSTOM" as const, label: "Custom", icon: Type },
+];
 
 export default function StudioOverlays({
   overlays,
@@ -39,28 +34,32 @@ export default function StudioOverlays({
   const [showAddMenu, setShowAddMenu] = useState(false);
 
   const handleAddOverlay = (type: Overlay["type"]) => {
-    const newOverlay: Overlay = {
-      id: Date.now().toString(),
+    const baseOverlay: Omit<Overlay, "id"> = {
       type,
       name: `Overlay ${type.toLowerCase()}`,
-      content: type === "TEXT" ? "Votre texte ici" : "",
+      content: type === "VERSE" ? "Ainsi la foi vient de ce qu'on entend, et ce qu'on entend vient de la parole de Christ." : "",
       x: 50,
       y: 50,
-      width: type === "TEXT" ? 300 : 200,
-      height: type === "TEXT" ? 100 : 200,
-      fontSize: 24,
-      fontFamily: "Arial",
-      color: "#ffffff",
-      backgroundColor: "transparent",
-      opacity: 100,
-      zIndex: overlays.length + 1,
+      width: 300,
+      height: 100,
+      opacity: 1,
       isVisible: true,
       isLocked: false,
+      zIndex: overlays.length + 1,
+      rotation: 0,
+      style: {
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        textColor: "#ffffff",
+        fontSize: 16,
+        fontFamily: "Arial",
+        fontWeight: "normal",
+        padding: 20,
+        borderRadius: 8,
+      },
     };
 
-    onOverlayAdd(newOverlay);
+    onOverlayAdd(baseOverlay);
     setShowAddMenu(false);
-    setSelectedOverlay(newOverlay.id);
   };
 
   const handleToggleVisibility = (overlayId: string) => {
@@ -78,18 +77,8 @@ export default function StudioOverlays({
   };
 
   const getOverlayIcon = (type: Overlay["type"]) => {
-    switch (type) {
-      case "TEXT":
-        return Type;
-      case "IMAGE":
-        return Image;
-      case "TIMER":
-        return Clock;
-      case "LOGO":
-        return Layers;
-      default:
-        return Layers;
-    }
+    const overlayType = OVERLAY_TYPES.find(t => t.type === type);
+    return overlayType?.icon || Layers;
   };
 
   return (
@@ -106,35 +95,20 @@ export default function StudioOverlays({
           </button>
 
           {showAddMenu && (
-            <div className="absolute right-0 top-full mt-2 bg-[#252535] border border-gray-700 rounded-lg shadow-lg py-1 z-10 min-w-[150px]">
-              <button
-                onClick={() => handleAddOverlay("TEXT")}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-300 hover:bg-[#353545] text-sm"
-              >
-                <Type size={14} />
-                <span>Texte</span>
-              </button>
-              <button
-                onClick={() => handleAddOverlay("IMAGE")}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-300 hover:bg-[#353545] text-sm"
-              >
-                <Image size={14} />
-                <span>Image</span>
-              </button>
-              <button
-                onClick={() => handleAddOverlay("TIMER")}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-300 hover:bg-[#353545] text-sm"
-              >
-                <Clock size={14} />
-                <span>Timer</span>
-              </button>
-              <button
-                onClick={() => handleAddOverlay("LOGO")}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-300 hover:bg-[#353545] text-sm"
-              >
-                <Layers size={14} />
-                <span>Logo</span>
-              </button>
+            <div className="absolute right-0 top-full mt-2 bg-[#252535] border border-gray-700 rounded-lg shadow-lg py-1 z-10 min-w-[150px] max-h-64 overflow-y-auto">
+              {OVERLAY_TYPES.map((overlayType) => {
+                const Icon = overlayType.icon;
+                return (
+                  <button
+                    key={overlayType.type}
+                    onClick={() => handleAddOverlay(overlayType.type)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-300 hover:bg-[#353545] text-sm"
+                  >
+                    <Icon size={14} />
+                    <span>{overlayType.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -221,38 +195,41 @@ export default function StudioOverlays({
                       />
                     </div>
 
-                    {overlay.type === "TEXT" && (
-                      <>
+                    <div>
+                      <label className="text-gray-400 text-xs block mb-1">Contenu</label>
+                      <textarea
+                        value={overlay.content}
+                        onChange={(e) => onOverlayUpdate(overlay.id, { content: e.target.value })}
+                        className="w-full bg-[#16161f] text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 resize-none"
+                        rows={2}
+                      />
+                    </div>
+
+                    {overlay.style && (
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-gray-400 text-xs block mb-1">Contenu</label>
-                          <textarea
-                            value={overlay.content}
-                            onChange={(e) => onOverlayUpdate(overlay.id, { content: e.target.value })}
-                            className="w-full bg-[#16161f] text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 resize-none"
-                            rows={2}
+                          <label className="text-gray-400 text-xs block mb-1">Taille</label>
+                          <input
+                            type="number"
+                            value={overlay.style.fontSize || 16}
+                            onChange={(e) => onOverlayUpdate(overlay.id, { 
+                              style: { ...overlay.style, fontSize: Number(e.target.value) }
+                            })}
+                            className="w-full bg-[#16161f] text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-gray-400 text-xs block mb-1">Taille</label>
-                            <input
-                              type="number"
-                              value={overlay.fontSize}
-                              onChange={(e) => onOverlayUpdate(overlay.id, { fontSize: Number(e.target.value) })}
-                              className="w-full bg-[#16161f] text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-gray-400 text-xs block mb-1">Couleur</label>
-                            <input
-                              type="color"
-                              value={overlay.color}
-                              onChange={(e) => onOverlayUpdate(overlay.id, { color: e.target.value })}
-                              className="w-full h-8 bg-[#16161f] rounded cursor-pointer"
-                            />
-                          </div>
+                        <div>
+                          <label className="text-gray-400 text-xs block mb-1">Couleur</label>
+                          <input
+                            type="color"
+                            value={overlay.style.textColor || "#ffffff"}
+                            onChange={(e) => onOverlayUpdate(overlay.id, { 
+                              style: { ...overlay.style, textColor: e.target.value }
+                            })}
+                            className="w-full h-8 bg-[#16161f] rounded cursor-pointer"
+                          />
                         </div>
-                      </>
+                      </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-2">
@@ -277,11 +254,12 @@ export default function StudioOverlays({
                     </div>
 
                     <div>
-                      <label className="text-gray-400 text-xs block mb-1">Opacité ({overlay.opacity}%)</label>
+                      <label className="text-gray-400 text-xs block mb-1">Opacité ({Math.round(overlay.opacity * 100)}%)</label>
                       <input
                         type="range"
                         min={0}
-                        max={100}
+                        max={1}
+                        step={0.01}
                         value={overlay.opacity}
                         onChange={(e) => onOverlayUpdate(overlay.id, { opacity: Number(e.target.value) })}
                         className="w-full accent-violet-500"

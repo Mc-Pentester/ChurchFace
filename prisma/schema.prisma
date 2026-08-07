@@ -22,6 +22,14 @@ model User {
   suspendedAt                DateTime?
   churchId                   String?
   permissions                Json?                        @default("{}")
+  // Profile extensions
+  coverImage                 String?
+  firstName                 String?
+  lastName                  String?
+  country                   String?
+  language                  String?                     @default("fr")
+  ministry                  String?
+  username                  String?                     @unique
   accounts                   Account[]
   adminLogs                  AdminLog[]
   audioTracks                AudioTrack[]
@@ -37,7 +45,6 @@ model User {
   friendships2               Friendship[]                @relation("FriendshipReceiver")
   friendships1               Friendship[]                @relation("FriendshipSender")
   likes                      Like[]
-  liveBroadcasts             LiveBroadcast[]
   sentMessages               Message[]                   @relation("MessageSender")
   messageSeen                MessageSeen[]
   notificationsSent          Notification[]              @relation("NotificationSender")
@@ -75,6 +82,13 @@ model User {
   church                     Church?                     @relation("UserChurch", fields: [churchId], references: [id])
   followers                  UserFollow[]                @relation("UserFollowFollower")
   following                  UserFollow[]                @relation("UserFollowFollowing")
+  // Profile social relations
+  profilePrivacy             ProfilePrivacy?
+  albums                     Album[]
+  media                      Media[]
+  blockedBy                  Block[]                     @relation("Blocked")
+  blocking                   Block[]                     @relation("Blocker")
+  liveBroadcasts             LiveBroadcast[]
 }
 
 model Account {
@@ -1212,8 +1226,10 @@ model StudioSource {
 model StudioOutput {
   id          String         @id @default(cuid())
   name        String
-  type        String
-  enabled     Boolean        @default(false)
+  type        String         // "CHURCHFACE" | "RTMP" | "WEBRTC" | "HLS" | "DASH"
+  platform    String?        // "CHURCHFACE" | "YOUTUBE" | "FACEBOOK" | "TWITCH" | "CUSTOM_RTMP"
+  enabled     Boolean        @default(true)
+  isPrimary   Boolean        @default(false) // ChurchFace is always primary
   config      Json?
   streamKey   String?
   streamUrl   String?
@@ -1226,4 +1242,128 @@ model StudioOutput {
   @@index([broadcastId])
   @@index([type])
   @@index([enabled])
+  @@index([isPrimary])
+  @@index([platform])
+}
+
+// Broadcast Hub System
+model BroadcastAccount {
+  id                    String   @id @default(cuid())
+  ownerType             String   // "USER" | "CHURCH"
+  userId                String?
+  churchId              String?
+  platform              String   // "YOUTUBE" | "FACEBOOK" | "TWITCH" | "RTMP"
+  accountName           String
+  accessTokenEncrypted  String?
+  refreshTokenEncrypted String?
+  status                String   @default("ACTIVE") // "ACTIVE" | "REVOKED" | "EXPIRED"
+  metadata              Json?    // Platform-specific data
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastUsedAt            DateTime?
+  destinations          BroadcastDestination[]
+
+  @@index([ownerType, userId])
+  @@index([ownerType, churchId])
+  @@index([platform])
+  @@index([status])
+}
+
+model BroadcastDestination {
+  id                  String   @id @default(cuid())
+  broadcastAccountId  String
+  name                String
+  platform            String
+  enabled             Boolean  @default(true)
+  isDefault           Boolean  @default(false)
+  configuration       Json?    // Stream key, RTMP URL, etc.
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  account             BroadcastAccount @relation(fields: [broadcastAccountId], references: [id], onDelete: Cascade)
+
+  @@index([broadcastAccountId])
+  @@index([platform])
+  @@index([enabled])
+}
+
+model BroadcastPermission {
+  id          String   @id @default(cuid())
+  churchId    String
+  userId      String?
+  role        String   // "BROADCAST_MANAGER" | "STUDIO_OPERATOR"
+  permissions Json?    @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([churchId, userId])
+  @@index([churchId])
+  @@index([userId])
+  @@index([role])
+}
+
+// Profile Privacy Settings
+model ProfilePrivacy {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  profileLocked   Boolean  @default(false)
+  postVisibility  String   @default("PUBLIC")  // PUBLIC, FRIENDS, PRIVATE
+  friendVisibility String  @default("PUBLIC")  // PUBLIC, FRIENDS, PRIVATE
+  followPermission String  @default("EVERYONE") // EVERYONE, FRIENDS
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Media Albums
+model Album {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  type        String   @default("CUSTOM") // PROFILE, COVER, CUSTOM
+  visibility  String   @default("PUBLIC") // PUBLIC, FRIENDS, PRIVATE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media       Media[]
+
+  @@index([userId])
+  @@index([type])
+  @@index([visibility])
+}
+
+// Media Items (Photos/Videos)
+model Media {
+  id          String   @id @default(cuid())
+  userId      String
+  albumId     String?
+  type        String   // PHOTO, VIDEO
+  url         String
+  thumbnail   String?
+  caption     String?
+  visibility  String   @default("PUBLIC")
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  album       Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([albumId])
+  @@index([type])
+  @@index([visibility])
+  @@index([createdAt])
+}
+
+// User Blocking
+model Block {
+  id         String   @id @default(cuid())
+  blockerId  String
+  blockedId  String
+  createdAt  DateTime @default(now())
+  blocker    User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked    User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
 }

@@ -123,7 +123,7 @@ export default function StudioOutputManager({
           </button>
 
           {showAddMenu && (
-            <div className="absolute right-0 top-full mt-2 bg-[#252535] border border-gray-700 rounded-lg shadow-lg py-1 z-10 min-w-[150px]">
+            <div className="absolute right-0 top-full mt-2 bg-[#252535] border border-gray-700 rounded-lg shadow-lg py-1 z-10 min-w-[150px] max-h-64 overflow-y-auto">
               <button
                 onClick={() => handleAddDestination("YOUTUBE")}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-300 hover:bg-[#353545] text-sm"

@@ -26,6 +26,7 @@ interface StudioTopBarProps {
   onModeChange: (mode: StudioMode) => void;
   broadcastName?: string;
   churchName?: string; // @deprecated Use ownerName instead
+  churchSlug?: string; // Slug de l'église pour l'URL publique
   ownerName?: string;
   ownerType?: OwnerType;
   ownerId?: string;
@@ -49,6 +50,7 @@ export default function StudioTopBar({
   onModeChange,
   broadcastName,
   churchName,
+  churchSlug,
   ownerName,
   ownerType,
   ownerId,
@@ -120,11 +122,14 @@ export default function StudioTopBar({
     if (!broadcastId) return;
 
     let url = "";
-    if (ownerType === "CHURCH" && ownerId) {
+    if (ownerType === "CHURCH" && churchSlug) {
       // Pour les églises, on utilise le slug
-      url = `/church/${ownerId}/live`;
+      url = `/church/${churchSlug}/live`;
+    } else if (ownerType === "USER") {
+      // Pour les users, on utilise l'ID du broadcast
+      url = `/live/${broadcastId}`;
     } else {
-      // Pour les users et autres, on utilise l'ID du broadcast
+      // Fallback
       url = `/live/${broadcastId}`;
     }
 
@@ -284,7 +289,7 @@ export default function StudioTopBar({
           </button>
           
           {showMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
               <div className="p-2 space-y-1">
                 <button className="w-full px-3 py-2 text-left text-gray-300 hover:bg-[#2a2a4a] rounded-md text-sm">
                   Reset Layout
