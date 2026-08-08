@@ -4,10 +4,10 @@ import Link from "next/link";
 import UpdateEventForm from "./UpdateEventForm";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
     id: string;
-  };
+  }>;
 }
 
 export default async function EditEventPage({ params }: PageProps) {

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 
-export default function CreateMemberPage() {
+export default function CreateMemberPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
-  const params = useParams();
+  const resolvedParams = use(params);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -24,7 +24,7 @@ export default function CreateMemberPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          churchId: params.slug,
+          churchId: resolvedParams.slug,
         }),
       });
 

@@ -12,11 +12,11 @@ async function getChurchLive(slug: string) {
   });
 
   if (!church) {
-    console.log(`Church not found for slug: ${slug}`);
+    console.log("getChurchLive: Church not found for slug", slug);
     return null;
   }
 
-  console.log(`Found church: ${church.name} (ID: ${church.id})`);
+  console.log("getChurchLive: Church found", church.id, church.name);
 
   // Récupérer les broadcasts de cette église
   const broadcasts = await prisma.liveBroadcast.findMany({
@@ -33,19 +33,7 @@ async function getChurchLive(slug: string) {
     },
   });
 
-  console.log(`Found ${broadcasts.length} LIVE broadcasts for church ${church.id}`);
-  
-  if (broadcasts.length > 0) {
-    console.log(`Broadcast details:`, {
-      id: broadcasts[0].id,
-      title: broadcasts[0].title,
-      status: broadcasts[0].status,
-      ownerType: broadcasts[0].ownerType,
-      ownerId: broadcasts[0].ownerId,
-      livekitRoom: broadcasts[0].livekitRoom,
-      playbackUrl: broadcasts[0].playbackUrl,
-    });
-  }
+  console.log("getChurchLive: Broadcasts found", broadcasts.length, broadcasts[0]?.id, broadcasts[0]?.status, broadcasts[0]?.livekitRoom);
 
   return { church, broadcast: broadcasts[0] || null };
 }

@@ -5,21 +5,21 @@ import { notFound } from "next/navigation";
 
 
 interface EventPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 
 export default async function EventDetailPage({
   params,
 }: EventPageProps) {
-
+  const { id } = await params;
 
   const event = await prisma.churchEvent.findUnique({
 
     where: {
-      id: params.id,
+      id,
     },
 
     include: {

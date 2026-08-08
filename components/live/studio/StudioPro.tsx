@@ -16,6 +16,8 @@ import StudioOutputs from "./StudioOutputs";
 import StudioControls from "./StudioControls";
 import StudioMonitoring from "./StudioMonitoring";
 import StudioOverlays from "./StudioOverlays";
+import StudioMain from "@/components/radio/studio/StudioMain";
+import ChurchStudioMain from "@/components/radio/studio/ChurchStudioMain";
 import { TransitionType, getTransitionEffect, TransitionConfig } from "@/lib/transitions/TransitionTypes";
 import { useStudioLayout } from "@/hooks/useStudioLayout";
 import { useSceneEngine } from "@/hooks/useSceneEngine";
@@ -100,6 +102,9 @@ export default function StudioPro({
   const [previewSceneId, setPreviewSceneId] = useState<string | null>(null);
   const [programSceneId, setProgramSceneId] = useState<string | null>(null);
 
+  // Radio State (for StudioMain integration)
+  const [radioData, setRadioData] = useState<any>(null);
+
   // Refs
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -176,7 +181,13 @@ export default function StudioPro({
   useEffect(() => {
     if (audioChannelsInitializedRef.current) return;
     
+    // Skip audio initialization for RADIO mode - StudioMain handles its own audio
     if (mode === "RADIO") {
+      audioChannelsInitializedRef.current = true;
+      return;
+    }
+    
+    if (mode === "VIDEO") {
       audioEngineRef.current.addChannel({
         name: "Microphone",
         type: "MICROPHONE",
@@ -229,12 +240,13 @@ export default function StudioPro({
       try {
         let stream: MediaStream | null = null;
 
+        // Skip media stream initialization for RADIO mode - StudioMain handles its own audio
         if (mode === "RADIO") {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: false,
-            audio: true,
-          });
-        } else {
+          setMediaStream(null);
+          return;
+        }
+
+        if (mode === "VIDEO") {
           stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true,
@@ -267,28 +279,55 @@ export default function StudioPro({
   useEffect(() => {
     if (sceneInitializedRef.current) return;
     
-    const defaultScene = sceneEngine.createScene("Scene 1", "Default scene");
-    if (mode !== "RADIO") {
-      sceneEngine.addSource(defaultScene.id, {
-        type: "CAMERA",
-        name: "Camera",
-        x: 0,
-        y: 0,
-        width: 1920,
-        height: 1080,
-        rotation: 0,
-        opacity: 1,
-        zIndex: 1,
-        isVisible: true,
-        isLocked: false,
-        volume: 100,
-        muted: false,
-      });
+    // Skip scene initialization for RADIO mode
+    if (mode === "RADIO") {
+      sceneInitializedRef.current = true;
+      return;
     }
+    
+    const defaultScene = sceneEngine.createScene("Scene 1", "Default scene");
+    sceneEngine.addSource(defaultScene.id, {
+      type: "CAMERA",
+      name: "Camera",
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 1080,
+      rotation: 0,
+      opacity: 1,
+      zIndex: 1,
+      isVisible: true,
+      isLocked: false,
+      volume: 100,
+      muted: false,
+    });
     sceneEngine.setActiveScene(defaultScene.id);
     
     sceneInitializedRef.current = true;
-  }, []);
+  }, [mode]);
+
+  // Load radio data for RADIO mode
+  useEffect(() => {
+    if (mode !== "RADIO" || !effectiveOwnerId) return;
+
+    const loadRadioData = async () => {
+      try {
+        const endpoint = effectiveOwnerType === "CHURCH" 
+          ? `/api/church/${churchSlug}/studio/radio`
+          : "/api/studio/radio";
+        
+        const response = await fetch(endpoint);
+        if (response.ok) {
+          const data = await response.json();
+          setRadioData(data.radio || data);
+        }
+      } catch (error) {
+        console.error("Failed to load radio data:", error);
+      }
+    };
+
+    loadRadioData();
+  }, [mode, effectiveOwnerId, effectiveOwnerType, churchSlug]);
 
   // Timer
   useEffect(() => {
@@ -367,22 +406,30 @@ export default function StudioPro({
   // Handle streaming start
   const handleStartStreaming = useCallback(async () => {
     if (!livekitToken || !livekitUrl || !roomName) {
-      console.error("Missing LiveKit credentials:", {
-        hasToken: !!livekitToken,
-        hasUrl: !!livekitUrl,
-        hasRoomName: !!roomName,
-      });
+      console.error("Missing required parameters for streaming");
       return;
     }
 
     try {
       setLiveKitStatus("CONNECTING");
 
-      console.log("Attempting LiveKit connection:", {
-        url: livekitUrl,
-        room: roomName,
-        tokenLength: livekitToken.length,
-      });
+      // Update broadcast with livekitRoom before connecting
+      if (broadcastId && roomName) {
+        try {
+          await fetch(`/api/studio/${broadcastId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              livekitRoom: roomName,
+              status: "LIVE",
+              startedAt: new Date().toISOString(),
+            }),
+          });
+        } catch (error) {
+          console.error("Failed to update broadcast livekitRoom:", error);
+          // Continue with streaming even if update fails
+        }
+      }
 
       // Connect to LiveKit room
       const room = await liveKitService.connect({
@@ -409,7 +456,7 @@ export default function StudioPro({
       console.error("Failed to start streaming:", error);
       setLiveKitStatus("ERROR");
     }
-  }, [livekitToken, livekitUrl, roomName]);
+  }, [livekitToken, livekitUrl, roomName, broadcastId]);
 
   // Handle streaming stop
   const handleStopStreaming = useCallback(async () => {
@@ -741,89 +788,23 @@ export default function StudioPro({
 
         {/* RADIO Mode Panels */}
         {mode === "RADIO" && (
-          <div className="grid grid-cols-4 gap-4 h-full p-4">
-            {/* Audio Sources Panel */}
-            <div className="bg-[#16161f] rounded-lg shadow-xl h-96">
-              <StudioSourcesPanel
-                sources={audioEngine.channels
-                  .filter(c => c.type === "MICROPHONE" || c.type === "MUSIC")
-                  .map(c => ({
-                    id: c.id,
-                    type: "AUDIO" as any,
-                    name: c.name,
-                    url: undefined,
-                    settings: undefined,
-                    order: 0,
-                    isVisible: true,
-                    volume: c.volume,
-                    muted: c.muted,
-                  }))}
-                onSourceAdd={(type) => {
-                  // Add audio source logic
-                }}
-                onSourceDelete={(sourceId) => {
-                  // TODO: Implement delete channel in audio engine
-                  // audioEngine.deleteChannel(sourceId);
-                }}
-                onSourceToggleVisibility={() => {}}
-                onSourceToggleMute={(sourceId) => {
-                  const channel = audioEngine.channels.find(c => c.id === sourceId);
-                  if (channel) {
-                    audioEngine.updateChannel(sourceId, { muted: !channel.muted });
-                  }
-                }}
-                onSourceVolumeChange={(sourceId, volume) => {
-                  audioEngine.updateChannel(sourceId, { volume });
-                }}
-              />
-            </div>
-
-            {/* Playlist Panel - Placeholder */}
-            <div className="bg-[#16161f] rounded-lg shadow-xl h-96 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <div className="text-3xl mb-2">🎵</div>
-                <p className="text-sm">Playlist</p>
-                <p className="text-xs mt-1">À implémenter</p>
-              </div>
-            </div>
-
-            {/* Audio Mixer Panel */}
-            <div className="bg-[#16161f] rounded-lg shadow-xl h-96">
-              <StudioAudioMixer
-                channels={audioEngine.channels.map(c => ({
-                  id: c.id,
-                  name: c.name,
-                  volume: c.volume,
-                  muted: c.muted,
-                  solo: c.solo,
-                  peak: c.peak * 100,
-                  color: c.color,
-                  icon: c.icon === "Mic" ? Mic : c.icon === "Music" ? Music : MonitorUp,
-                }))}
-                onChannelUpdate={(channelId, updates) => {
-                  const { icon, ...rest } = updates;
-                  audioEngine.updateChannel(channelId, rest);
-                }}
-              />
-            </div>
-
-            {/* Controls Panel */}
-            <div className="bg-[#16161f] rounded-lg shadow-xl h-96 p-4">
-              <StudioControls
+          <div className="h-full p-4 overflow-hidden">
+            {effectiveOwnerType === "CHURCH" ? (
+              <ChurchStudioMain
+                radio={radioData}
                 isLive={isLive}
-                isRecording={isRecording}
-                isCameraEnabled={false}
-                isMicEnabled={false}
-                isScreenSharing={false}
-                onStartLive={handleStartStreaming}
-                onStopLive={handleStopStreaming}
-                onToggleRecording={() => setIsRecording(!isRecording)}
-                onToggleCamera={() => {}}
-                onToggleMic={() => {}}
-                onToggleScreenShare={() => {}}
-                onOpenSettings={handleOpenSettings}
+                setIsLive={setIsLive}
+                onRadioUpdate={setRadioData}
+                churchSlug={churchSlug || ""}
               />
-            </div>
+            ) : (
+              <StudioMain
+                radio={radioData}
+                isLive={isLive}
+                setIsLive={setIsLive}
+                onRadioUpdate={setRadioData}
+              />
+            )}
           </div>
         )}
       </div>

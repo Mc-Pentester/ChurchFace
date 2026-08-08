@@ -132,7 +132,43 @@ export class BroadcastContextService {
     });
       
       if (!broadcast) {
-        throw new Error("Broadcast not found");
+        // If broadcast not found, fall back to user context
+        console.warn(`Broadcast ${broadcastId} not found, falling back to user context`);
+        ownerType = "USER";
+        ownerId = userId;
+        ownerName = userName || "Unknown";
+        
+        // Créer un broadcast pour l'utilisateur
+        const broadcast = await prisma.liveBroadcast.create({
+          data: {
+            title: `${ownerName} - Live`,
+            description: "Diffusion en direct",
+            streamUrl: "",
+            authorId: userId,
+            ownerType: "USER",
+            ownerId: userId,
+            status: "SCHEDULED",
+          },
+        });
+        
+        return {
+          ownerType,
+          ownerId,
+          ownerName,
+          broadcastId: broadcast.id,
+          broadcastName: broadcast.title,
+          permissions: await this.resolvePermissions({
+            ownerType,
+            ownerId,
+            userId,
+            userRole,
+          }),
+          livekitConfig: await this.generateLiveKitConfig({
+            ownerType,
+            ownerId,
+            broadcastId: broadcast.id,
+          }),
+        };
       }
       
       ownerType = (broadcast.ownerType as any as OwnerType) || "USER";
@@ -169,6 +205,7 @@ export class BroadcastContextService {
           title: `${ownerName} - Live`,
           description: "Diffusion en direct",
           streamUrl: "",
+          authorId: userId,
           ownerType: "USER",
           ownerId: userId,
           status: "SCHEDULED",
@@ -348,6 +385,7 @@ export class BroadcastContextService {
         title,
         description: "",
         streamUrl: "",
+        authorId: authorId,
         ownerType,
         ownerId: authorId,
         status: "SCHEDULED",

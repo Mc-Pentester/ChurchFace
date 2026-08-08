@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
@@ -26,7 +26,8 @@ type UserProfile = {
 
 type FriendshipStatus = "NONE" | "PENDING_SENT" | "PENDING_RECEIVED" | "ACCEPTED" | "BLOCKED";
 
-export default function UserProfilePage({ params }: { params: { userId: string } }) {
+export default function UserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
+  const resolvedParams = use(params);
   const { data: session } = useSession();
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -38,10 +39,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const [showMobileLiveSetup, setShowMobileLiveSetup] = useState(false);
   const [mobileLiveSession, setMobileLiveSession] = useState<MobileLiveSession | null>(null);
 
-  console.log("UserProfilePage rendered, params.userId:", params.userId, "session:", session);
+  console.log("UserProfilePage rendered, resolvedParams.userId:", resolvedParams.userId, "session:", session);
 
   useEffect(() => {
-    console.log("useEffect triggered, session:", session, "params.userId:", params.userId);
+    console.log("useEffect triggered, session:", session, "resolvedParams.userId:", resolvedParams.userId);
     if (!session) {
       console.log("No session, skipping fetch");
       return;
@@ -49,11 +50,11 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     fetchUserProfile();
     fetchFriendshipStatus();
     fetchPrivacySettings();
-  }, [session, params.userId]);
+  }, [session, resolvedParams.userId]);
 
   const fetchUserProfile = async () => {
     try {
-      const res = await fetch(`/api/users/${params.userId}`);
+      const res = await fetch(`/api/users/${resolvedParams.userId}`);
       if (!res.ok) {
         router.push("/profile");
         return;
@@ -71,7 +72,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   const fetchFriendshipStatus = async () => {
     try {
-      const res = await fetch(`/api/friends/check?userId=${params.userId}`);
+      const res = await fetch(`/api/friends/check?userId=${resolvedParams.userId}`);
       const data = await res.json();
       setFriendshipStatus(data.status || "NONE");
       setFriendshipId(data.friendshipId || null);
@@ -97,7 +98,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       const res = await fetch("/api/friends", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receiverId: params.userId }),
+        body: JSON.stringify({ receiverId: resolvedParams.userId }),
       });
 
       if (res.ok) {
@@ -152,7 +153,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       const res = await fetch("/api/block", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blockedId: params.userId }),
+        body: JSON.stringify({ blockedId: resolvedParams.userId }),
       });
 
       if (res.ok) {
@@ -164,7 +165,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   };
 
   const handleMessage = () => {
-    router.push(`/chat?userId=${params.userId}`);
+    router.push(`/chat?userId=${resolvedParams.userId}`);
   };
 
   if (loading) {

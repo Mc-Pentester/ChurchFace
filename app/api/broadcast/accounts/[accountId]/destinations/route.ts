@@ -10,9 +10,10 @@ import { canManageBroadcastDestinations } from '@/lib/broadcast-perms';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
+    const { accountId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -23,7 +24,7 @@ export async function GET(
     }
 
     const account = await prisma.broadcastAccount.findUnique({
-      where: { id: params.accountId },
+      where: { id: accountId },
       include: { destinations: true }
     });
 
@@ -71,9 +72,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
+    const { accountId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -94,7 +96,7 @@ export async function POST(
     }
 
     const account = await prisma.broadcastAccount.findUnique({
-      where: { id: params.accountId }
+      where: { id: accountId }
     });
 
     if (!account) {
@@ -127,7 +129,7 @@ export async function POST(
 
     const destination = await prisma.broadcastDestination.create({
       data: {
-        broadcastAccountId: params.accountId,
+        broadcastAccountId: accountId,
         name,
         platform,
         enabled: enabled ?? true,

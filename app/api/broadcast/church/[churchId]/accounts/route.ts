@@ -12,9 +12,10 @@ import { requireBroadcastPermissionOrThrow } from '@/lib/broadcast-perms';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { churchId: string } }
+  { params }: { params: Promise<{ churchId: string }> }
 ) {
   try {
+    const { churchId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -26,7 +27,7 @@ export async function GET(
 
     // Check broadcast permission
     await requireBroadcastPermissionOrThrow(
-      params.churchId,
+      churchId,
       session.user.id,
       'VIEW_STREAMS'
     );
@@ -34,7 +35,7 @@ export async function GET(
     const accounts = await prisma.broadcastAccount.findMany({
       where: {
         ownerType: 'CHURCH',
-        churchId: params.churchId
+        churchId: churchId
       },
       include: {
         destinations: true
@@ -86,9 +87,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { churchId: string } }
+  { params }: { params: Promise<{ churchId: string }> }
 ) {
   try {
+    const { churchId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -100,7 +102,7 @@ export async function POST(
 
     // Check broadcast permission
     await requireBroadcastPermissionOrThrow(
-      params.churchId,
+      churchId,
       session.user.id,
       'MANAGE_ACCOUNTS'
     );
@@ -155,7 +157,7 @@ export async function POST(
     const account = await prisma.broadcastAccount.create({
       data: {
         ownerType: 'CHURCH',
-        churchId: params.churchId,
+        churchId: churchId,
         platform,
         accountName,
         accessTokenEncrypted,

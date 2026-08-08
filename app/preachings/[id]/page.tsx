@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { Play, Heart, Share2, MessageCircle, Clock, Eye, BookOpen, Edit3, Save, X } from "lucide-react";
 import type { Preaching, PreachingNote, PreachingComment, PreachingVerse } from "@/types/preaching";
 
-export default function PreachingPage({ params }: { params: { id: string } }) {
+export default function PreachingPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const [preaching, setPreaching] = useState<Preaching | null>(null);
   const [notes, setNotes] = useState<PreachingNote[]>([]);
   const [comments, setComments] = useState<PreachingComment[]>([]);
@@ -17,11 +18,11 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
     fetchPreaching();
     fetchNotes();
     fetchComments();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   const fetchPreaching = async () => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}`);
+      const res = await fetch(`/api/preachings/${resolvedParams.id}`);
       const data = await res.json();
       setPreaching(data);
     } catch (error) {
@@ -33,7 +34,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
 
   const fetchNotes = async () => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}/notes`);
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/notes`);
       const data = await res.json();
       setNotes(data || []);
     } catch (error) {
@@ -43,7 +44,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
 
   const fetchComments = async () => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}/comments`);
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/comments`);
       const data = await res.json();
       setComments(data || []);
     } catch (error) {
@@ -53,7 +54,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
 
   const handleLike = async () => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}/likes`, {
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/likes`, {
         method: "POST",
       });
       if (res.ok) {
@@ -66,7 +67,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
 
   const handleUnlike = async () => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}/likes`, {
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/likes`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -79,7 +80,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
 
   const handleBookmark = async () => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}/bookmarks`, {
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/bookmarks`, {
         method: "POST",
       });
       if (res.ok) {
@@ -92,7 +93,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
 
   const handleRemoveBookmark = async () => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}/bookmarks`, {
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/bookmarks`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -107,7 +108,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
     if (!newNote.trim()) return;
 
     try {
-      const res = await fetch(`/api/preachings/${params.id}/notes`, {
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: newNote }),
@@ -124,7 +125,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
 
   const handleDeleteNote = async (noteId: string) => {
     try {
-      const res = await fetch(`/api/preachings/${params.id}/notes?noteId=${noteId}`, {
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/notes?noteId=${noteId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -139,7 +140,7 @@ export default function PreachingPage({ params }: { params: { id: string } }) {
     if (!newComment.trim()) return;
 
     try {
-      const res = await fetch(`/api/preachings/${params.id}/comments`, {
+      const res = await fetch(`/api/preachings/${resolvedParams.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: newComment }),

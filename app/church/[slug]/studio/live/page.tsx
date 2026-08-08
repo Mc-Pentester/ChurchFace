@@ -91,6 +91,7 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
       ownerType={broadcastData?.ownerType}
       ownerName={broadcastData?.ownerName}
       broadcastName={broadcastData?.broadcastName}
+      churchSlug={slug}
       livekitToken={livekitToken}
       livekitUrl={livekitUrl}
       roomName={roomName}

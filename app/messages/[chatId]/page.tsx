@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, use } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
 
 type Message = {
@@ -12,8 +12,9 @@ type Message = {
   createdAt?: string;
 };
 
-export default function ChatPage() {
-  const { chatId } = useParams();
+export default function ChatPage({ params }: { params: Promise<{ chatId: string }> }) {
+  const resolvedParams = use(params);
+  const chatId = resolvedParams.chatId;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");

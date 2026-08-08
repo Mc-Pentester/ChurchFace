@@ -7,9 +7,9 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as { id?: string } | undefined)?.id;
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    
+    // Allow public viewers (no session) for read-only access
+    const isPublicViewer = !userId;
 
     const body = await req.json();
     const { roomName, participantName, isPublisher = true } = body;
@@ -18,6 +18,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "roomName and participantName are required" },
         { status: 400 }
+      );
+    }
+
+    // Only authenticated users can publish
+    if (isPublisher && isPublicViewer) {
+      return NextResponse.json(
+        { error: "Publishing requires authentication" },
+        { status: 401 }
       );
     }
 

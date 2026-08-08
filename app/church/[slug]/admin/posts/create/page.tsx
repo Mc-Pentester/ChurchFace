@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, use } from "react";
+import { useRouter } from "next/navigation";
 import { UploadButton } from "@/lib/uploadthing";
 
-export default function CreatePostPage() {
+export default function CreatePostPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
-  const params = useParams();
+  const resolvedParams = use(params);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     content: "",
@@ -24,7 +24,7 @@ export default function CreatePostPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          churchId: params.slug,
+          churchId: resolvedParams.slug,
         }),
       });
 

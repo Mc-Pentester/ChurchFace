@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ReportButton from "@/components/moderation/ReportButton";
 
-export default function StoryViewer() {
-  const params = useParams();
+export default function StoryViewer({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
 
-  const id = typeof params.id === "string" ? params.id : "";
+  const id = resolvedParams.id;
 
   const [story, setStory] = useState<any>(null);
   const [allStories, setAllStories] = useState<any[]>([]);

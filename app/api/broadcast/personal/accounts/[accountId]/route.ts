@@ -11,9 +11,10 @@ import { getProvider } from '@/lib/broadcast/registry';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
+    const { accountId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -25,7 +26,7 @@ export async function GET(
 
     const account = await prisma.broadcastAccount.findFirst({
       where: {
-        id: params.accountId,
+        id: accountId,
         ownerType: 'USER',
         userId: session.user.id
       },
@@ -76,9 +77,10 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
+    const { accountId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -93,7 +95,7 @@ export async function PATCH(
 
     const account = await prisma.broadcastAccount.findFirst({
       where: {
-        id: params.accountId,
+        id: accountId,
         ownerType: 'USER',
         userId: session.user.id
       }
@@ -138,7 +140,7 @@ export async function PATCH(
     }
 
     const updatedAccount = await prisma.broadcastAccount.update({
-      where: { id: params.accountId },
+      where: { id: accountId },
       data: updateData
     });
 
@@ -158,9 +160,10 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
+    const { accountId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -172,7 +175,7 @@ export async function DELETE(
 
     const account = await prisma.broadcastAccount.findFirst({
       where: {
-        id: params.accountId,
+        id: accountId,
         ownerType: 'USER',
         userId: session.user.id
       }
@@ -202,7 +205,7 @@ export async function DELETE(
     }
 
     await prisma.broadcastAccount.delete({
-      where: { id: params.accountId }
+      where: { id: accountId }
     });
 
     return NextResponse.json({ success: true });

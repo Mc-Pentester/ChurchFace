@@ -112,8 +112,7 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
             <div className="relative h-80 sm:h-96 bg-black">
               {/* Live Video Player */}
               <LiveVideoPlayer
-                live={activeLive}
-                churchSlug={church.slug}
+                broadcast={activeLive}
                 isLive={isLive}
               />
               

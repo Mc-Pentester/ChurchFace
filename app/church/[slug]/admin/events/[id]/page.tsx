@@ -5,22 +5,22 @@ import Image from "next/image";
 
 
 interface AdminEventPageProps {
-  params: {
+  params: Promise<{
     slug: string;
     id: string;
-  };
+  }>;
 }
 
 
 export default async function AdminEventPage({
   params,
 }: AdminEventPageProps) {
-
+  const { slug, id } = await params;
 
   const church = await prisma.church.findUnique({
 
     where: {
-      slug: params.slug,
+      slug,
     },
 
     select: {
@@ -42,7 +42,7 @@ export default async function AdminEventPage({
   const event = await prisma.churchEvent.findFirst({
 
     where: {
-      id: params.id,
+      id,
       churchId: church.id,
     },
 
