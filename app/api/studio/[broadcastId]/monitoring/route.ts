@@ -1,6 +1,10 @@
+
 /**
  * API Route pour récupérer les stats de monitoring d'un broadcast
- * Récupère les vraies données depuis la base de données
+ *
+ * Récupère les données disponibles depuis la base de données.
+ * Les statistiques réseau/système restent actuellement des valeurs
+ * de fallback tant que l'intégration LiveKit Monitoring n'est pas branchée.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,13 +18,27 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const { broadcastId } = await params;
 
-    // Vérifier que l'utilisateur a accès à ce broadcast
+    if (!broadcastId) {
+      return NextResponse.json(
+        { error: "Broadcast ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // 1. Récupérer le broadcast
+    // -------------------------------------------------------------------------
+
     const broadcast = await prisma.liveBroadcast.findUnique({
       where: { id: broadcastId },
       select: {
@@ -36,51 +54,110 @@ export async function GET(
     });
 
     if (!broadcast) {
-      return NextResponse.json({ error: "Broadcast not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Broadcast not found" },
+        { status: 404 }
+      );
     }
 
-    // Vérifier les permissions d'accès
+    // -------------------------------------------------------------------------
+    // 2. Vérification des permissions
+    // -------------------------------------------------------------------------
+
     let hasAccess = false;
-    
-    if (broadcast.ownerType === "USER" && broadcast.ownerId === session.user.id) {
-      // Broadcast personnel de l'utilisateur
+
+    const userId = session.user.id;
+
+    // Broadcast personnel
+    if (
+      broadcast.ownerType === "USER" &&
+      broadcast.ownerId &&
+      broadcast.ownerId === userId
+    ) {
       hasAccess = true;
-    } else if (broadcast.ownerType === "CHURCH") {
-      // Broadcast d'église : vérifier si l'utilisateur est admin
+    }
+
+    // L'auteur du broadcast possède également l'accès.
+    //
+    // Cette vérification est faite avant la vérification ChurchAdmin
+    // afin d'éviter toute dépendance inutile au churchId.
+    if (!hasAccess && broadcast.authorId === userId) {
+      hasAccess = true;
+    }
+
+    // Broadcast d'église
+    //
+    // IMPORTANT :
+    // ownerId peut être NULL pour certains anciens ou nouveaux broadcasts.
+    // On ne doit JAMAIS envoyer null à churchAdmin.findUnique().
+    if (
+      !hasAccess &&
+      broadcast.ownerType === "CHURCH" &&
+      broadcast.ownerId
+    ) {
       const churchAdmin = await prisma.churchAdmin.findUnique({
         where: {
           churchId_userId: {
-            churchId: broadcast.ownerId!,
-            userId: session.user.id,
+            churchId: broadcast.ownerId,
+            userId,
           },
         },
+        select: {
+          id: true,
+        },
       });
+
       hasAccess = !!churchAdmin;
-    } else if (broadcast.authorId === session.user.id) {
-      // L'auteur du broadcast a aussi accès
-      hasAccess = true;
     }
 
     if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
     }
 
-    // Récupérer les stats de monitoring depuis la base
-    const now = new Date();
-    const startTime = broadcast.startedAt || broadcast.createdAt;
-    const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+    // -------------------------------------------------------------------------
+    // 3. Calcul de la durée
+    // -------------------------------------------------------------------------
 
-    // Stats réseau (simulées pour l'instant, à remplacer par vraies stats LiveKit)
+    const now = new Date();
+
+    const startTime = broadcast.startedAt || broadcast.createdAt;
+
+    const duration = Math.max(
+      0,
+      Math.floor(
+        (now.getTime() - startTime.getTime()) / 1000
+      )
+    );
+
+    // -------------------------------------------------------------------------
+    // 4. Statistiques réseau
+    //
+    // TODO:
+    // Remplacer ces valeurs par les vraies métriques LiveKit Monitoring.
+    // -------------------------------------------------------------------------
+
     const networkStats = {
-      bitrate: 4500, // À remplacer par vraies stats
+      bitrate: 4500,
       fps: 30,
-      resolution: { width: 1920, height: 1080 },
+      resolution: {
+        width: 1920,
+        height: 1080,
+      },
       packetLoss: 0.1,
       rtt: 25,
       jitter: 5,
     };
 
-    // Stats système (à remplacer par vraies stats du serveur)
+    // -------------------------------------------------------------------------
+    // 5. Statistiques système
+    //
+    // TODO:
+    // Brancher les vraies métriques serveur.
+    // -------------------------------------------------------------------------
+
     const systemStats = {
       cpuUsage: 25,
       memoryUsage: 45,
@@ -90,43 +167,122 @@ export async function GET(
       },
     };
 
-    // Stats stream depuis la base
+    // -------------------------------------------------------------------------
+    // 6. Statistiques générales du stream
+    // -------------------------------------------------------------------------
+
     const streamStats = {
       duration,
-      viewers: broadcast.viewerCount || 0,
+      viewers: broadcast.viewerCount ?? 0,
       uptime: duration,
-      bytesSent: 0, // À calculer depuis les logs
+      bytesSent: 0,
       bytesReceived: 0,
     };
 
-    // Stats des outputs depuis la base
+    // -------------------------------------------------------------------------
+    // 7. Indexation des outputs
+    //
+    // On évite de refaire plusieurs .find() sur le même tableau.
+    // -------------------------------------------------------------------------
+
+    const outputs = broadcast.outputs ?? [];
+
+    const findOutput = (...types: string[]) =>
+      outputs.find((output) => {
+        const type = String(output.type ?? "").toUpperCase();
+        const platform = String(output.platform ?? "").toUpperCase();
+
+        return types.some(
+          (value) =>
+            type === value.toUpperCase() ||
+            platform === value.toUpperCase()
+        );
+      });
+
+    const churchFaceOutput = findOutput(
+      "CHURCHFACE",
+      "NATIVE_CHURCHFACE",
+      "WEBRTC"
+    );
+
+    const youtubeOutput = findOutput("YOUTUBE");
+
+    const facebookOutput = findOutput("FACEBOOK");
+
+    const twitchOutput = findOutput("TWITCH");
+
+    const recordingOutput = findOutput(
+      "RECORDING",
+      "RECORD"
+    );
+
+    // -------------------------------------------------------------------------
+    // 8. Stats des outputs
+    // -------------------------------------------------------------------------
+
     const outputStats = {
       churchFace: {
-        status: broadcast.outputs.find(o => o.type === "NATIVE_CHURCHFACE")?.enabled ? "active" : "idle" as const,
-        bitrate: networkStats.bitrate,
-        fps: networkStats.fps,
+        status: churchFaceOutput?.enabled
+          ? "active"
+          : "idle" as const,
+        bitrate: churchFaceOutput?.enabled
+          ? networkStats.bitrate
+          : 0,
+        fps: churchFaceOutput?.enabled
+          ? networkStats.fps
+          : 0,
       },
+
       youtube: {
-        status: broadcast.outputs.find(o => o.type === "YOUTUBE")?.enabled ? "active" : "idle" as const,
-        bitrate: broadcast.outputs.find(o => o.type === "YOUTUBE")?.enabled ? networkStats.bitrate : 0,
-        fps: broadcast.outputs.find(o => o.type === "YOUTUBE")?.enabled ? networkStats.fps : 0,
+        status: youtubeOutput?.enabled
+          ? "active"
+          : "idle" as const,
+        bitrate: youtubeOutput?.enabled
+          ? networkStats.bitrate
+          : 0,
+        fps: youtubeOutput?.enabled
+          ? networkStats.fps
+          : 0,
       },
+
       facebook: {
-        status: broadcast.outputs.find(o => o.type === "FACEBOOK")?.enabled ? "active" : "idle" as const,
-        bitrate: broadcast.outputs.find(o => o.type === "FACEBOOK")?.enabled ? networkStats.bitrate : 0,
-        fps: broadcast.outputs.find(o => o.type === "FACEBOOK")?.enabled ? networkStats.fps : 0,
+        status: facebookOutput?.enabled
+          ? "active"
+          : "idle" as const,
+        bitrate: facebookOutput?.enabled
+          ? networkStats.bitrate
+          : 0,
+        fps: facebookOutput?.enabled
+          ? networkStats.fps
+          : 0,
       },
+
       twitch: {
-        status: broadcast.outputs.find(o => o.type === "TWITCH")?.enabled ? "active" : "idle" as const,
-        bitrate: broadcast.outputs.find(o => o.type === "TWITCH")?.enabled ? networkStats.bitrate : 0,
-        fps: broadcast.outputs.find(o => o.type === "TWITCH")?.enabled ? networkStats.fps : 0,
+        status: twitchOutput?.enabled
+          ? "active"
+          : "idle" as const,
+        bitrate: twitchOutput?.enabled
+          ? networkStats.bitrate
+          : 0,
+        fps: twitchOutput?.enabled
+          ? networkStats.fps
+          : 0,
       },
+
       recording: {
-        status: broadcast.outputs.find(o => o.type === "RECORDING")?.enabled ? "active" : "idle" as const,
-        size: 0, // À calculer depuis les fichiers d'enregistrement
-        duration: broadcast.outputs.find(o => o.type === "RECORDING")?.enabled ? duration : 0,
+        status: recordingOutput?.enabled
+          ? "active"
+          : "idle" as const,
+        size: 0,
+        duration: recordingOutput?.enabled
+          ? duration
+          : 0,
       },
     };
+
+    // -------------------------------------------------------------------------
+    // 9. Réponse
+    // -------------------------------------------------------------------------
 
     return NextResponse.json({
       network: networkStats,
@@ -136,10 +292,19 @@ export async function GET(
       timestamp: now.getTime(),
     });
   } catch (error) {
-    console.error("Error fetching monitoring stats:", error);
+    console.error(
+      "Error fetching monitoring stats:",
+      error
+    );
+
     return NextResponse.json(
-      { error: "Failed to fetch monitoring stats" },
-      { status: 500 }
+      {
+        error: "Failed to fetch monitoring stats",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
+
