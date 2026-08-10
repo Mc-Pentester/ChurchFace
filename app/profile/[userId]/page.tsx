@@ -11,6 +11,7 @@ import VideoGallery from "@/components/profile/VideoGallery";
 import GoLiveButton from "@/components/mobilelive/GoLiveButton";
 import MobileLiveSetup from "@/components/mobilelive/MobileLiveSetup";
 import MobileLiveInterface from "@/components/mobilelive/MobileLiveInterface";
+import PostCreator from "@/components/posts/PostCreator";
 import { MobileLiveSession } from "@/lib/mobilelive/MobileLiveTypes";
 
 type UserProfile = {
@@ -211,6 +212,26 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
       case "posts":
         return (
           <div className="p-6">
+            {isOwnProfile && (
+              <>
+                {showPostCreator ? (
+                  <PostCreator 
+                    userId={user.id}
+                    onPostCreated={() => {
+                      setShowPostCreator(false);
+                      // Recharger les posts si nécessaire
+                    }}
+                  />
+                ) : (
+                  <button
+                    onClick={() => setShowPostCreator(true)}
+                    className="w-full mb-4 p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    Créer une publication
+                  </button>
+                )}
+              </>
+            )}
             <p className="text-gray-500 text-center">Les publications seront affichées ici</p>
           </div>
         );
