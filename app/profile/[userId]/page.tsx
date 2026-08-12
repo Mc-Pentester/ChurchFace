@@ -39,6 +39,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   const [profileLocked, setProfileLocked] = useState(false);
   const [showMobileLiveSetup, setShowMobileLiveSetup] = useState(false);
   const [mobileLiveSession, setMobileLiveSession] = useState<MobileLiveSession | null>(null);
+  const [showPostCreator, setShowPostCreator] = useState(false);
 
   console.log("UserProfilePage rendered, resolvedParams.userId:", resolvedParams.userId, "session:", session);
 
@@ -194,6 +195,12 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   }
 
   const isOwnProfile = session?.user?.id === user.id;
+  
+  console.log("Debug profile:", { 
+    sessionUserId: session?.user?.id, 
+    profileUserId: user.id, 
+    isOwnProfile 
+  });
 
   const handleMobileLiveStart = (sessionId: string) => {
     setShowMobileLiveSetup(false);
@@ -304,13 +311,22 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
       </div>
 
       {isOwnProfile && (
-        <div className="fixed bottom-6 right-6">
+        <div className="fixed bottom-6 right-6 flex flex-col gap-2">
+          <div className="bg-yellow-100 p-2 rounded text-xs">
+            Debug: isOwnProfile={isOwnProfile ? 'true' : 'false'}
+          </div>
           <GoLiveButton
             context="PERSONAL"
             ownerId={user.id}
             ownerType="USER"
             onOpenSetup={() => setShowMobileLiveSetup(true)}
           />
+          <button
+            onClick={() => setShowPostCreator(!showPostCreator)}
+            className="w-full bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium px-4 py-3 shadow-lg"
+          >
+            {showPostCreator ? "Annuler" : "Créer une publication"}
+          </button>
         </div>
       )}
 

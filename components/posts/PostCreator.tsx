@@ -313,18 +313,7 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
                     fontSize: "14px",
                   },
                 }}
-              >
-                {({ onClick }) => (
-                  <button
-                    onClick={onClick}
-                    disabled={isSubmitting || isUploading}
-                    className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                  >
-                    <ImageIcon size={20} />
-                    <span className="hidden sm:inline">Photo/Vidéo</span>
-                  </button>
-                )}
-              </UploadButton>
+              />
 
               {/* Sélecteur d'album */}
               <button

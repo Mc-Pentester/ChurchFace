@@ -12,6 +12,7 @@ import PrivacySettings from "@/components/profile/PrivacySettings";
 import GoLiveButton from "@/components/mobilelive/GoLiveButton";
 import MobileLiveSetup from "@/components/mobilelive/MobileLiveSetup";
 import MobileLiveInterface from "@/components/mobilelive/MobileLiveInterface";
+import PostCreator from "@/components/posts/PostCreator";
 import { MobileLiveSession } from "@/lib/mobilelive/MobileLiveTypes";
 
 type UserProfile = {
@@ -34,6 +35,7 @@ export default function ProfilePage() {
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);
   const [showMobileLiveSetup, setShowMobileLiveSetup] = useState(false);
   const [mobileLiveSession, setMobileLiveSession] = useState<MobileLiveSession | null>(null);
+  const [showPostCreator, setShowPostCreator] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -95,6 +97,21 @@ export default function ProfilePage() {
       case "posts":
         return (
           <div className="p-6">
+            {showPostCreator ? (
+              <PostCreator 
+                userId={user.id}
+                onPostCreated={() => {
+                  setShowPostCreator(false);
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => setShowPostCreator(true)}
+                className="w-full mb-4 p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Créer une publication
+              </button>
+            )}
             <p className="text-gray-500 text-center">Les publications seront affichées ici</p>
           </div>
         );
@@ -176,13 +193,19 @@ export default function ProfilePage() {
         <div className="bg-white rounded-xl shadow">{renderTabContent()}</div>
       </div>
 
-      <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-6 right-6 flex flex-col gap-2">
         <GoLiveButton
           context="PERSONAL"
           ownerId={user.id}
           ownerType="USER"
           onOpenSetup={() => setShowMobileLiveSetup(true)}
         />
+        <button
+          onClick={() => setShowPostCreator(!showPostCreator)}
+          className="bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium px-4 py-3 shadow-lg"
+        >
+          {showPostCreator ? "Annuler" : "Créer une publication"}
+        </button>
       </div>
 
       {showPrivacySettings && (
