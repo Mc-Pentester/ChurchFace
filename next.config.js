@@ -8,6 +8,15 @@ const nextConfig = {
 
   staticPageGenerationTimeout: 120,
 
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'utfs.io',
+      },
+    ],
+  },
+
   async headers() {
     return [
       {

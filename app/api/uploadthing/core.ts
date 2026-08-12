@@ -8,11 +8,11 @@ export const ourFileRouter = {
   mediaUploader: f({
     image: {
       maxFileSize: "8MB",
-      maxFileCount: 1,
+      maxFileCount: 10,
     },
     video: {
       maxFileSize: "64MB",
-      maxFileCount: 1,
+      maxFileCount: 10,
     },
   })
     .middleware(async () => {
@@ -24,10 +24,10 @@ export const ourFileRouter = {
       return { userId };
     })
     .onUploadComplete(async ({ file }) => {
-      console.log("UPLOAD:", file.url, file.type);
+      console.log("UPLOAD:", file.ufsUrl, file.type);
 
       return {
-        url: file.url,
+        url: file.ufsUrl,
         type: file.type,
       };
     }),

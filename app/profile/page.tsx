@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
-import PhotoGallery from "@/components/profile/PhotoGallery";
-import VideoGallery from "@/components/profile/VideoGallery";
+import MediaGallery from "@/components/profile/MediaGallery";
+import FriendsList from "@/components/profile/FriendsList";
 import PrivacySettings from "@/components/profile/PrivacySettings";
 import GoLiveButton from "@/components/mobilelive/GoLiveButton";
 import MobileLiveSetup from "@/components/mobilelive/MobileLiveSetup";
 import MobileLiveInterface from "@/components/mobilelive/MobileLiveInterface";
 import PostCreator from "@/components/posts/PostCreator";
+import Feed from "@/components/posts/Feed";
 import { MobileLiveSession } from "@/lib/mobilelive/MobileLiveTypes";
 
 type UserProfile = {
@@ -98,21 +99,30 @@ export default function ProfilePage() {
         return (
           <div className="p-6">
             {showPostCreator ? (
-              <PostCreator 
+              <PostCreator
                 userId={user.id}
                 onPostCreated={() => {
                   setShowPostCreator(false);
                 }}
               />
             ) : (
-              <button
-                onClick={() => setShowPostCreator(true)}
-                className="w-full mb-4 p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-              >
-                Créer une publication
-              </button>
+              <div className="flex gap-3 mb-4">
+                <button
+                  onClick={() => setShowPostCreator(true)}
+                  className="flex-1 p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  Créer une publication
+                </button>
+                <GoLiveButton
+                  context="PERSONAL"
+                  ownerId={user.id}
+                  ownerType="USER"
+                  onOpenSetup={() => setShowMobileLiveSetup(true)}
+                  className="flex-1"
+                />
+              </div>
             )}
-            <p className="text-gray-500 text-center">Les publications seront affichées ici</p>
+            <Feed userId={user.id} hideCreator={true} />
           </div>
         );
       case "about":
@@ -141,19 +151,13 @@ export default function ProfilePage() {
       case "friends":
         return (
           <div className="p-6">
-            <p className="text-gray-500 text-center">La liste d'amis sera affichée ici</p>
+            <FriendsList userId={user.id} isOwnProfile={true} />
           </div>
         );
-      case "photos":
+      case "media":
         return (
           <div className="p-6">
-            <PhotoGallery userId={user.id} isOwnProfile={true} />
-          </div>
-        );
-      case "videos":
-        return (
-          <div className="p-6">
-            <VideoGallery userId={user.id} isOwnProfile={true} />
+            <MediaGallery userId={user.id} isOwnProfile={true} />
           </div>
         );
       default:
@@ -191,21 +195,6 @@ export default function ProfilePage() {
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 pb-8">
         <div className="bg-white rounded-xl shadow">{renderTabContent()}</div>
-      </div>
-
-      <div className="fixed bottom-6 right-6 flex flex-col gap-2">
-        <GoLiveButton
-          context="PERSONAL"
-          ownerId={user.id}
-          ownerType="USER"
-          onOpenSetup={() => setShowMobileLiveSetup(true)}
-        />
-        <button
-          onClick={() => setShowPostCreator(!showPostCreator)}
-          className="bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium px-4 py-3 shadow-lg"
-        >
-          {showPostCreator ? "Annuler" : "Créer une publication"}
-        </button>
       </div>
 
       {showPrivacySettings && (

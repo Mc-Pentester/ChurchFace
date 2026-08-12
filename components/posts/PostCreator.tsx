@@ -117,19 +117,20 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
     setIsSubmitting(true);
 
     try {
-      // Pour le moment, on utilise le premier média pour le post principal
-      // L'API posts existante ne supporte qu'un seul média
-      const firstMediaUrl = mediaUrls[0];
-      const firstMediaType = mediaTypes[0];
+      // Préparer le tableau de médias pour le nouveau format
+      const medias = mediaUrls.map((url, index) => ({
+        url,
+        type: mediaTypes[index],
+        thumbnail: null,
+      }));
 
-      // Créer le post via l'API existante
+      // Créer le post via l'API avec le nouveau format medias
       const response = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: content.trim() || undefined,
-          imageUrl: firstMediaType === "IMAGE" ? firstMediaUrl : undefined,
-          videoUrl: firstMediaType === "VIDEO" ? firstMediaUrl : undefined,
+          medias,
         }),
       });
 
@@ -208,11 +209,10 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
               {mediaUrls.map((url, index) => (
                 <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
                   {mediaTypes[index] === "IMAGE" ? (
-                    <Image
+                    <img
                       src={url}
                       alt={`Preview ${index + 1}`}
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <video
@@ -337,6 +337,14 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
                 <Send size={20} />
               )}
               <span>Publier</span>
+            </button>
+            <button
+              onClick={() => onPostCreated?.()}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <X size={20} />
+              <span>Annuler</span>
             </button>
           </div>
 

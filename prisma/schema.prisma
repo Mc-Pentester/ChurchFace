@@ -156,6 +156,7 @@ model Post {
   author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   church        Church?   @relation(fields: [churchId], references: [id], onDelete: Cascade)
   shares        Share[]
+  postMedias    PostMedia[]
 
   @@index([createdAt])
   @@index([authorId, createdAt])
@@ -163,6 +164,20 @@ model Post {
   @@index([likes])
   @@index([churchId])
   @@index([generatedType, generatedId])
+}
+
+model PostMedia {
+  id        String   @id @default(cuid())
+  postId    String
+  type      String   // "IMAGE" | "VIDEO"
+  url       String
+  thumbnail String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([order])
 }
 
 model Comment {
