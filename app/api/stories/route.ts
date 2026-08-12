@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { canPublishContent } from "@/lib/moderation/ModerationService";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -119,6 +120,23 @@ export async function POST(req: Request) {
     }
 
     console.log("Final values - imageUrl:", finalImageUrl, "videoUrl:", finalVideoUrl);
+
+    // Moderation check before creating story
+    const moderationCheck = await canPublishContent(
+      { text: content, imageUrl: finalImageUrl, videoUrl: finalVideoUrl },
+      { userId, contentType: 'story' }
+    );
+
+    if (!moderationCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: "Contenu non autorisé",
+          moderationResult: moderationCheck.result,
+          reason: moderationCheck.result.reasons.join(', ')
+        },
+        { status: 403 }
+      );
+    }
 
     const story = await prisma.story.create({
       data: {
