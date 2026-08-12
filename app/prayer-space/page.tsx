@@ -202,7 +202,7 @@ export default function PrayerSpacePage({ mode = "global", churchId, churchName,
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-purple-600 text-white text-sm font-medium hover:shadow-lg transition"
+            className="flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-emerald-600 to-purple-600 text-white text-sm font-medium hover:shadow-lg transition active:scale-95"
           >
             <Plus size={16} /> Nouvelle demande
           </button>
@@ -220,7 +220,7 @@ export default function PrayerSpacePage({ mode = "global", churchId, churchName,
           <button
             key={t.key}
             onClick={() => setMobileTab(t.key)}
-            className={`flex-1 py-3 text-sm font-medium transition border-b-2 ${
+            className={`flex-1 py-3 min-h-[44px] text-sm font-medium transition border-b-2 active:scale-95 ${
               mobileTab === t.key
                 ? "border-emerald-500 text-emerald-700"
                 : "border-transparent text-gray-400"

@@ -133,13 +133,13 @@ export default function ChatPage() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Écris un message..."
-          className="flex-1 p-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 transition"
+          className="flex-1 p-3 min-h-[44px] bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 transition"
         />
 
         <button
           onClick={sendMessage}
           disabled={!text.trim()}
-          className="bg-emerald-600 disabled:bg-gray-300 text-white px-5 py-2 rounded-xl font-medium hover:bg-emerald-700 transition"
+          className="bg-emerald-600 disabled:bg-gray-300 text-white px-5 py-3 min-h-[44px] rounded-xl font-medium hover:bg-emerald-700 transition active:scale-95"
         >
           Envoyer
         </button>

@@ -397,17 +397,15 @@ export async function POST(req: NextRequest) {
 
     // Create PostMedia entries if medias array is provided
     if (medias.length > 0) {
-      for (const media of medias) {
-        await prisma.postMedia.create({
-          data: {
-            postId: post.id,
-            type: media.type,
-            url: media.url,
-            thumbnail: media.thumbnail || null,
-            order: medias.indexOf(media),
-          },
-        });
-      }
+      await prisma.postMedia.createMany({
+        data: medias.map((media: any, index: number) => ({
+          postId: post.id,
+          type: media.type,
+          url: media.url,
+          thumbnail: media.thumbnail || null,
+          order: index,
+        })),
+      });
     }
 
     // Store media in gallery if image or video was uploaded (backward compatibility)

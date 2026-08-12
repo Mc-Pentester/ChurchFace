@@ -33,17 +33,17 @@ export default function ProfileTabs({
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 mt-6">
       <div className="border-b border-gray-200">
-        <nav className="flex space-x-8 overflow-x-auto">
+        <nav className="flex space-x-2 md:space-x-8 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
-            
+
             return (
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
                 className={`
-                  flex items-center gap-2 px-1 py-4 border-b-2 font-medium text-sm transition
+                  flex items-center gap-2 px-3 py-3 md:px-1 md:py-4 border-b-2 font-medium text-sm transition min-h-[44px] md:min-h-0 whitespace-nowrap active:scale-95
                   ${
                     isActive
                       ? "border-emerald-600 text-emerald-600"
@@ -52,7 +52,7 @@ export default function ProfileTabs({
                 `}
               >
                 <Icon size={18} />
-                {tab.label}
+                <span className="hidden md:inline">{tab.label}</span>
               </button>
             );
           })}

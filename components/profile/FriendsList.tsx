@@ -123,7 +123,7 @@ export default function FriendsList({ userId, isOwnProfile }: FriendsListProps) 
           <div className="flex gap-2">
             <button
               onClick={() => handleMessage(friend.id)}
-              className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-lg transition"
+              className="p-3 min-h-[44px] min-w-[44px] text-emerald-600 hover:bg-emerald-100 rounded-lg transition flex items-center justify-center"
               title="Envoyer un message"
             >
               <MessageCircle size={20} />
@@ -131,7 +131,7 @@ export default function FriendsList({ userId, isOwnProfile }: FriendsListProps) 
             {isOwnProfile && (
               <button
                 onClick={() => handleUnfriend(friend.friendshipId)}
-                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition"
+                className="p-3 min-h-[44px] min-w-[44px] text-red-600 hover:bg-red-100 rounded-lg transition flex items-center justify-center"
                 title="Supprimer l'ami"
               >
                 <UserMinus size={20} />

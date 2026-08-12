@@ -58,7 +58,7 @@ export default function ConversationList({
           </h1>
           <button
             onClick={onNewConversation}
-            className="p-2 rounded-full bg-gradient-to-r from-emerald-500 to-purple-500 text-white hover:shadow-lg transition"
+            className="p-3 min-h-[44px] min-w-[44px] rounded-full bg-gradient-to-r from-emerald-500 to-purple-500 text-white hover:shadow-lg transition active:scale-95"
           >
             <Plus size={20} />
           </button>
@@ -72,7 +72,7 @@ export default function ConversationList({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher une conversation..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            className="w-full pl-10 pr-4 py-3 min-h-[44px] bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
           />
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function ConversationList({
                 <button
                   key={conversation.id}
                   onClick={() => onSelectConversation(conversation.id)}
-                  className={`w-full p-3 rounded-xl transition flex items-center gap-3 ${
+                  className={`w-full p-4 min-h-[64px] rounded-xl transition flex items-center gap-3 active:scale-98 ${
                     selectedConversationId === conversation.id
                       ? "bg-gradient-to-r from-emerald-500 to-purple-500 text-white shadow-lg"
                       : "hover:bg-white/50"

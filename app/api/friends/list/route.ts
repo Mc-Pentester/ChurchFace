@@ -15,6 +15,9 @@ export async function GET(request: Request) {
   const limit = parseInt(searchParams.get("limit") || "20");
   const targetUserId = searchParams.get("userId") || session.user.id;
 
+  // Mobile optimization: reduce limit for slower connections
+  const mobileLimit = searchParams.get("mobile") === "true" ? Math.min(limit, 10) : limit;
+
   console.log("FRIENDS LIST API - targetUserId:", targetUserId, "sessionUserId:", session.user.id);
 
   try {
@@ -53,8 +56,8 @@ export async function GET(request: Request) {
       orderBy: {
         createdAt: "desc",
       },
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (page - 1) * mobileLimit,
+      take: mobileLimit,
     });
 
     const users = friendships.map((f) => {

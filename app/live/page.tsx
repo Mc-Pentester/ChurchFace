@@ -43,15 +43,15 @@ export default function LivePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
+      <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 md:mb-8 gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
             <Radio className="text-red-500" />
             Diffusions en direct
           </h1>
           <Link
             href="/preachings"
-            className="bg-gradient-to-r from-emerald-500 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
+            className="bg-gradient-to-r from-emerald-500 to-purple-600 text-white px-6 py-3 min-h-[44px] rounded-xl font-medium hover:opacity-90 transition-opacity active:scale-95 text-center"
           >
             Voir les prédications
           </Link>
@@ -71,12 +71,12 @@ export default function LivePage() {
               <p className="text-gray-500">Aucune diffusion en cours</p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {liveBroadcasts.map((broadcast) => (
                 <Link
                   key={broadcast.id}
                   href={`/live/${broadcast.id}`}
-                  className="block bg-white rounded-2xl shadow-sm hover:shadow-md transition group"
+                  className="block bg-white rounded-2xl shadow-sm hover:shadow-md transition group active:scale-98"
                 >
                   <div className="aspect-video bg-gradient-to-br from-red-500 to-purple-600 rounded-t-2xl flex items-center justify-center relative">
                     <Play size={48} className="text-white opacity-80" />
@@ -119,7 +119,7 @@ export default function LivePage() {
               <Calendar size={20} />
               Programmés
             </h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {scheduledBroadcasts.map((broadcast) => (
                 <div
                   key={broadcast.id}

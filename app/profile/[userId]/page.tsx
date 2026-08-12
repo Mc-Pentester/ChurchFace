@@ -3,18 +3,26 @@
 import { useEffect, useState, use } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Navbar from "@/components/layout/Navbar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 import MediaGallery from "@/components/profile/MediaGallery";
 import FriendsList from "@/components/profile/FriendsList";
-import MobileLiveSetup from "@/components/mobilelive/MobileLiveSetup";
-import MobileLiveInterface from "@/components/mobilelive/MobileLiveInterface";
 import GoLiveButton from "@/components/mobilelive/GoLiveButton";
 import PostCreator from "@/components/posts/PostCreator";
 import CreateMenuButton from "@/components/profile/CreateMenuButton";
 import { MobileLiveSession } from "@/lib/mobilelive/MobileLiveTypes";
 import Feed from "@/components/posts/Feed";
+
+// Lazy load heavy components
+const MobileLiveSetup = dynamic(() => import("@/components/mobilelive/MobileLiveSetup"), {
+  ssr: false,
+});
+
+const MobileLiveInterface = dynamic(() => import("@/components/mobilelive/MobileLiveInterface"), {
+  ssr: false,
+});
 
 type UserProfile = {
   id: string;

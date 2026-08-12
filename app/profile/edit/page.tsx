@@ -73,7 +73,7 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
       <Navbar />
-      <div className="max-w-xl mx-auto p-6">
+      <div className="max-w-xl mx-auto p-4 md:p-6">
         <h1 className="text-2xl font-bold mb-6 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">Modifier mon profil</h1>
 
         {message && (
@@ -91,7 +91,7 @@ export default function EditProfilePage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-white border p-3 rounded-xl"
+            className="w-full bg-white border p-3 min-h-[44px] rounded-xl"
             placeholder="Ton nom"
           />
         </div>
@@ -103,7 +103,7 @@ export default function EditProfilePage() {
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            className="w-full bg-white border p-3 rounded-xl resize-none"
+            className="w-full bg-white border p-3 min-h-[44px] rounded-xl resize-none"
             rows={3}
             placeholder="Parle-nous de toi..."
           />
@@ -117,7 +117,7 @@ export default function EditProfilePage() {
             type="text"
             value={image}
             onChange={(e) => setImage(e.target.value)}
-            className="w-full bg-white border p-3 rounded-xl"
+            className="w-full bg-white border p-3 min-h-[44px] rounded-xl"
             placeholder="https://..."
           />
         </div>
@@ -126,7 +126,7 @@ export default function EditProfilePage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition disabled:opacity-50"
+            className="px-6 py-3 min-h-[44px] bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition disabled:opacity-50 active:scale-95"
           >
             {loading ? "Enregistrement..." : "Enregistrer"}
           </button>
@@ -134,7 +134,7 @@ export default function EditProfilePage() {
           <button
             type="button"
             onClick={() => router.push("/profile")}
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition"
+            className="px-6 py-3 min-h-[44px] bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition active:scale-95"
           >
             Annuler
           </button>

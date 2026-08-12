@@ -505,14 +505,14 @@ export default function ChurchTabs({ church, churchSlug }: ChurchTabsProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 rounded-lg font-medium text-sm transition whitespace-nowrap ${
+              className={`px-3 py-3 md:px-4 md:py-3 rounded-lg font-medium text-sm transition whitespace-nowrap min-h-[44px] md:min-h-0 flex items-center gap-2 active:scale-95 ${
                 activeTab === tab.id
                   ? "bg-emerald-600 text-white"
                   : "text-gray-600 hover:bg-gray-100"
               }`}
             >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
+              <span className="text-lg md:text-base">{tab.icon}</span>
+              <span className="hidden md:inline">{tab.label}</span>
             </button>
           ))}
         </div>

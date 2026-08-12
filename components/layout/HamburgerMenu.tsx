@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, X, User, Users, LogOut, LogIn, Church, HeartHandshake } from "lucide-react";
+import { Menu, X, User, Users, LogOut, LogIn, Church, HeartHandshake, Home, MessageSquare, Radio, Headphones, Settings, Shield } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-export default function HamburgerMenu() {
+type HamburgerMenuProps = {
+  onOpenLogin?: () => void;
+};
+
+export default function HamburgerMenu({ onOpenLogin }: HamburgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
@@ -16,7 +20,11 @@ export default function HamburgerMenu() {
   };
 
   const handleLogin = () => {
-    router.push("/login");
+    if (onOpenLogin) {
+      onOpenLogin();
+    } else {
+      router.push("/login");
+    }
     setIsOpen(false);
   };
 
@@ -78,6 +86,15 @@ export default function HamburgerMenu() {
 
             {/* Menu Items */}
             <div className="p-4 space-y-2">
+              {/* Accueil */}
+              <button
+                onClick={() => navigate("/")}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 transition text-left"
+              >
+                <Home size={20} className="text-emerald-600" />
+                <span className="font-medium text-gray-700">Accueil</span>
+              </button>
+
               {/* Profile - First element */}
               <button
                 onClick={() => navigate(session?.user ? `/profile/${session.user.id}` : "/profile")}
@@ -94,6 +111,33 @@ export default function HamburgerMenu() {
               >
                 <Users size={20} className="text-emerald-600" />
                 <span className="font-medium text-gray-700">Amis</span>
+              </button>
+
+              {/* Messages */}
+              <button
+                onClick={() => navigate("/messages")}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 transition text-left"
+              >
+                <MessageSquare size={20} className="text-emerald-600" />
+                <span className="font-medium text-gray-700">Messages</span>
+              </button>
+
+              {/* Lives */}
+              <button
+                onClick={() => navigate("/live")}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 transition text-left"
+              >
+                <Radio size={20} className="text-emerald-600" />
+                <span className="font-medium text-gray-700">Lives</span>
+              </button>
+
+              {/* Radio */}
+              <button
+                onClick={() => navigate("/radio")}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 transition text-left"
+              >
+                <Headphones size={20} className="text-emerald-600" />
+                <span className="font-medium text-gray-700">Radio</span>
               </button>
 
               {/* Prayer */}
@@ -113,6 +157,56 @@ export default function HamburgerMenu() {
                 <Church size={20} className="text-emerald-600" />
                 <span className="font-medium text-gray-700">Créer une église</span>
               </button>
+
+              {/* Settings */}
+              <button
+                onClick={() => navigate("/profile/edit")}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 transition text-left"
+              >
+                <Settings size={20} className="text-emerald-600" />
+                <span className="font-medium text-gray-700">Paramètres</span>
+              </button>
+
+              {/* Admin - Only if admin */}
+              {session?.user && (
+                <button
+                  onClick={() => navigate("/admin")}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 transition text-left"
+                >
+                  <Shield size={20} className="text-emerald-600" />
+                  <span className="font-medium text-gray-700">Admin</span>
+                </button>
+              )}
+
+              <div className="border-t border-gray-200 my-4" />
+
+              {/* Actualités Section */}
+              <div className="px-3 py-2">
+                <h4 className="text-sm font-semibold text-gray-500 mb-2">Actualités</h4>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => navigate("/events")}
+                    className="w-full text-left p-2 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    <p className="text-sm font-medium text-gray-700">Grande croisade ce week-end 🔥</p>
+                    <p className="text-xs text-gray-500">Samedi • 18h00</p>
+                  </button>
+                  <button
+                    onClick={() => navigate("/events")}
+                    className="w-full text-left p-2 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    <p className="text-sm font-medium text-gray-700">Nouveau live de prière</p>
+                    <p className="text-xs text-gray-500">Ce soir • 20h30</p>
+                  </button>
+                  <button
+                    onClick={() => navigate("/events")}
+                    className="w-full text-left p-2 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    <p className="text-sm font-medium text-gray-700">Jeûne et prière communautaire</p>
+                    <p className="text-xs text-gray-500">Lundi • 6h00</p>
+                  </button>
+                </div>
+              </div>
 
               <div className="border-t border-gray-200 my-4" />
 
