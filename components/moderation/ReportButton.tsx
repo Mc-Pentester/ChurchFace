@@ -18,6 +18,13 @@ export default function ReportButton({ targetId, targetType }: ReportButtonProps
     { id: "fake_account", label: "Faux compte" },
     { id: "offensive", label: "Contenu offensant" },
     { id: "inappropriate", label: "Contenu inapproprié" },
+    { id: "insult", label: "Insultes" },
+    { id: "profanity", label: "Grossièretés" },
+    { id: "sexual_content", label: "Contenu sexuel" },
+    { id: "pornography", label: "Pornographie" },
+    { id: "violence", label: "Violence" },
+    { id: "threat", label: "Menaces" },
+    { id: "hate", label: "Haine" },
     { id: "other", label: "Autre" },
   ];
 

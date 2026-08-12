@@ -1,4 +1,17 @@
-export type ReportReason = "spam" | "harassment" | "fake_account" | "offensive" | "inappropriate" | "other";
+export type ReportReason = 
+  | "spam" 
+  | "harassment" 
+  | "fake_account" 
+  | "offensive" 
+  | "inappropriate" 
+  | "insult"
+  | "profanity"
+  | "sexual_content"
+  | "pornography"
+  | "violence"
+  | "threat"
+  | "hate"
+  | "other";
 export type ReportStatus = "PENDING" | "RESOLVED" | "DISMISSED";
 export type ReportTargetType = "post" | "comment" | "story" | "user";
 

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { canPublishContent } from "@/lib/moderation/ModerationService";
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
 import { createNotification } from "@/lib/notifications";
 import { sanitizeText } from "@/lib/sanitize";
@@ -79,6 +80,23 @@ export async function POST(req: NextRequest) {
           { status: 404 }
         );
       }
+    }
+
+    // Moderation check before creating comment
+    const moderationCheck = await canPublishContent(
+      { text: content },
+      { userId, contentType: 'comment' }
+    );
+
+    if (!moderationCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: "Contenu non autorisé",
+          moderationResult: moderationCheck.result,
+          reason: moderationCheck.result.reasons.join(', ')
+        },
+        { status: 403 }
+      );
     }
 
     const created = await prisma.comment.create({

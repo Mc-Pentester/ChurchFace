@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { canPublishContent } from "@/lib/moderation/ModerationService";
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
 import { sanitizeText } from "@/lib/sanitize";
 
@@ -279,8 +280,25 @@ export async function POST(req: NextRequest) {
 
     if (imageUrl && videoUrl) {
       return NextResponse.json(
-        { error: "Un post ne peut contenir qu’un seul média." },
+        { error: "Un post ne peut contenir qu'un seul média." },
         { status: 400 }
+      );
+    }
+
+    // Moderation check before creating post
+    const moderationCheck = await canPublishContent(
+      { text: content, imageUrl, videoUrl },
+      { userId, contentType: 'post' }
+    );
+
+    if (!moderationCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: "Contenu non autorisé",
+          moderationResult: moderationCheck.result,
+          reason: moderationCheck.result.reasons.join(', ')
+        },
+        { status: 403 }
       );
     }
 
@@ -379,15 +397,17 @@ export async function POST(req: NextRequest) {
 
     // Create PostMedia entries if medias array is provided
     if (medias.length > 0) {
-      await prisma.postMedia.createMany({
-        data: medias.map((media: any, index: number) => ({
-          postId: post.id,
-          type: media.type,
-          url: media.url,
-          thumbnail: media.thumbnail || null,
-          order: index,
-        })),
-      });
+      for (const media of medias) {
+        await prisma.postMedia.create({
+          data: {
+            postId: post.id,
+            type: media.type,
+            url: media.url,
+            thumbnail: media.thumbnail || null,
+            order: medias.indexOf(media),
+          },
+        });
+      }
     }
 
     // Store media in gallery if image or video was uploaded (backward compatibility)
