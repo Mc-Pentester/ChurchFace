@@ -378,17 +378,18 @@ export async function POST(req: NextRequest) {
     });
 
     // Create PostMedia entries if medias array is provided
-    if (medias.length > 0) {
-      await prisma.postMedia.createMany({
-        data: medias.map((media: any, index: number) => ({
-          postId: post.id,
-          type: media.type,
-          url: media.url,
-          thumbnail: media.thumbnail || null,
-          order: index,
-        })),
-      });
-    }
+    // TODO: Uncomment after PostMedia migration is applied
+    // if (medias.length > 0) {
+    //   await prisma.postMedias.createMany({
+    //     data: medias.map((media: any, index: number) => ({
+    //       postId: post.id,
+    //       type: media.type,
+    //       url: media.url,
+    //       thumbnail: media.thumbnail || null,
+    //       order: index,
+    //     })),
+    //   });
+    // }
 
     // Store media in gallery if image or video was uploaded (backward compatibility)
     if (imageUrl || videoUrl && medias.length === 0) {

@@ -326,14 +326,14 @@ export default function AdminPage() {
             <button
               onClick={resetFeed}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition"
+              className="flex items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition active:scale-95"
             >
               <AlertTriangle size={16} /> Reset Feed
             </button>
             <button
               onClick={() => window.location.reload()}
               disabled={!!actionLoading}
-              className="flex items-center gap-2 bg-gray-900 text-white hover:bg-gray-800 px-3 py-2 rounded-lg text-sm font-medium transition"
+              className="flex items-center gap-2 bg-gray-900 text-white hover:bg-gray-800 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition active:scale-95"
             >
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
             </button>
@@ -378,7 +378,7 @@ export default function AdminPage() {
                     if (t.href) router.push(t.href);
                     else setTab(t.key as Tab);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition ${active ? "bg-emerald-50 text-emerald-700" : t.href ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-white text-gray-600 border"}`}
+                  className={`flex items-center gap-1.5 px-3 py-3 min-h-[44px] rounded-lg text-xs font-medium whitespace-nowrap transition active:scale-95 ${active ? "bg-emerald-50 text-emerald-700" : t.href ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-white text-gray-600 border"}`}
                 >
                   <Icon size={14} /> {t.label}
                 </button>

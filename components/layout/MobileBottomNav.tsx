@@ -8,16 +8,16 @@ import {
   MessageSquare,
   Radio as RadioIcon,
   Headphones,
-  MessageCircle,
+  Church,
+  HeartHandshake,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Accueil", icon: Home },
-  { href: "/profile", label: "Profil", icon: User },
+  { href: "/prayer-space", label: "Prières", icon: HeartHandshake },
+  { href: "/church/create", label: "Églises", icon: Church },
   { href: "/messages", label: "Messages", icon: MessageSquare },
-  { href: "/live", label: "Lives", icon: RadioIcon },
-  { href: "/radio", label: "Radio", icon: Headphones },
-  { href: "/chat", label: "Chat", icon: MessageCircle },
+  { href: "/profile", label: "Profil", icon: User },
 ];
 
 export default function MobileBottomNav() {
@@ -34,7 +34,7 @@ export default function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition min-w-[3rem] ${
+              className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition min-w-[3rem] active:scale-95 active:bg-emerald-50 ${
                 isActive
                   ? "text-emerald-600"
                   : "text-gray-500 hover:text-gray-700"

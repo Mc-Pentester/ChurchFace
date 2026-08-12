@@ -510,15 +510,15 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
 
       {/* POSTS */}
       {posts.map((p) => (
-        <div key={p.id} className="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-5 shadow-sm space-y-3 border border-purple-100">
+        <div key={p.id} className="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-4 md:p-5 shadow-sm space-y-3 border border-purple-100">
 
           {/* AUTHOR */}
-          <div className="font-semibold bg-gradient-to-r from-emerald-700 to-purple-700 bg-clip-text text-transparent">
+          <div className="font-semibold bg-gradient-to-r from-emerald-700 to-purple-700 bg-clip-text text-transparent text-base md:text-lg">
             {p.author?.name || "Utilisateur"}
           </div>
 
           {/* CONTENT */}
-          <p>{p.content}</p>
+          <p className="text-sm md:text-base">{p.content}</p>
 
           {/* HASHTAGS */}
           {p.hashtags && p.hashtags.length > 0 && (
@@ -606,13 +606,16 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
           ) : null}
 
           {/* ACTIONS */}
-          <div className="flex gap-4 text-sm pt-2">
+          <div className="flex gap-3 md:gap-4 text-sm pt-2">
 
             <button
               onClick={() => handleLike(p.id)}
-              className="text-gray-600 hover:text-red-600 transition"
+              className="flex items-center gap-2 px-4 py-2 min-h-[44px] text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
             >
-              {p.likeRelations?.some((l) => l.userId === session?.user?.id) ? "❤️" : "🤍"} ({p.likeRelations?.length || 0})
+              <span className="text-lg">
+                {p.likeRelations?.some((l) => l.userId === session?.user?.id) ? "❤️" : "🤍"}
+              </span>
+              <span className="font-medium">({p.likeRelations?.length || 0})</span>
             </button>
 
             <ShareMenu
@@ -706,7 +709,7 @@ function CommentItem({
                 setShowReply(false);
               }
             }}
-            className="flex-1 bg-gray-100 p-2 rounded-xl text-base"
+            className="flex-1 bg-gray-100 px-3 py-3 min-h-[44px] rounded-xl text-base"
             placeholder="Répondre..."
           />
           <button
@@ -717,7 +720,7 @@ function CommentItem({
               }
             }}
             disabled={!replyValue.trim() || !comment.id}
-            className="text-emerald-600 text-sm disabled:text-gray-300 disabled:cursor-not-allowed"
+            className="px-4 py-3 min-h-[44px] text-emerald-600 font-medium disabled:text-gray-300 disabled:cursor-not-allowed hover:bg-emerald-50 rounded-lg transition"
           >
             Envoyer
           </button>
@@ -757,14 +760,14 @@ function CommentBox({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           disabled={!isAuth}
-          className="flex-1 bg-gray-100 p-2 rounded-xl"
+          className="flex-1 bg-gray-100 px-3 py-3 min-h-[44px] rounded-xl text-base"
           placeholder="Commenter..."
         />
 
         <button
           onClick={() => sendComment(postId, value, setValue)}
           disabled={!isAuth}
-          className="text-emerald-600"
+          className="px-4 py-3 min-h-[44px] text-emerald-600 font-medium disabled:text-gray-300 disabled:cursor-not-allowed hover:bg-emerald-50 rounded-lg transition"
         >
           Envoyer
         </button>

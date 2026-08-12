@@ -40,7 +40,7 @@ export default function RadioPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-purple-50">
       <Navbar />
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
             <Headphones className="text-emerald-600" />
@@ -63,13 +63,13 @@ export default function RadioPage() {
         ) : liveRadios.length === 0 ? (
           <div className="text-gray-500 text-sm">Aucune radio en cours.</div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {liveRadios.map((radio) => (
               <button
                 key={radio.id}
                 type="button"
                 onClick={() => openRadio(radio.id)}
-                className="text-left bg-white rounded-2xl p-5 shadow-sm border hover:shadow-md hover:border-emerald-300 transition group w-full"
+                className="text-left bg-white rounded-2xl p-5 shadow-sm border hover:shadow-md hover:border-emerald-300 transition group w-full active:scale-98"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -113,7 +113,7 @@ export default function RadioPage() {
             <Headphones size={18} />
             Archives
           </h2>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {pastRadios.map((radio) => (
               <div
                 key={radio.id}

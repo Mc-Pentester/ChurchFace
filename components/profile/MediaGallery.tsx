@@ -156,12 +156,12 @@ export default function MediaGallery({ userId, isOwnProfile }: MediaGalleryProps
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={handleBackToAlbums}
-            className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
+            className="flex items-center gap-2 px-4 py-3 min-h-[44px] text-emerald-600 hover:text-emerald-700 font-medium rounded-lg hover:bg-emerald-50 transition"
           >
             ← Retour aux albums
           </button>
           {isOwnProfile && (
-            <label className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium cursor-pointer">
+            <label className="flex items-center gap-2 px-4 py-3 min-h-[44px] bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium cursor-pointer">
               {isUploading ? "Upload..." : <><Upload size={18} /> Ajouter média</>}
               <input
                 type="file"

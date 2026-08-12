@@ -221,7 +221,7 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
             {isLive && (
               <a
                 href={`/church/${church.slug}/live`}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition flex items-center gap-2"
+                className="px-4 py-3 min-h-[44px] bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition flex items-center gap-2"
               >
                 <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                 En direct
@@ -231,7 +231,7 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
               onClick={handleFollow}
               disabled={isProcessingFollow}
               aria-busy={isProcessingFollow}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
+              className={`px-4 py-3 min-h-[44px] rounded-lg font-medium transition ${
                 isFollowing
                   ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   : "bg-emerald-600 text-white hover:bg-emerald-700"
@@ -239,11 +239,11 @@ export default function ChurchHero({ church }: ChurchHeroProps) {
             >
               {isProcessingFollow ? "Traitement…" : isFollowing ? "Abonné" : "Suivre"}
             </button>
-            <button className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
+            <button className="px-4 py-3 min-h-[44px] bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
               Message
             </button>
             {church.donationEnabled && (
-              <button className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
+              <button className="px-4 py-3 min-h-[44px] bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
                 Faire un don
               </button>
             )}

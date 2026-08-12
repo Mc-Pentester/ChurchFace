@@ -609,16 +609,44 @@ export default function StudioPro({
       <div className="flex-1 relative overflow-hidden">
         {/* VIDEO Mode Panels */}
         {mode === "VIDEO" && (
-          <div className="grid grid-cols-[250px_1fr_210px_300px] gap-4 h-full p-4 overflow-hidden">
-            {/* Column 1: Empty or future use */}
-            <div className="flex flex-col gap-4 overflow-hidden">
-              <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 flex items-center justify-center text-gray-500 text-sm">
-                <div className="text-center">
-                  <div className="text-3xl mb-2">📋</div>
-                  <p>Colonne disponible</p>
-                </div>
+          <>
+            {/* Mobile VIDEO Interface */}
+            <div className="lg:hidden h-full flex flex-col p-4 gap-4">
+              {/* Mobile Preview */}
+              <div className="flex-1 bg-[#16161f] rounded-lg shadow-xl overflow-hidden">
+                <StudioPreview stream={mediaStream} muted={true} className="w-full h-full" />
+              </div>
+
+              {/* Mobile Controls */}
+              <div className="bg-[#16161f] rounded-lg shadow-xl p-4">
+                <StudioControls
+                  isLive={isLive}
+                  isRecording={isRecording}
+                  isCameraEnabled={false}
+                  isMicEnabled={false}
+                  isScreenSharing={false}
+                  onStartLive={handleStartStreaming}
+                  onStopLive={handleStopStreaming}
+                  onToggleRecording={() => setIsRecording(!isRecording)}
+                  onToggleCamera={() => {}}
+                  onToggleMic={() => {}}
+                  onToggleScreenShare={() => {}}
+                  onOpenSettings={handleOpenSettings}
+                />
               </div>
             </div>
+
+            {/* Desktop VIDEO Interface */}
+            <div className="hidden lg:grid grid-cols-[250px_1fr_210px_300px] gap-4 h-full p-4 overflow-hidden">
+              {/* Column 1: Empty or future use */}
+              <div className="flex flex-col gap-4 overflow-hidden">
+                <div className="bg-[#16161f] rounded-lg shadow-xl flex-1 flex items-center justify-center text-gray-500 text-sm">
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">📋</div>
+                    <p>Colonne disponible</p>
+                  </div>
+                </div>
+              </div>
 
             {/* Column 2: Preview, Program, Transitions, Scenes, Sources, Audio Mixer */}
             <div className="flex flex-col gap-4 overflow-hidden flex-1">
@@ -784,6 +812,7 @@ export default function StudioPro({
               </div>
             </div>
           </div>
+          </>
         )}
 
         {/* RADIO Mode Panels */}

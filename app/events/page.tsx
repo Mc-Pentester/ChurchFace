@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
+import Navbar from "@/components/layout/Navbar";
 
 export const dynamic = "force-dynamic";
 export default async function EventsPage() {
@@ -32,11 +33,11 @@ export default async function EventsPage() {
 
   return (
 
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-6xl mx-auto p-4 md:p-6">
 
-      <div className="max-w-6xl mx-auto">
-
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8">
           📅 Événements à venir
         </h1>
 
@@ -44,11 +45,11 @@ export default async function EventsPage() {
         {events.length === 0 ? (
 
           <div className="
-            bg-white 
-            rounded-xl 
-            shadow-sm 
-            p-8 
-            text-center 
+            bg-white
+            rounded-xl
+            shadow-sm
+            p-8
+            text-center
             text-gray-500
           ">
             Aucun événement à venir pour le moment.
@@ -57,9 +58,10 @@ export default async function EventsPage() {
         ) : (
 
           <div className="
-            grid 
-            sm:grid-cols-2 
-            lg:grid-cols-3 
+            grid
+            grid-cols-1
+            sm:grid-cols-2
+            lg:grid-cols-3
             gap-6
           ">
 
@@ -75,6 +77,7 @@ export default async function EventsPage() {
                   shadow-sm
                   hover:shadow-xl
                   transition
+                  active:scale-98
                 "
               >
 
@@ -124,7 +127,6 @@ export default async function EventsPage() {
                   </h2>
 
 
-
                   <Link
                     href={`/church/${event.church.slug}`}
                     className="
@@ -136,7 +138,6 @@ export default async function EventsPage() {
                   >
                     ⛪ {event.church.name}
                   </Link>
-
 
 
                   <p className="mt-3 text-gray-600">

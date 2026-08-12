@@ -70,7 +70,7 @@ export default function ModerationPage() {
             </div>
             <a
               href="/admin/studio"
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition"
+              className="flex items-center gap-2 px-4 py-3 min-h-[44px] bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition active:scale-95"
             >
               <Radio size={20} />
               <span className="font-medium">Studio Live</span>
@@ -115,14 +115,14 @@ export default function ModerationPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-3 min-h-[44px] font-medium transition whitespace-nowrap active:scale-95 ${
                   activeTab === tab.id
                     ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 <tab.icon size={18} />
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
                 {tab.count > 0 && (
                   <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-emerald-500 to-purple-500 text-white">
                     {tab.count}
@@ -243,13 +243,13 @@ function ReportsQueue() {
           <div className="flex gap-2">
             <button
               onClick={() => handleResolve(report.id)}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-purple-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition"
+              className="px-4 py-3 min-h-[44px] bg-gradient-to-r from-emerald-500 to-purple-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition active:scale-95"
             >
               Résoudre
             </button>
             <button
               onClick={() => handleDismiss(report.id)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
+              className="px-4 py-3 min-h-[44px] bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition active:scale-95"
             >
               Rejeter
             </button>

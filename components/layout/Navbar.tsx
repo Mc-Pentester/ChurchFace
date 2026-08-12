@@ -9,7 +9,10 @@ import {
   HeartHandshake,
   X,
   Check,
-  Users
+  Users,
+  Search,
+  LogOut,
+  LogIn
 } from "lucide-react";
 
 import { useEffect, useState, useRef } from "react";
@@ -35,7 +38,11 @@ type Notification = {
   entityType?: string | null;
 };
 
-export default function Navbar() {
+type NavbarProps = {
+  onOpenLogin?: () => void;
+};
+
+export default function Navbar({ onOpenLogin }: NavbarProps) {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -54,6 +61,7 @@ export default function Navbar() {
 
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<string[]>([]);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   /**
    * SOCKET
@@ -258,7 +266,15 @@ export default function Navbar() {
           ChurchFace
         </div>
 
-        {/* SEARCH */}
+        {/* SEARCH - Mobile button */}
+        <button
+          onClick={() => setShowMobileSearch(true)}
+          className="md:hidden p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition"
+        >
+          <Search size={20} className="text-white" />
+        </button>
+
+        {/* SEARCH - Desktop */}
         <div className="relative hidden md:block w-[420px]">
 
           <input
@@ -428,7 +444,7 @@ export default function Navbar() {
         {/* AUTH - Desktop only */}
         {!session ? (
           <button
-            onClick={() => router.push("/login")}
+            onClick={onOpenLogin}
             className="hidden md:block bg-gradient-to-r from-emerald-600 to-purple-600 text-white px-5 py-2.5 rounded-full hover:shadow-lg transition"
           >
             Connexion
@@ -450,8 +466,54 @@ export default function Navbar() {
         )}
 
         {/* HAMBURGER MENU - Mobile */}
-        <HamburgerMenu />
+        <HamburgerMenu onOpenLogin={onOpenLogin} />
       </div>
+
+      {/* MOBILE SEARCH MODAL */}
+      {showMobileSearch && (
+        <div className="fixed inset-0 z-[60] md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowMobileSearch(false)}
+          />
+
+          {/* Search Panel */}
+          <div className="absolute top-20 left-4 right-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Rechercher personnes, posts..."
+                  className="flex-1 bg-gray-100 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 placeholder-gray-500"
+                  autoFocus
+                />
+                <button
+                  onClick={() => setShowMobileSearch(false)}
+                  className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
+
+              {/* Results */}
+              {results.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {results.map((r, i) => (
+                    <div
+                      key={i}
+                      className="px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-emerald-50 hover:to-purple-50 cursor-pointer"
+                    >
+                      {r}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

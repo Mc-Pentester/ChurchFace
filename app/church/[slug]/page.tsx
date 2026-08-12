@@ -92,14 +92,14 @@ export default async function ChurchPage({ params }: { params: Promise<{ slug: s
       <ChurchHero church={church} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <ChurchTabs church={church} churchSlug={slug} />
           </div>
-          
-          {/* Sidebar */}
-          <div className="lg:w-80">
+
+          {/* Sidebar - Hidden on mobile, visible on tablet+ */}
+          <div className="hidden md:block md:w-72 lg:w-80">
             <ChurchSidebar church={church} />
           </div>
         </div>
