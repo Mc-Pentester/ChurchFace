@@ -6,7 +6,6 @@ import {
   User, 
   Users, 
   Image as ImageIcon, 
-  Video, 
   Lock,
   Info
 } from "lucide-react";
@@ -28,8 +27,7 @@ export default function ProfileTabs({
     { id: "posts", label: "Publications", icon: Newspaper },
     { id: "about", label: "À propos", icon: Info },
     { id: "friends", label: "Amis", icon: Users },
-    { id: "photos", label: "Photos", icon: ImageIcon },
-    { id: "videos", label: "Vidéos", icon: Video },
+    { id: "media", label: "Photos & Vidéos", icon: ImageIcon },
   ];
 
   return (

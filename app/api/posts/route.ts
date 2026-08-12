@@ -15,14 +15,12 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    const userId = (session?.user as any)?.id as string | undefined;
 
-    const search = req.nextUrl.searchParams;
-    const limitRaw = Number(search.get("limit") ?? "10");
-    const limit = Number.isFinite(limitRaw)
-      ? Math.min(Math.max(limitRaw, 1), 20)
-      : 10;
-    const cursor = search.get("cursor");
+    const { searchParams } = new URL(req.url);
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const cursor = searchParams.get("cursor") || null;
+    const profileUserId = searchParams.get("userId") || null;
 
     // Get followed church IDs if user is authenticated
     let followedChurchIds: string[] = [];
@@ -86,23 +84,31 @@ export async function GET(req: NextRequest) {
       },
       where: {
         isHidden: false,
-        OR: [
-          // Personal posts
-          { churchId: null },
-          // Public posts from followed churches
-          ...(followedChurchIds.length > 0
-            ? [{ churchId: { in: followedChurchIds } }]
-            : []),
-          // Live posts from any church (show live streams even if not followed)
-          ...(liveChurchIds.length > 0
-            ? [
-                {
-                  churchId: { in: liveChurchIds },
-                  generatedType: "CHURCH_LIVE",
-                },
-              ]
-            : []),
-        ],
+        ...(profileUserId
+          ? {
+              // Filter by specific user ID (for profile pages)
+              authorId: profileUserId,
+            }
+          : {
+              // Global feed logic
+              OR: [
+                // Personal posts
+                { churchId: null },
+                // Public posts from followed churches
+                ...(followedChurchIds.length > 0
+                  ? [{ churchId: { in: followedChurchIds } }]
+                  : []),
+                // Live posts from any church (show live streams even if not followed)
+                ...(liveChurchIds.length > 0
+                  ? [
+                      {
+                        churchId: { in: liveChurchIds },
+                        generatedType: "CHURCH_LIVE",
+                      },
+                    ]
+                  : []),
+              ],
+            }),
       },
       include: {
         author: {
@@ -118,6 +124,11 @@ export async function GET(req: NextRequest) {
             name: true,
             slug: true,
             logo: true,
+          },
+        },
+        postMedias: {
+          orderBy: {
+            order: 'asc',
           },
         },
         comments: {
@@ -246,6 +257,7 @@ export async function POST(req: NextRequest) {
       (m) => m[0].slice(1).toLowerCase()
     );
 
+    // Support both old format (imageUrl/videoUrl) and new format (medias array)
     const imageUrl =
       typeof body?.imageUrl === "string" && body.imageUrl.trim() !== ""
         ? body.imageUrl.trim()
@@ -255,6 +267,8 @@ export async function POST(req: NextRequest) {
       typeof body?.videoUrl === "string" && body.videoUrl.trim() !== ""
         ? body.videoUrl.trim()
         : null;
+
+    const medias = Array.isArray(body?.medias) ? body.medias : [];
 
     if (content.length > 2000) {
       return NextResponse.json(
@@ -270,24 +284,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isValidMediaUrl = (value: string | null) => {
-      if (!value) return true;
-      try {
-        const parsed = new URL(value);
-        return parsed.protocol === "https:" || parsed.protocol === "http:";
-      } catch {
-        return false;
+    // Validate medias array if provided
+    if (medias.length > 0) {
+      for (const media of medias) {
+        if (!media.url || !media.type) {
+          return NextResponse.json(
+            { error: "Chaque média doit avoir une URL et un type." },
+            { status: 400 }
+          );
+        }
+        if (!["IMAGE", "VIDEO"].includes(media.type)) {
+          return NextResponse.json(
+            { error: "Type de média invalide. Doit être IMAGE ou VIDEO." },
+            { status: 400 }
+          );
+        }
+        try {
+          const parsed = new URL(media.url);
+          if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+            return NextResponse.json(
+              { error: "URL média invalide." },
+              { status: 400 }
+            );
+          }
+        } catch {
+          return NextResponse.json(
+            { error: "URL média invalide." },
+            { status: 400 }
+          );
+        }
       }
-    };
-
-    if (!isValidMediaUrl(imageUrl) || !isValidMediaUrl(videoUrl)) {
-      return NextResponse.json(
-        { error: "URL média invalide." },
-        { status: 400 }
-      );
     }
 
-    if (!content && !imageUrl && !videoUrl) {
+    // Backward compatibility: validate old format if no medias provided
+    if (medias.length === 0) {
+      const isValidMediaUrl = (value: string | null) => {
+        if (!value) return true;
+        try {
+          const parsed = new URL(value);
+          return parsed.protocol === "https:" || parsed.protocol === "http:";
+        } catch {
+          return false;
+        }
+      };
+
+      if (!isValidMediaUrl(imageUrl) || !isValidMediaUrl(videoUrl)) {
+        return NextResponse.json(
+          { error: "URL média invalide." },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!content && !imageUrl && !videoUrl && medias.length === 0) {
       return NextResponse.json(
         { error: "Post vide" },
         { status: 400 }
@@ -328,8 +377,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Store media in gallery if image or video was uploaded
-    if (imageUrl || videoUrl) {
+    // Create PostMedia entries if medias array is provided
+    if (medias.length > 0) {
+      await prisma.postMedia.createMany({
+        data: medias.map((media: any, index: number) => ({
+          postId: post.id,
+          type: media.type,
+          url: media.url,
+          thumbnail: media.thumbnail || null,
+          order: index,
+        })),
+      });
+    }
+
+    // Store media in gallery if image or video was uploaded (backward compatibility)
+    if (imageUrl || videoUrl && medias.length === 0) {
       // Create or get "Posts" album
       let postsAlbum = await prisma.album.findFirst({
         where: {

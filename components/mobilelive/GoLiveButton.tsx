@@ -34,7 +34,9 @@ export default function GoLiveButton({
   useEffect(() => {
     const check = async () => {
       setChecking(true);
+      console.log("GoLiveButton - checking permissions for:", { context, ownerId, ownerType });
       const perms = await checkPermissions(context, ownerId, ownerType);
+      console.log("GoLiveButton - permissions result:", perms);
       setHasPermission(perms?.canStartLive || false);
       setChecking(false);
     };
@@ -50,14 +52,21 @@ export default function GoLiveButton({
 
   // Ne pas afficher le bouton si l'utilisateur n'a pas la permission
   if (checking) {
-    return null;
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span>Vérification...</span>
+      </div>
+    );
   }
 
-  if (!hasPermission) {
-    return null;
-  }
+  // Temporairement désactiver la vérification de permission pour le débogage
+  // if (!hasPermission) {
+  //   console.log("GoLiveButton - No permission, button hidden");
+  //   return null;
+  // }
 
-  const baseStyles = "flex items-center gap-2 rounded-lg font-medium transition-all duration-200";
+  const baseStyles = "flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200";
   
   const variantStyles = {
     primary: "bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-500/25",

@@ -6,12 +6,15 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileTabs from "@/components/profile/ProfileTabs";
-import PhotoGallery from "@/components/profile/PhotoGallery";
-import VideoGallery from "@/components/profile/VideoGallery";
-import GoLiveButton from "@/components/mobilelive/GoLiveButton";
+import MediaGallery from "@/components/profile/MediaGallery";
+import FriendsList from "@/components/profile/FriendsList";
 import MobileLiveSetup from "@/components/mobilelive/MobileLiveSetup";
 import MobileLiveInterface from "@/components/mobilelive/MobileLiveInterface";
+import GoLiveButton from "@/components/mobilelive/GoLiveButton";
+import PostCreator from "@/components/posts/PostCreator";
+import CreateMenuButton from "@/components/profile/CreateMenuButton";
 import { MobileLiveSession } from "@/lib/mobilelive/MobileLiveTypes";
+import Feed from "@/components/posts/Feed";
 
 type UserProfile = {
   id: string;
@@ -38,6 +41,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   const [profileLocked, setProfileLocked] = useState(false);
   const [showMobileLiveSetup, setShowMobileLiveSetup] = useState(false);
   const [mobileLiveSession, setMobileLiveSession] = useState<MobileLiveSession | null>(null);
+  const [showPostCreator, setShowPostCreator] = useState(false);
 
   console.log("UserProfilePage rendered, resolvedParams.userId:", resolvedParams.userId, "session:", session);
 
@@ -193,6 +197,12 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   }
 
   const isOwnProfile = session?.user?.id === user.id;
+  
+  console.log("Debug profile:", { 
+    sessionUserId: session?.user?.id, 
+    profileUserId: user.id, 
+    isOwnProfile 
+  });
 
   const handleMobileLiveStart = (sessionId: string) => {
     setShowMobileLiveSetup(false);
@@ -211,7 +221,33 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
       case "posts":
         return (
           <div className="p-6">
-            <p className="text-gray-500 text-center">Les publications seront affichées ici</p>
+            {isOwnProfile && (
+              <>
+                {showPostCreator ? (
+                  <PostCreator
+                    userId={user.id}
+                    onPostCreated={() => setShowPostCreator(false)}
+                  />
+                ) : (
+                  <div className="flex gap-3 mb-4">
+                    <button
+                      onClick={() => setShowPostCreator(true)}
+                      className="flex-1 p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                      Créer une publication
+                    </button>
+                    <GoLiveButton
+                      context="PERSONAL"
+                      ownerId={user.id}
+                      ownerType="USER"
+                      onOpenSetup={() => setShowMobileLiveSetup(true)}
+                      className="flex-1"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+            <Feed userId={user.id} hideCreator={true} />
           </div>
         );
       case "about":
@@ -234,19 +270,13 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
       case "friends":
         return (
           <div className="p-6">
-            <p className="text-gray-500 text-center">La liste d'amis sera affichée ici</p>
+            <FriendsList userId={user.id} isOwnProfile={isOwnProfile} />
           </div>
         );
-      case "photos":
+      case "media":
         return (
           <div className="p-6">
-            <PhotoGallery userId={user.id} isOwnProfile={isOwnProfile} />
-          </div>
-        );
-      case "videos":
-        return (
-          <div className="p-6">
-            <VideoGallery userId={user.id} isOwnProfile={isOwnProfile} />
+            <MediaGallery userId={user.id} isOwnProfile={isOwnProfile} />
           </div>
         );
       default:
@@ -283,14 +313,12 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
       </div>
 
       {isOwnProfile && (
-        <div className="fixed bottom-6 right-6">
-          <GoLiveButton
-            context="PERSONAL"
-            ownerId={user.id}
-            ownerType="USER"
-            onOpenSetup={() => setShowMobileLiveSetup(true)}
-          />
-        </div>
+        <CreateMenuButton
+          userId={user.id}
+          onOpenPostCreator={() => setShowPostCreator(!showPostCreator)}
+          onOpenMobileLiveSetup={() => setShowMobileLiveSetup(true)}
+          isPostCreatorOpen={showPostCreator}
+        />
       )}
 
       {showMobileLiveSetup && (

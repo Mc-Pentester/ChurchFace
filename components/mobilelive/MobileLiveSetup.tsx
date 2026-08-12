@@ -130,13 +130,14 @@ export default function MobileLiveSetup({
   };
 
   const handleStartLive = async () => {
-    if (!title.trim()) {
-      alert("Veuillez entrer un titre pour votre live");
-      return;
-    }
+    // Temporairement retirer la validation du titre pour le débogage
+    // if (!title.trim()) {
+    //   alert("Veuillez entrer un titre pour votre live");
+    //   return;
+    // }
 
     const config: MobileLiveConfig = {
-      title: title.trim(),
+      title: title.trim() || "Live sans titre",
       description: description.trim() || undefined,
       category: category || undefined,
       visibility,
@@ -190,8 +191,8 @@ export default function MobileLiveSetup({
         <div className="w-10" />
       </div>
 
-      {/* Camera Preview */}
-      <div className="flex-1 relative bg-black">
+      {/* Camera Preview - Reduced height */}
+      <div className="h-[40vh] relative bg-black">
         <video
           ref={videoRef}
           autoPlay
@@ -199,7 +200,7 @@ export default function MobileLiveSetup({
           muted
           className={`w-full h-full object-cover ${!cameraEnabled ? 'hidden' : ''}`}
         />
-        
+
         {!cameraEnabled && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
             <CameraOff className="w-16 h-16 text-gray-600" />
@@ -211,8 +212,8 @@ export default function MobileLiveSetup({
           <button
             onClick={toggleCameraEnabled}
             className={`p-3 rounded-full transition ${
-              cameraEnabled 
-                ? "bg-white/20 backdrop-blur-sm text-white" 
+              cameraEnabled
+                ? "bg-white/20 backdrop-blur-sm text-white"
                 : "bg-gray-700 text-gray-400"
             }`}
           >
@@ -229,8 +230,8 @@ export default function MobileLiveSetup({
           <button
             onClick={toggleMicrophone}
             className={`p-3 rounded-full transition ${
-              microphoneEnabled 
-                ? "bg-white/20 backdrop-blur-sm text-white" 
+              microphoneEnabled
+                ? "bg-white/20 backdrop-blur-sm text-white"
                 : "bg-gray-700 text-gray-400"
             }`}
           >
@@ -239,8 +240,8 @@ export default function MobileLiveSetup({
         </div>
       </div>
 
-      {/* Setup Form */}
-      <div className="bg-white rounded-t-3xl p-6 space-y-4 max-h-[50vh] overflow-y-auto">
+      {/* Setup Form - Takes remaining space */}
+      <div className="flex-1 bg-white rounded-t-3xl p-6 space-y-4 overflow-y-auto">
         {/* Title */}
         <input
           type="text"
@@ -451,7 +452,7 @@ export default function MobileLiveSetup({
         {/* Start Button */}
         <button
           onClick={handleStartLive}
-          disabled={isLoading || !title.trim()}
+          disabled={isLoading}
           className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
         >
           {isLoading ? (

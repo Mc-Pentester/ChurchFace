@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ShareMenu from "./ShareMenu";
 import ReportButton from "../moderation/ReportButton";
 import UploadProgress from "@/components/upload/UploadProgress";
+import MediaModal from "@/components/media/MediaModal";
 
 
 /**
@@ -32,6 +33,14 @@ type Post = {
     slug: string;
     logo?: string | null;
   };
+
+  postMedias?: {
+    id: string;
+    type: string;
+    url: string;
+    thumbnail: string | null;
+    order: number;
+  }[];
 
   comments?: Comment[];
   likeRelations?: { userId: string }[];
@@ -67,7 +76,7 @@ type UploadedFile = {
 /**
  * ================= FEED =================
  */
-export default function Feed() {
+export default function Feed({ userId, hideCreator = false }: { userId?: string; hideCreator?: boolean } = {}) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -81,6 +90,8 @@ export default function Feed() {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+  const [modalMedia, setModalMedia] = useState<any[] | null>(null);
+  const [modalInitialIndex, setModalInitialIndex] = useState(0);
 
   const isAuth = status === "authenticated" && !!session?.user;
 
@@ -125,7 +136,9 @@ export default function Feed() {
           ? `&cursor=${encodeURIComponent(nextCursor)}`
           : "";
 
-      const res = await fetch(`/api/posts?limit=10${cursorParam}`, {
+      const userIdParam = userId ? `&userId=${userId}` : "";
+
+      const res = await fetch(`/api/posts?limit=10${cursorParam}${userIdParam}`, {
         cache: "no-store",
       });
 
@@ -177,7 +190,7 @@ export default function Feed() {
 
   useEffect(() => {
     loadPosts("reset");
-  }, []);
+  }, [userId]);
 
   /**
    * ================= CREATE POST =================
@@ -430,7 +443,8 @@ export default function Feed() {
     <div className="space-y-8">
 
       {/* CREATE POST */}
-      <div className="bg-gradient-to-br from-white to-emerald-50 rounded-2xl p-5 shadow-sm border border-emerald-100">
+      {!hideCreator && (
+        <div className="bg-gradient-to-br from-white to-emerald-50 rounded-2xl p-5 shadow-sm border border-emerald-100">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -492,6 +506,7 @@ export default function Feed() {
           </div>
         )}
       </div>
+      )}
 
       {/* POSTS */}
       {posts.map((p) => (
@@ -549,6 +564,35 @@ export default function Feed() {
                 Voir la diffusion →
               </a>
             </div>
+          ) : p.postMedias && p.postMedias.length > 0 ? (
+            <div className={`grid gap-2 ${p.postMedias.length === 1 ? 'grid-cols-1' : p.postMedias.length === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
+              {p.postMedias.map((media, index) => (
+                <div
+                  key={media.id}
+                  className="relative cursor-pointer"
+                  onClick={() => {
+                    setModalMedia(p.postMedias || []);
+                    setModalInitialIndex(index);
+                  }}
+                >
+                  {media.type === "VIDEO" ? (
+                    <video
+                      src={media.url}
+                      controls
+                      preload="metadata"
+                      playsInline
+                      className="rounded-xl w-full max-h-[600px] object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={media.thumbnail || media.url}
+                      alt=""
+                      className="rounded-xl w-full object-cover"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
           ) : p.videoUrl ? (
             <video
               src={p.videoUrl}
@@ -600,6 +644,15 @@ export default function Feed() {
         >
           Charger plus
         </button>
+      )}
+
+      {/* MEDIA MODAL */}
+      {modalMedia && (
+        <MediaModal
+          media={modalMedia}
+          initialIndex={modalInitialIndex}
+          onClose={() => setModalMedia(null)}
+        />
       )}
     </div>
   );

@@ -13,13 +13,16 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
+  const targetUserId = searchParams.get("userId") || session.user.id;
+
+  console.log("FRIENDS LIST API - targetUserId:", targetUserId, "sessionUserId:", session.user.id);
 
   try {
     const friendships = await prisma.friendship.findMany({
       where: {
         OR: [
-          { senderId: session.user.id },
-          { receiverId: session.user.id },
+          { senderId: targetUserId },
+          { receiverId: targetUserId },
         ],
         status: "ACCEPTED",
       },
@@ -55,24 +58,28 @@ export async function GET(request: Request) {
     });
 
     const users = friendships.map((f) => {
-      const friend = f.senderId === session.user.id ? f.receiver : f.sender;
+      const friend = f.senderId === targetUserId ? f.receiver : f.sender;
       return {
         ...friend,
         friendshipId: f.id,
-        isSender: f.senderId === session.user.id,
+        isSender: f.senderId === targetUserId,
         createdAt: f.createdAt,
       };
     });
 
+    console.log("FRIENDS LIST API - friendships found:", friendships.length, "users mapped:", users.length);
+
     const total = await prisma.friendship.count({
       where: {
         OR: [
-          { senderId: session.user.id },
-          { receiverId: session.user.id },
+          { senderId: targetUserId },
+          { receiverId: targetUserId },
         ],
         status: "ACCEPTED",
       },
     });
+
+    console.log("FRIENDS LIST API - total count:", total);
 
     return NextResponse.json({
       users,

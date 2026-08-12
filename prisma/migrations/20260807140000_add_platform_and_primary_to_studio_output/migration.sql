@@ -1,8 +1,0 @@
--- StudioOutput is created by the subsequent migration
--- 20260810122512_add_missing_studio_tables.
---
--- The original migration attempted to ALTER StudioOutput before
--- StudioOutput existed in the database.
--- The complete StudioOutput definition, including platform,
--- isPrimary and their indexes, is now handled by the subsequent
--- migration.

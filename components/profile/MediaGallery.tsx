@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Image as ImageIcon, Plus, Grid, Folder, Upload } from "lucide-react";
+import { Image as ImageIcon, Video, Plus, Grid, Folder, Upload } from "lucide-react";
 import { useUploadThing } from "@/lib/uploadthing";
+import MediaModal from "@/components/media/MediaModal";
 
-interface PhotoGalleryProps {
+interface MediaGalleryProps {
   userId: string;
   isOwnProfile: boolean;
 }
@@ -26,14 +27,14 @@ interface Media {
   createdAt: string;
 }
 
-export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps) {
+export default function MediaGallery({ userId, isOwnProfile }: MediaGalleryProps) {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [modalMedia, setModalMedia] = useState<any[] | null>(null);
+  const [modalInitialIndex, setModalInitialIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState("");
 
@@ -110,7 +111,7 @@ export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps
     setMedia([]);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       startUpload([files[0]]);
@@ -161,11 +162,11 @@ export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps
           </button>
           {isOwnProfile && (
             <label className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium cursor-pointer">
-              {isUploading ? "Upload..." : <><Upload size={18} /> Ajouter photo</>}
+              {isUploading ? "Upload..." : <><Upload size={18} /> Ajouter média</>}
               <input
                 type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
+                accept="image/*,video/*"
+                onChange={handleMediaUpload}
                 className="hidden"
               />
             </label>
@@ -175,21 +176,49 @@ export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps
         {media.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <ImageIcon size={48} className="mx-auto mb-4 text-gray-300" />
-            <p>Aucune photo dans cet album</p>
+            <p>Aucun média dans cet album</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {media.map((item) => (
+            {media.map((item, index) => (
               <div key={item.id} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                <img
-                  src={item.thumbnail || item.url}
-                  alt={item.caption || "Photo"}
-                  className="w-full h-full object-cover hover:scale-105 transition cursor-pointer"
-                  onClick={() => {
-                    setModalImage(item.url);
-                    setShowImageModal(true);
-                  }}
-                />
+                {item.type === "VIDEO" ? (
+                  <div className="relative w-full h-full">
+                    <video
+                      src={item.url}
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        setModalMedia(media.map(m => ({
+                          id: m.id,
+                          type: m.type,
+                          url: m.url,
+                          thumbnail: m.thumbnail,
+                          order: 0
+                        })));
+                        setModalInitialIndex(index);
+                      }}
+                    />
+                    <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                      Vidéo
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={item.thumbnail || item.url}
+                    alt={item.caption || "Média"}
+                    className="w-full h-full object-cover hover:scale-105 transition cursor-pointer"
+                    onClick={() => {
+                      setModalMedia(media.map(m => ({
+                        id: m.id,
+                        type: m.type,
+                        url: m.url,
+                        thumbnail: m.thumbnail,
+                        order: 0
+                      })));
+                      setModalInitialIndex(index);
+                    }}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -201,15 +230,15 @@ export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Albums photo</h2>
+        <h2 className="text-xl font-semibold">Photos & Vidéos</h2>
         {isOwnProfile && (
           <div className="flex gap-2">
             <label className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-medium cursor-pointer">
-              {isUploading ? "Upload..." : <><Upload size={18} /> Ajouter photo</>}
+              {isUploading ? "Upload..." : <><Upload size={18} /> Ajouter média</>}
               <input
                 type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
+                accept="image/*,video/*"
+                onChange={handleMediaUpload}
                 className="hidden"
               />
             </label>
@@ -227,7 +256,7 @@ export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps
       {albums.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <Folder size={48} className="mx-auto mb-4 text-gray-300" />
-          <p>Aucun album photo</p>
+          <p>Aucun album</p>
           {isOwnProfile && (
             <button
               onClick={() => setShowUploadModal(true)}
@@ -248,7 +277,7 @@ export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps
               <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
                 <Folder size={32} className="text-emerald-600 mb-2" />
                 <p className="font-medium text-center text-sm">{album.name}</p>
-                <p className="text-xs text-gray-500 mt-1">{album._count.media} photos</p>
+                <p className="text-xs text-gray-500 mt-1">{album._count.media} médias</p>
               </div>
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition" />
             </button>
@@ -289,27 +318,13 @@ export default function PhotoGallery({ userId, isOwnProfile }: PhotoGalleryProps
         </div>
       )}
 
-      {/* Image Modal */}
-      {showImageModal && modalImage && (
-        <div 
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowImageModal(false)}
-        >
-          <button
-            onClick={() => setShowImageModal(false)}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition"
-          >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <img
-            src={modalImage || ""}
-            alt="Full size"
-            className="max-w-full max-h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+      {/* Media Modal */}
+      {modalMedia && (
+        <MediaModal
+          media={modalMedia}
+          initialIndex={modalInitialIndex}
+          onClose={() => setModalMedia(null)}
+        />
       )}
     </div>
   );
