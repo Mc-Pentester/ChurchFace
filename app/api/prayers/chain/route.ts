@@ -8,12 +8,34 @@ export async function GET() {
     where: { isActive: true },
     orderBy: { createdAt: "desc" },
     take: 10,
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      isActive: true,
+      createdAt: true,
+      ownerId: true,
+      ownerType: true,
+      churchId: true,
+      imageUrl: true,
+      visibility: true,
+      prayerCampaignId: true,
+      scheduledStart: true,
+      scheduledEnd: true,
       _count: { select: { links: true } },
       links: {
         take: 5,
         orderBy: { createdAt: "asc" },
-        include: { user: { select: { id: true, name: true, image: true } } },
+        select: {
+          id: true,
+          message: true,
+          createdAt: true,
+          role: true,
+          joinedAt: true,
+          lastPrayedAt: true,
+          prayerCount: true,
+          user: { select: { id: true, name: true, image: true } },
+        },
       },
     },
   });
@@ -39,10 +61,20 @@ export async function POST(req: Request) {
         description: description?.trim() || null,
         prayerRequestId: prayerRequestId || null,
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        isActive: true,
+        createdAt: true,
         _count: { select: { links: true } },
         links: {
-          include: { user: { select: { id: true, name: true, image: true } } },
+          select: {
+            id: true,
+            message: true,
+            createdAt: true,
+            user: { select: { id: true, name: true, image: true } },
+          },
         },
       },
     });
@@ -66,15 +98,28 @@ export async function POST(req: Request) {
         userId: session.user.id,
         message: message?.trim() || null,
       },
-      include: {
+      select: {
+        id: true,
+        message: true,
+        createdAt: true,
         user: { select: { id: true, name: true, image: true } },
         chain: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            isActive: true,
+            createdAt: true,
             _count: { select: { links: true } },
             links: {
               take: 5,
               orderBy: { createdAt: "asc" },
-              include: { user: { select: { id: true, name: true, image: true } } },
+              select: {
+                id: true,
+                message: true,
+                createdAt: true,
+                user: { select: { id: true, name: true, image: true } },
+              },
             },
           },
         },
