@@ -96,8 +96,20 @@ export interface PrayerChainWithLinks {
   description: string | null;
   isActive: boolean;
   createdAt: string;
+  ownerId?: string;
+  ownerType?: string;
+  churchId?: string;
+  groupId?: string;
+  ministryId?: string;
+  eventId?: string;
+  imageUrl?: string;
+  visibility?: "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS";
+  prayerCampaignId?: string;
+  scheduledStart?: string;
+  scheduledEnd?: string;
   _count?: {
     links: number;
+    participants?: number;
   };
   links?: {
     id: string;
@@ -109,6 +121,87 @@ export interface PrayerChainWithLinks {
       image: string | null;
     };
   }[];
+}
+
+export interface PrayerParticipant {
+  id: string;
+  prayerChainId: string;
+  userId: string;
+  role: "PARTICIPANT" | "MODERATOR" | "ADMIN";
+  joinedAt: string;
+  lastPrayedAt?: string;
+  prayerCount: number;
+  notificationEnabled: boolean;
+  user: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+}
+
+export interface PrayerSchedule {
+  id: string;
+  prayerChainId: string;
+  userId: string;
+  hour: number;
+  dayOfWeek?: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PrayerRoom {
+  id: string;
+  prayerChainId?: string;
+  title: string;
+  description?: string;
+  roomType: "TEXT" | "AUDIO" | "VIDEO";
+  isPublic: boolean;
+  isActive: boolean;
+  moderatorId: string;
+  maxParticipants?: number;
+  scheduledStart?: string;
+  scheduledEnd?: string;
+  createdAt: string;
+  endedAt?: string;
+  _count?: {
+    participants?: number;
+  };
+}
+
+export interface PrayerCampaign {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  type: "FAST" | "PRAYER" | "VIGIL" | "NATIONAL" | "GLOBAL";
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  churchId?: string;
+  createdBy: string;
+  createdAt: string;
+  church?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo?: string;
+  };
+  _count?: {
+    chains?: number;
+  };
+}
+
+export interface PrayerEngagement {
+  id: string;
+  prayerRequestId: string;
+  userId: string;
+  type: "PRAYED" | "ENCOURAGED" | "SHARED_VERSE" | "SHARED_TESTIMONY";
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
 }
 
 export interface PrayerLiveRoomWithCount {

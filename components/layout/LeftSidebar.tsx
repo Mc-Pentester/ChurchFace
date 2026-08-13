@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 
 const navItems = [
   { label: "Accueil", href: "/" },
+  { label: "Prières", href: "/prayers" },
   { label: "Profil", href: "/profile" },
   { label: "Amis", href: "/friends" },
   { label: "Messages", href: "/messages" },

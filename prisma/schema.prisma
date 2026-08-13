@@ -89,6 +89,8 @@ model User {
   blockedBy                  Block[]                     @relation("Blocked")
   blocking                   Block[]                     @relation("Blocker")
   liveBroadcasts             LiveBroadcast[]
+  trainingRoomMembers        TrainingRoomMember[]
+  trainingRoomsAsInstructor  TrainingRoom[]             @relation("TrainingInstructor")
 }
 
 model Account {
@@ -708,6 +710,7 @@ model Church {
   globalPosts     Post[]
   users           User[]         @relation("UserChurch")
   prayerRequests  PrayerRequest[]
+  trainingRooms   TrainingRoom[] @relation("TrainingChurch")
 
 }
 
@@ -1381,4 +1384,58 @@ model Block {
   @@unique([blockerId, blockedId])
   @@index([blockerId])
   @@index([blockedId])
+}
+
+// Training Module - Online Formation
+model TrainingRoom {
+  id               String                @id @default(cuid())
+  title            String
+  description      String?
+  roomType         String                @default("VIDEO") // "VIDEO" | "AUDIO" | "TEXT"
+  isActive         Boolean               @default(true)
+  isPublic         Boolean               @default(true)
+  instructorId     String?
+  churchId         String?
+  maxParticipants  Int?
+  scheduledStart   DateTime?
+  scheduledEnd     DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  members          TrainingRoomMember[]
+  sessions         TrainingSession[]
+  instructor       User?                 @relation("TrainingInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  church           Church?               @relation("TrainingChurch", fields: [churchId], references: [id], onDelete: SetNull)
+
+  @@index([isActive])
+  @@index([isPublic])
+  @@index([instructorId])
+  @@index([churchId])
+  @@index([scheduledStart])
+  @@index([roomType])
+}
+
+model TrainingRoomMember {
+  id             String       @id @default(cuid())
+  trainingRoomId String
+  userId         String
+  joinedAt       DateTime     @default(now())
+  trainingRoom   TrainingRoom @relation(fields: [trainingRoomId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingRoomId, userId])
+  @@index([trainingRoomId])
+  @@index([userId])
+}
+
+model TrainingSession {
+  id             String       @id @default(cuid())
+  trainingRoomId String
+  startedAt      DateTime?
+  endedAt        DateTime?
+  recordingUrl   String?
+  createdAt      DateTime     @default(now())
+  trainingRoom   TrainingRoom @relation(fields: [trainingRoomId], references: [id], onDelete: Cascade)
+
+  @@index([trainingRoomId])
+  @@index([startedAt])
 }
