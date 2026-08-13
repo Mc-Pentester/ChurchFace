@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const roomId = params.id;
+    const resolvedParams = await params;
+    const roomId = resolvedParams.id;
 
     const participants = await prisma.prayerLiveRoomMember.findMany({
       where: { roomId },
