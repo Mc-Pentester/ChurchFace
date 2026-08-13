@@ -46,9 +46,7 @@ export async function POST(req: Request) {
       data: {
         title: title.trim(),
         description: description?.trim() || null,
-        imageUrl: imageUrl || null,
         isActive: true,
-        visibility: "PUBLIC",
       },
       include: {
         _count: { select: { links: true } },

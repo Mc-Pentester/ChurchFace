@@ -96,7 +96,7 @@ export function ParticipantManagement({
           {canManage && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
-                {ROLE_LABELS[currentRole]}
+                {ROLE_LABELS[currentUserRole]}
               </span>
             </div>
           )}
