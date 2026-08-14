@@ -12,7 +12,7 @@ export default function PrayersPage() {
   const [showSearch, setShowSearch] = useState(false);
 
   const TABS = [
-    { id: "chains" as const, label: "Chaînes", icon: Users, href: "/prayers/chains" },
+    { id: "chains" as const, label: "ChaÃ®nes", icon: Users, href: "/prayers/chains" },
     { id: "campaigns" as const, label: "Campagnes", icon: Flame, href: "/prayers/campaigns" },
     { id: "rooms" as const, label: "Salles", icon: Video, href: "/prayers/rooms" },
   ];
@@ -30,7 +30,7 @@ export default function PrayersPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Heart className="w-8 h-8 text-emerald-600" />
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Réseau d'Intercession</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">RÃ©seau d'Intercession</h1>
             </div>
 
             <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ export default function PrayersPage() {
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            Chaînes
+            ChaÃ®nes
           </button>
           <button
             onClick={() => setActiveTab("campaigns")}
@@ -94,12 +94,12 @@ export default function PrayersPage() {
           <div className="lg:col-span-2">
             {activeTab === "chains" && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold mb-4">Chaînes de prière récentes</h2>
+                <h2 className="text-xl font-semibold mb-4">ChaÃ®nes de priÃ¨re rÃ©centes</h2>
                 <button
                   onClick={() => router.push("/prayers/chains")}
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  Voir toutes les chaînes →
+                  Voir toutes les chaÃ®nes â†’
                 </button>
               </div>
             )}
@@ -110,7 +110,7 @@ export default function PrayersPage() {
                   onClick={() => router.push("/prayers/campaigns")}
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  Voir toutes les campagnes →
+                  Voir toutes les campagnes â†’
                 </button>
               </div>
             )}
@@ -121,7 +121,7 @@ export default function PrayersPage() {
                   onClick={() => router.push("/prayers/rooms")}
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  Voir toutes les salles →
+                  Voir toutes les salles â†’
                 </button>
               </div>
             )}
@@ -135,7 +135,18 @@ export default function PrayersPage() {
               groups={[]}
               ministries={[]}
             />
-            <button className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors w-full">
+            <button
+              onClick={() => {
+                if (activeTab === "chains") {
+                  router.push("/prayers/chains/new");
+                } else if (activeTab === "campaigns") {
+                  router.push("/prayers/campaigns/new");
+                } else if (activeTab === "rooms") {
+                  router.push("/prayers/rooms/new");
+                }
+              }}
+              className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors w-full"
+            >
               <Plus className="w-4 h-4" />
               Nouveau
             </button>

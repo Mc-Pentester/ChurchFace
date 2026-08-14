@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET - Récupérer les salles de prière
+// GET - RÃ©cupÃ©rer les salles de priÃ¨re
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: "Non autorisé" },
+        { error: "Non autorisÃ©" },
         { status: 401 }
       );
     }
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
       rooms,
     });
   } catch (error) {
-    console.error("Erreur récupération salles:", error);
+    console.error("Erreur rÃ©cupÃ©ration salles:", error);
 
     return NextResponse.json(
       { error: "Erreur serveur" },
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST - Créer une salle de prière
+// POST - CrÃ©er une salle de priÃ¨re
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: "Non autorisé" },
+        { error: "Non autorisÃ©" },
         { status: 401 }
       );
     }
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       (!Number.isInteger(maxParticipants) || maxParticipants < 1)
     ) {
       return NextResponse.json(
-        { error: "maxParticipants doit être un entier positif" },
+        { error: "maxParticipants doit Ãªtre un entier positif" },
         { status: 400 }
       );
     }
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "La date de fin doit être après la date de début",
+            "La date de fin doit Ãªtre aprÃ¨s la date de dÃ©but",
         },
         { status: 400 }
       );
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
 
       if (!chain) {
         return NextResponse.json(
-          { error: "Chaîne de prière introuvable" },
+          { error: "ChaÃ®ne de priÃ¨re introuvable" },
           { status: 404 }
         );
       }
@@ -235,7 +235,7 @@ export async function POST(req: NextRequest) {
       status: 201,
     });
   } catch (error) {
-    console.error("Erreur création salle:", error);
+    console.error("Erreur crÃ©ation salle:", error);
 
     return NextResponse.json(
       { error: "Erreur serveur" },
