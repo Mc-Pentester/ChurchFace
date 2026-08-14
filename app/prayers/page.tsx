@@ -5,14 +5,20 @@ import { useRouter } from "next/navigation";
 import { Heart, Users, Flame, Video, Plus, Search, Bell } from "lucide-react";
 import { PrayerAdvancedSearch } from "@/components/prayer/search/PrayerAdvancedSearch";
 import { PrayerNotificationCenter } from "@/components/prayer/notifications/PrayerNotificationCenter";
+import { CreatePrayerChainModal } from "@/components/prayer/modals/CreatePrayerChainModal";
+import { CreatePrayerCampaignModal } from "@/components/prayer/modals/CreatePrayerCampaignModal";
+import { CreatePrayerRoomModal } from "@/components/prayer/modals/CreatePrayerRoomModal";
 
 export default function PrayersPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"chains" | "campaigns" | "rooms">("chains");
   const [showSearch, setShowSearch] = useState(false);
+  const [showCreateChainModal, setShowCreateChainModal] = useState(false);
+  const [showCreateCampaignModal, setShowCreateCampaignModal] = useState(false);
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
 
   const TABS = [
-    { id: "chains" as const, label: "ChaÃ®nes", icon: Users, href: "/prayers/chains" },
+    { id: "chains" as const, label: "Chaînes", icon: Users, href: "/prayers/chains" },
     { id: "campaigns" as const, label: "Campagnes", icon: Flame, href: "/prayers/campaigns" },
     { id: "rooms" as const, label: "Salles", icon: Video, href: "/prayers/rooms" },
   ];
@@ -30,7 +36,7 @@ export default function PrayersPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Heart className="w-8 h-8 text-emerald-600" />
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">RÃ©seau d'Intercession</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Réseau d'Intercession</h1>
             </div>
 
             <div className="flex items-center gap-3">
@@ -64,7 +70,7 @@ export default function PrayersPage() {
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            ChaÃ®nes
+            Chaînes
           </button>
           <button
             onClick={() => setActiveTab("campaigns")}
@@ -94,12 +100,12 @@ export default function PrayersPage() {
           <div className="lg:col-span-2">
             {activeTab === "chains" && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold mb-4">ChaÃ®nes de priÃ¨re rÃ©centes</h2>
+                <h2 className="text-xl font-semibold mb-4">Chaînes de prière récentes</h2>
                 <button
                   onClick={() => router.push("/prayers/chains")}
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  Voir toutes les chaÃ®nes â†’
+                  Voir toutes les chaînes →
                 </button>
               </div>
             )}
@@ -110,7 +116,7 @@ export default function PrayersPage() {
                   onClick={() => router.push("/prayers/campaigns")}
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  Voir toutes les campagnes â†’
+                  Voir toutes les campagnes →
                 </button>
               </div>
             )}
@@ -121,7 +127,7 @@ export default function PrayersPage() {
                   onClick={() => router.push("/prayers/rooms")}
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  Voir toutes les salles â†’
+                  Voir toutes les salles →
                 </button>
               </div>
             )}
@@ -135,14 +141,14 @@ export default function PrayersPage() {
               groups={[]}
               ministries={[]}
             />
-            <button
+            <button 
               onClick={() => {
                 if (activeTab === "chains") {
-                  router.push("/prayers/chains/new");
+                  setShowCreateChainModal(true);
                 } else if (activeTab === "campaigns") {
-                  router.push("/prayers/campaigns/new");
+                  setShowCreateCampaignModal(true);
                 } else if (activeTab === "rooms") {
-                  router.push("/prayers/rooms/new");
+                  setShowCreateRoomModal(true);
                 }
               }}
               className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors w-full"
@@ -153,6 +159,70 @@ export default function PrayersPage() {
           </div>
         </div>
       </div>
+
+      {/* Modals de création */}
+      {showCreateChainModal && (
+        <CreatePrayerChainModal
+          isOpen={showCreateChainModal}
+          onClose={() => setShowCreateChainModal(false)}
+          onSubmit={async (data) => {
+            try {
+              const res = await fetch("/api/prayers/chain", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                setShowCreateChainModal(false);
+              }
+            } catch (error) {
+              console.error("Erreur création chaîne:", error);
+            }
+          }}
+        />
+      )}
+
+      {showCreateCampaignModal && (
+        <CreatePrayerCampaignModal
+          isOpen={showCreateCampaignModal}
+          onClose={() => setShowCreateCampaignModal(false)}
+          onSubmit={async (data) => {
+            try {
+              const res = await fetch("/api/prayers/campaigns", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                setShowCreateCampaignModal(false);
+              }
+            } catch (error) {
+              console.error("Erreur création campagne:", error);
+            }
+          }}
+        />
+      )}
+
+      {showCreateRoomModal && (
+        <CreatePrayerRoomModal
+          isOpen={showCreateRoomModal}
+          onClose={() => setShowCreateRoomModal(false)}
+          onSubmit={async (data) => {
+            try {
+              const res = await fetch("/api/prayers/rooms", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                setShowCreateRoomModal(false);
+              }
+            } catch (error) {
+              console.error("Erreur création salle:", error);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
