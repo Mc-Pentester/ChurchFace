@@ -3,23 +3,46 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET - R√©cup√©rer les salles de pri√®re actives
+// GET - RÈcupÈrer les salles de priËre
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    const userId = (session?.user as { id?: string })?.id;
 
     if (!userId) {
-      return NextResponse.json({ error: "Non autoris√©" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Non autorisÈ" },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
+
     const prayerChainId = searchParams.get("prayerChainId");
     const isActive = searchParams.get("isActive");
+    const roomType = searchParams.get("roomType");
 
-    const where: any = {};
-    if (prayerChainId) where.prayerChainId = prayerChainId;
-    if (isActive !== null) where.isActive = isActive === "true";
+    const where: {
+      prayerChainId?: string;
+      isActive?: boolean;
+      roomType?: "TEXT" | "AUDIO" | "VIDEO";
+    } = {};
+
+    if (prayerChainId) {
+      where.prayerChainId = prayerChainId;
+    }
+
+    if (isActive !== null) {
+      where.isActive = isActive === "true";
+    }
+
+    if (
+      roomType === "TEXT" ||
+      roomType === "AUDIO" ||
+      roomType === "VIDEO"
+    ) {
+      where.roomType = roomType;
+    }
 
     const rooms = await prisma.prayerRoom.findMany({
       where,
@@ -43,12 +66,17 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
-    return NextResponse.json(rooms);
+    return NextResponse.json({
+      rooms,
+    });
   } catch (error) {
-    console.error("Erreur r√©cup√©ration salles:", error);
+    console.error("Erreur rÈcupÈration salles:", error);
+
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }
@@ -56,17 +84,21 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST - Cr√©er une salle de pri√®re
+// POST - CrÈer une salle de priËre
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    const userId = (session?.user as { id?: string })?.id;
 
     if (!userId) {
-      return NextResponse.json({ error: "Non autoris√©" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Non autorisÈ" },
+        { status: 401 }
+      );
     }
 
     const body = await req.json();
+
     const {
       title,
       description,
@@ -78,15 +110,15 @@ export async function POST(req: NextRequest) {
       scheduledEnd,
     } = body;
 
-    if (!title) {
+    if (!title || typeof title !== "string" || !title.trim()) {
       return NextResponse.json(
-        { error: "titre requis" },
+        { error: "Le titre est requis" },
         { status: 400 }
       );
     }
 
-    // Valider le type de salle
     const validRoomTypes = ["TEXT", "AUDIO", "VIDEO"];
+
     if (!validRoomTypes.includes(roomType)) {
       return NextResponse.json(
         { error: "Type de salle invalide" },
@@ -94,18 +126,87 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cr√©er la salle
+    if (
+      maxParticipants !== undefined &&
+      maxParticipants !== null &&
+      (!Number.isInteger(maxParticipants) || maxParticipants < 1)
+    ) {
+      return NextResponse.json(
+        { error: "maxParticipants doit Ítre un entier positif" },
+        { status: 400 }
+      );
+    }
+
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (scheduledStart) {
+      startDate = new Date(scheduledStart);
+
+      if (Number.isNaN(startDate.getTime())) {
+        return NextResponse.json(
+          { error: "scheduledStart invalide" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (scheduledEnd) {
+      endDate = new Date(scheduledEnd);
+
+      if (Number.isNaN(endDate.getTime())) {
+        return NextResponse.json(
+          { error: "scheduledEnd invalide" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (startDate && endDate && endDate <= startDate) {
+      return NextResponse.json(
+        {
+          error:
+            "La date de fin doit Ítre aprËs la date de dÈbut",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (prayerChainId) {
+      const chain = await prisma.prayerChain.findUnique({
+        where: {
+          id: prayerChainId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!chain) {
+        return NextResponse.json(
+          { error: "ChaÓne de priËre introuvable" },
+          { status: 404 }
+        );
+      }
+    }
+
     const room = await prisma.prayerRoom.create({
       data: {
-        title,
-        description,
+        title: title.trim(),
+        description:
+          typeof description === "string"
+            ? description.trim() || null
+            : null,
         roomType,
-        isPublic,
+        isPublic: Boolean(isPublic),
         moderatorId: userId,
-        prayerChainId,
-        maxParticipants,
-        scheduledStart: scheduledStart ? new Date(scheduledStart) : null,
-        scheduledEnd: scheduledEnd ? new Date(scheduledEnd) : null,
+        prayerChainId: prayerChainId || null,
+        maxParticipants:
+          maxParticipants !== undefined && maxParticipants !== null
+            ? maxParticipants
+            : null,
+        scheduledStart: startDate,
+        scheduledEnd: endDate,
         isActive: true,
       },
       include: {
@@ -122,12 +223,20 @@ export async function POST(req: NextRequest) {
             title: true,
           },
         },
+        _count: {
+          select: {
+            participants: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json(room, { status: 201 });
+    return NextResponse.json(room, {
+      status: 201,
+    });
   } catch (error) {
-    console.error("Erreur cr√©ation salle:", error);
+    console.error("Erreur crÈation salle:", error);
+
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }

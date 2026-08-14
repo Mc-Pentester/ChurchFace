@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 
+import React from "react";
+
 import {
   Room,
   RoomEvent,
@@ -73,6 +75,20 @@ export default function LiveKitRoom({
     isVideoEnabled,
     setIsVideoEnabled
   ] = useState(true);
+
+
+
+  const [
+    remoteParticipants,
+    setRemoteParticipants
+  ] = useState<Map<string, { track: any; element: HTMLVideoElement }>>(new Map());
+
+  const remoteVideoRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const [
+    localVideoElement,
+    setLocalVideoElement
+  ] = useState<HTMLVideoElement | null>(null);
 
 
 
@@ -163,35 +179,47 @@ export default function LiveKitRoom({
         room.on(
           RoomEvent.TrackSubscribed,
           (
-            track
+            track,
+            publication,
+            participant
           ) => {
+            console.log('Track subscribed:', track.kind, participant.identity);
 
-
-            if(
-              track.kind === Track.Kind.Video
-            ){
-
-
-              const element =
-                track.attach();
-
-
-
-              if(
-                videoRef.current
-              ){
-
-
-                videoRef.current.srcObject =
-                  element as unknown as MediaStream;
-
-
+            if(track.kind === Track.Kind.Video){
+              const element = track.attach() as HTMLVideoElement;
+              if (element instanceof HTMLVideoElement) {
+                setRemoteParticipants(prev => new Map(prev).set(participant.identity, { track, element }));
               }
-
-
             }
+          }
+        );
 
+        // Nettoyer les tracks quand un participant se déconnecte
+        room.on(
+          RoomEvent.TrackUnsubscribed,
+          (track, publication, participant) => {
+            console.log('Track unsubscribed:', participant.identity);
+            setRemoteParticipants(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(participant.identity);
+              return newMap;
+            });
+          }
+        );
 
+        // Écouter les publications de tracks locaux
+        room.localParticipant.on(
+          'trackPublished',
+          (publication: any) => {
+            console.log('Track published:', publication);
+            if (publication.track && publication.track.kind === Track.Kind.Video) {
+              console.log('Video track found, attaching...');
+              const element = publication.track.attach();
+              if (element instanceof HTMLVideoElement) {
+                setLocalVideoElement(element);
+                console.log('Local video attached');
+              }
+            }
           }
         );
 
@@ -226,6 +254,39 @@ export default function LiveKitRoom({
         setIsVideoEnabled(true);
 
         setIsMuted(false);
+
+        // Attendre un court délai pour que le track soit publié puis l'afficher
+        setTimeout(() => {
+          console.log('Attempting to attach local video...');
+          // Essayer de récupérer le track vidéo local via différentes méthodes
+          try {
+            const cameraPublication = room.localParticipant.getTrackPublication(Track.Source.Camera);
+            if (cameraPublication && cameraPublication.track) {
+              console.log('Camera publication found:', cameraPublication);
+              const element = cameraPublication.track.attach();
+              if (element instanceof HTMLVideoElement) {
+                setLocalVideoElement(element);
+                console.log('Local video attached successfully');
+              }
+            } else {
+              console.log('Camera publication not found, trying trackPublications...');
+              const publications = Array.from(room.localParticipant.trackPublications.values());
+              console.log('Publications:', publications);
+              publications.forEach((publication: any) => {
+                console.log('Publication:', publication.kind, publication.track?.kind);
+                if (publication.track && publication.track.kind === Track.Kind.Video) {
+                  const element = publication.track.attach();
+                  if (element instanceof HTMLVideoElement) {
+                    setLocalVideoElement(element);
+                    console.log('Video attached from publications');
+                  }
+                }
+              });
+            }
+          } catch (e) {
+            console.error('Error attaching local video:', e);
+          }
+        }, 1000);
 
 
 
@@ -467,27 +528,62 @@ export default function LiveKitRoom({
         (
 
           <>
-
-
-            <video
-
-              ref={videoRef}
-
-              autoPlay
-
-              playsInline
-
-              muted
-
+            {/* Video Grid - Style ZOOM */}
+            <div
               className="
               w-full
               h-full
-              object-cover
+              grid
+              gap-1
+              p-1
               "
+              style={{
+                gridTemplateColumns: `repeat(${Math.ceil(Math.sqrt(remoteParticipants.size + 1))}, 1fr)`,
+                gridTemplateRows: `repeat(${Math.ceil((remoteParticipants.size + 1) / Math.ceil(Math.sqrt(remoteParticipants.size + 1)))}, 1fr)`,
+              }}
+            >
+              {/* Local Video */}
+              {localVideoElement && (
+                <div
+                  ref={(el) => {
+                    if (el && localVideoElement) {
+                      if (el.firstChild) {
+                        el.removeChild(el.firstChild);
+                      }
+                      el.appendChild(localVideoElement);
+                      localVideoElement.className = "w-full h-full object-cover";
+                    }
+                  }}
+                  className="relative bg-gray-900 rounded-lg overflow-hidden"
+                >
+                  <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    Vous
+                  </div>
+                </div>
+              )}
 
-            />
-
-
+              {/* Remote Participants */}
+              {Array.from(remoteParticipants.entries()).map(([identity, { element }]) => (
+                <div
+                  key={identity}
+                  ref={(el) => {
+                    if (el) {
+                      remoteVideoRefs.current.set(identity, el);
+                      if (el.firstChild) {
+                        el.removeChild(el.firstChild);
+                      }
+                      el.appendChild(element);
+                      element.className = "w-full h-full object-cover";
+                    }
+                  }}
+                  className="relative bg-gray-900 rounded-lg overflow-hidden"
+                >
+                  <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    {identity}
+                  </div>
+                </div>
+              ))}
+            </div>
 
 
             <div
@@ -502,6 +598,7 @@ export default function LiveKitRoom({
               px-4
               py-2
               rounded-full
+              z-10
               "
             >
 

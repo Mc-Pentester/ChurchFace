@@ -1,24 +1,17 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { 
-  PrayerRequestWithUser, 
-  PrayerParticipant, 
-  PrayerSchedule, 
-  PrayerRoom, 
-  PrayerCampaign, 
-  PrayerEngagement 
-} from "@/types/prayer";
+import type { PrayerRequestWithUser, PrayerParticipant, PrayerSchedule, PrayerRoom, PrayerCampaign, PrayerEngagement } from "@/types/prayer";
 
 export function usePrayers() {
   const [prayers, setPrayers] = useState<PrayerRequestWithUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [prayedIds, setPrayedIds] = useState<Set<string>>(new Set());
 
-  const fetchPrayers = useCallback(async (params?: { 
-    category?: string | null; 
-    filter?: string; 
-    page?: number; 
+  const fetchPrayers = useCallback(async (params?: {
+    category?: string | null;
+    filter?: string;
+    page?: number;
     limit?: number;
     churchId?: string;
   }) => {
@@ -30,7 +23,7 @@ export function usePrayers() {
     if (params?.limit) searchParams.set("limit", String(params.limit));
     if (params?.churchId) searchParams.set("churchId", params.churchId);
 
-    const apiUrl = params?.churchId 
+    const apiUrl = params?.churchId
       ? `/api/church/prayers?${searchParams.toString()}`
       : `/api/prayers?${searchParams.toString()}`;
 
@@ -41,14 +34,14 @@ export function usePrayers() {
     return data;
   }, []);
 
-  const createPrayer = useCallback(async (data: { 
-    title: string; 
-    content: string; 
-    category: string; 
+  const createPrayer = useCallback(async (data: {
+    title: string;
+    content: string;
+    category: string;
     isUrgent: boolean;
     churchId?: string;
   }) => {
-    const apiUrl = data.churchId 
+    const apiUrl = data.churchId
       ? `/api/church/prayers?churchId=${data.churchId}`
       : "/api/prayers";
 
@@ -123,25 +116,39 @@ export function usePrayers() {
 }
 
 // Hook pour la gestion des participants aux chaînes de prière
-export function usePrayerParticipants() {
+export function usePrayerParticipants(prayerChainId?: string) {
   const [participants, setParticipants] = useState<PrayerParticipant[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchParticipants = useCallback(async (prayerChainId: string) => {
+  const fetchParticipants = useCallback(async (chainId?: string) => {
     setLoading(true);
-    const res = await fetch(`/api/prayers/participants?prayerChainId=${prayerChainId}`);
-    const data = await res.json();
-    setParticipants(data);
-    setLoading(false);
-    return data;
-  }, []);
+    try {
+      const searchParams = new URLSearchParams();
+      if (chainId || prayerChainId) searchParams.set("prayerChainId", chainId || prayerChainId!);
 
-  const joinChain = useCallback(async (prayerChainId: string, role = "PARTICIPANT") => {
+      const res = await fetch(`/api/prayers/participants?${searchParams.toString()}`);
+      const data = await res.json();
+      setParticipants(data.participants || []);
+      return data.participants || [];
+    } catch (error) {
+      console.error("Erreur récupération participants:", error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [prayerChainId]);
+
+  const addParticipant = useCallback(async (data: { prayerChainId: string; role?: string }) => {
     const res = await fetch("/api/prayers/participants", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prayerChainId, role }),
+      body: JSON.stringify(data),
     });
+    return res.json();
+  }, []);
+
+  const removeParticipant = useCallback(async (id: string) => {
+    const res = await fetch(`/api/prayers/participants?id=${id}`, { method: "DELETE" });
     return res.json();
   }, []);
 
@@ -152,34 +159,45 @@ export function usePrayerParticipants() {
     return res.json();
   }, []);
 
+  const joinChain = useCallback(async (chainId: string, role = "PARTICIPANT") => {
+    return addParticipant({ prayerChainId: chainId, role });
+  }, [addParticipant]);
+
   return {
     participants,
     loading,
     fetchParticipants,
+    addParticipant,
+    removeParticipant,
     joinChain,
     leaveChain,
   };
 }
 
 // Hook pour la gestion du calendrier d'intercession
-export function usePrayerSchedule() {
+export function usePrayerSchedule(prayerChainId?: string) {
   const [schedules, setSchedules] = useState<PrayerSchedule[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchSchedules = useCallback(async (prayerChainId: string) => {
+  const fetchSchedules = useCallback(async (chainId?: string) => {
     setLoading(true);
-    const res = await fetch(`/api/prayers/schedule?prayerChainId=${prayerChainId}`);
-    const data = await res.json();
-    setSchedules(data);
-    setLoading(false);
-    return data;
-  }, []);
+    try {
+      const searchParams = new URLSearchParams();
+      if (chainId || prayerChainId) searchParams.set("prayerChainId", chainId || prayerChainId!);
 
-  const createSchedule = useCallback(async (data: {
-    prayerChainId: string;
-    hour: number;
-    dayOfWeek?: number;
-  }) => {
+      const res = await fetch(`/api/prayers/schedule?${searchParams.toString()}`);
+      const data = await res.json();
+      setSchedules(data.schedules || []);
+      return data.schedules || [];
+    } catch (error) {
+      console.error("Erreur récupération horaires:", error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [prayerChainId]);
+
+  const addSchedule = useCallback(async (data: Omit<PrayerSchedule, "id" | "createdAt"> | { prayerChainId: string; hour: number; dayOfWeek?: number }) => {
     const res = await fetch("/api/prayers/schedule", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -188,10 +206,16 @@ export function usePrayerSchedule() {
     return res.json();
   }, []);
 
-  const deleteSchedule = useCallback(async (scheduleId: string) => {
-    const res = await fetch(`/api/prayers/schedule/${scheduleId}`, {
-      method: "DELETE",
-    });
+  const createSchedule = useCallback(async (data: {
+    prayerChainId: string;
+    hour: number;
+    dayOfWeek?: number;
+  }) => {
+    return addSchedule(data);
+  }, [addSchedule]);
+
+  const deleteSchedule = useCallback(async (id: string) => {
+    const res = await fetch(`/api/prayers/schedule?id=${id}`, { method: "DELETE" });
     return res.json();
   }, []);
 
@@ -199,33 +223,39 @@ export function usePrayerSchedule() {
     schedules,
     loading,
     fetchSchedules,
+    addSchedule,
     createSchedule,
     deleteSchedule,
   };
 }
 
 // Hook pour la gestion des salles de prière
-export function usePrayerRooms() {
+export function usePrayerRooms(filters?: { prayerChainId?: string; isActive?: boolean; roomType?: string }) {
   const [rooms, setRooms] = useState<PrayerRoom[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchRooms = useCallback(async (params?: {
-    prayerChainId?: string;
-    isActive?: boolean;
-  }) => {
+  const fetchRooms = useCallback(async (customFilters?: typeof filters) => {
     setLoading(true);
-    const searchParams = new URLSearchParams();
-    if (params?.prayerChainId) searchParams.set("prayerChainId", params.prayerChainId);
-    if (params?.isActive !== undefined) searchParams.set("isActive", String(params.isActive));
+    try {
+      const searchParams = new URLSearchParams();
+      const currentFilters = customFilters || filters;
+      if (currentFilters?.prayerChainId) searchParams.set("prayerChainId", currentFilters.prayerChainId);
+      if (currentFilters?.isActive !== undefined) searchParams.set("isActive", String(currentFilters.isActive));
+      if (currentFilters?.roomType) searchParams.set("roomType", currentFilters.roomType);
 
-    const res = await fetch(`/api/prayers/rooms?${searchParams.toString()}`);
-    const data = await res.json();
-    setRooms(data);
-    setLoading(false);
-    return data;
-  }, []);
+      const res = await fetch(`/api/prayers/rooms?${searchParams.toString()}`);
+      const data = await res.json();
+      setRooms(data.rooms || []);
+      return data.rooms || [];
+    } catch (error) {
+      console.error("Erreur récupération salles:", error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
 
-  const createRoom = useCallback(async (data: {
+  const addRoom = useCallback(async (data: Omit<PrayerRoom, "id" | "createdAt" | "endedAt"> | {
     title: string;
     description?: string;
     roomType?: "TEXT" | "AUDIO" | "VIDEO";
@@ -242,6 +272,19 @@ export function usePrayerRooms() {
     });
     return res.json();
   }, []);
+
+  const createRoom = useCallback(async (data: {
+    title: string;
+    description?: string;
+    roomType?: "TEXT" | "AUDIO" | "VIDEO";
+    isPublic?: boolean;
+    prayerChainId?: string;
+    maxParticipants?: number;
+    scheduledStart?: string;
+    scheduledEnd?: string;
+  }) => {
+    return addRoom(data);
+  }, [addRoom]);
 
   const joinRoom = useCallback(async (roomId: string) => {
     const res = await fetch("/api/prayers/rooms/join", {
@@ -265,6 +308,7 @@ export function usePrayerRooms() {
     rooms,
     loading,
     fetchRooms,
+    addRoom,
     createRoom,
     joinRoom,
     leaveRoom,
@@ -272,29 +316,32 @@ export function usePrayerRooms() {
 }
 
 // Hook pour la gestion des campagnes de prière
-export function usePrayerCampaigns() {
+export function usePrayerCampaigns(filters?: { churchId?: string; isActive?: boolean; type?: string }) {
   const [campaigns, setCampaigns] = useState<PrayerCampaign[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchCampaigns = useCallback(async (params?: {
-    churchId?: string;
-    isActive?: boolean;
-    type?: string;
-  }) => {
+  const fetchCampaigns = useCallback(async (customFilters?: typeof filters) => {
     setLoading(true);
-    const searchParams = new URLSearchParams();
-    if (params?.churchId) searchParams.set("churchId", params.churchId);
-    if (params?.isActive !== undefined) searchParams.set("isActive", String(params.isActive));
-    if (params?.type) searchParams.set("type", params.type);
+    try {
+      const searchParams = new URLSearchParams();
+      const currentFilters = customFilters || filters;
+      if (currentFilters?.churchId) searchParams.set("churchId", currentFilters.churchId);
+      if (currentFilters?.isActive !== undefined) searchParams.set("isActive", String(currentFilters.isActive));
+      if (currentFilters?.type) searchParams.set("type", currentFilters.type);
 
-    const res = await fetch(`/api/prayers/campaigns?${searchParams.toString()}`);
-    const data = await res.json();
-    setCampaigns(data);
-    setLoading(false);
-    return data;
-  }, []);
+      const res = await fetch(`/api/prayers/campaigns?${searchParams.toString()}`);
+      const data = await res.json();
+      setCampaigns(data || []);
+      return data || [];
+    } catch (error) {
+      console.error("Erreur récupération campagnes:", error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
 
-  const createCampaign = useCallback(async (data: {
+  const addCampaign = useCallback(async (data: Omit<PrayerCampaign, "id" | "createdAt"> | {
     title: string;
     description?: string;
     imageUrl?: string;
@@ -311,36 +358,52 @@ export function usePrayerCampaigns() {
     return res.json();
   }, []);
 
+  const createCampaign = useCallback(async (data: {
+    title: string;
+    description?: string;
+    imageUrl?: string;
+    type: "FAST" | "PRAYER" | "VIGIL" | "NATIONAL" | "GLOBAL";
+    startDate: string;
+    endDate: string;
+    churchId?: string;
+  }) => {
+    return addCampaign(data);
+  }, [addCampaign]);
+
   return {
     campaigns,
     loading,
     fetchCampaigns,
+    addCampaign,
     createCampaign,
   };
 }
 
 // Hook pour la gestion des engagements de prière
-export function usePrayerEngagements() {
+export function usePrayerEngagements(prayerRequestId?: string) {
   const [engagements, setEngagements] = useState<PrayerEngagement[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchEngagements = useCallback(async (prayerRequestId: string, type?: string) => {
+  const fetchEngagements = useCallback(async (requestId?: string, type?: string) => {
     setLoading(true);
-    const searchParams = new URLSearchParams();
-    searchParams.set("prayerRequestId", prayerRequestId);
-    if (type) searchParams.set("type", type);
+    try {
+      const searchParams = new URLSearchParams();
+      if (requestId || prayerRequestId) searchParams.set("prayerRequestId", requestId || prayerRequestId!);
+      if (type) searchParams.set("type", type);
 
-    const res = await fetch(`/api/prayers/engagements?${searchParams.toString()}`);
-    const data = await res.json();
-    setEngagements(data);
-    setLoading(false);
-    return data;
-  }, []);
+      const res = await fetch(`/api/prayers/engagements?${searchParams.toString()}`);
+      const data = await res.json();
+      setEngagements(data.engagements || []);
+      return data.engagements || [];
+    } catch (error) {
+      console.error("Erreur récupération engagements:", error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [prayerRequestId]);
 
-  const addEngagement = useCallback(async (data: {
-    prayerRequestId: string;
-    type: "PRAYED" | "CONTINUING" | "SHARED_VERSE" | "ENCOURAGED";
-  }) => {
+  const addEngagement = useCallback(async (data: { prayerRequestId: string; type: "PRAYED" | "CONTINUING" | "SHARED_VERSE" | "ENCOURAGED" }) => {
     const res = await fetch("/api/prayers/engagements", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

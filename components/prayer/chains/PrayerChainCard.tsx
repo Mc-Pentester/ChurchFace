@@ -14,7 +14,7 @@ interface PrayerChainCardProps {
 
 export function PrayerChainCard({ chain, onJoin, onView, isMember = false }: PrayerChainCardProps) {
   const { fetchParticipants } = usePrayerParticipants();
-  const [participantCount, setParticipantCount] = useState(chain._count?.participants || 0);
+  const [participantCount, setParticipantCount] = useState(chain._count?.links || 0);
 
   useEffect(() => {
     if (chain.id) {
@@ -77,14 +77,14 @@ export function PrayerChainCard({ chain, onJoin, onView, isMember = false }: Pra
         {isMember ? (
           <button
             onClick={() => onView?.(chain.id)}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
             Voir la chaîne
           </button>
         ) : (
           <button
             onClick={() => onJoin?.(chain.id)}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
             Rejoindre
           </button>

@@ -2,36 +2,55 @@
 
 import { useState, useEffect } from "react";
 import { PrayerRoom } from "@/types/prayer";
-import { PrayerRoomList } from "@/components/prayer/rooms/PrayerRoomList";
-import { usePrayerRooms } from "@/hooks/usePrayers";
-import { Plus, Filter, Video, Mic, MessageSquare } from "lucide-react";
+import { PrayerRoomCard } from "@/components/prayer/rooms/PrayerRoomCard";
+import { CreatePrayerRoomModal } from "@/components/prayer/modals/CreatePrayerRoomModal";
+import { Plus, Filter } from "lucide-react";
+import { useRevalidateOnMount } from "@/hooks/useRevalidateOnMount";
 
 export default function PrayerRoomsPage() {
+  // Revalider les données quand le composant est monté (navigation arrière)
+  useRevalidateOnMount();
+
   const [rooms, setRooms] = useState<PrayerRoom[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ACTIVE");
+  const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "ENDED">("ALL");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
-  const { createRoom, joinRoom } = usePrayerRooms();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCopiedMessage, setShowCopiedMessage] = useState(false);
 
   useEffect(() => {
     fetchRooms();
   }, [filter, typeFilter]);
 
+  // Écouter l'événement de revalidation (navigation arrière)
+  useEffect(() => {
+    const handleRevalidate = () => {
+      fetchRooms();
+    };
+
+    window.addEventListener('revalidate-data', handleRevalidate);
+
+    return () => {
+      window.removeEventListener('revalidate-data', handleRevalidate);
+    };
+  }, [filter, typeFilter]);
+
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const params: any = {};
-      if (filter === "ACTIVE") params.isActive = true;
-      if (filter === "INACTIVE") params.isActive = false;
-
-      const res = await fetch(`/api/prayers/rooms?${new URLSearchParams(params)}`);
+      const res = await fetch("/api/prayers/rooms");
       const data = await res.json();
-      
-      let filteredRooms = data;
-      if (typeFilter !== "ALL") {
-        filteredRooms = data.filter((room: PrayerRoom) => room.roomType === typeFilter);
+
+      let filteredRooms = data.rooms || [];
+      if (filter === "ACTIVE") {
+        filteredRooms = filteredRooms.filter((r: PrayerRoom) => r.isActive);
+      } else if (filter === "ENDED") {
+        filteredRooms = filteredRooms.filter((r: PrayerRoom) => !r.isActive);
       }
-      
+      if (typeFilter !== "ALL") {
+        filteredRooms = filteredRooms.filter((r: PrayerRoom) => r.roomType === typeFilter);
+      }
+
       setRooms(filteredRooms);
     } catch (error) {
       console.error("Erreur récupération salles:", error);
@@ -40,28 +59,34 @@ export default function PrayerRoomsPage() {
     }
   };
 
-  const handleJoin = async (roomId: string) => {
-    try {
-      await joinRoom(roomId);
-      window.location.href = `/prayers/rooms/${roomId}`;
-    } catch (error) {
-      console.error("Erreur rejoindre salle:", error);
-    }
+  const handleJoin = (roomId: string) => {
+    window.location.href = `/prayers/rooms/${roomId}`;
   };
 
   const handleView = (roomId: string) => {
     window.location.href = `/prayers/rooms/${roomId}`;
   };
 
+  const handleShare = async (roomId: string) => {
+    const shareUrl = `${window.location.origin}/prayers/rooms/${roomId}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShowCopiedMessage(true);
+      setTimeout(() => setShowCopiedMessage(false), 2000);
+    } catch (error) {
+      console.error("Erreur copie lien:", error);
+    }
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Salles de prière</h1>
-          <p className="text-gray-600 mt-1">Rejoignez des salles de prière en temps réel</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Salles de prière</h1>
+          <p className="text-gray-600 mt-1">Rejoignez des salles de prière en temps réel (texte, audio, vidéo)</p>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+        <button onClick={() => setShowCreateModal(true)} className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors w-full sm:w-auto">
           <Plus className="w-5 h-5" />
           Créer une salle
         </button>
@@ -69,95 +94,102 @@ export default function PrayerRoomsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <Filter className="w-5 h-5 text-gray-500" />
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter("ACTIVE")}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                filter === "ACTIVE"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Actives
-            </button>
-            <button
-              onClick={() => setFilter("INACTIVE")}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                filter === "INACTIVE"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Terminées
-            </button>
-            <button
-              onClick={() => setFilter("ALL")}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                filter === "ALL"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Toutes
-            </button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+            <Filter className="w-5 h-5 text-gray-500" />
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setFilter("ALL")}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  filter === "ALL"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Toutes
+              </button>
+              <button
+                onClick={() => setFilter("ACTIVE")}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  filter === "ACTIVE"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Actives
+              </button>
+              <button
+                onClick={() => setFilter("ENDED")}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  filter === "ENDED"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Terminées
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2 ml-auto">
-            <button
-              onClick={() => setTypeFilter("ALL")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                typeFilter === "ALL"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-4 py-2 rounded-lg border border-gray-300 bg-white w-full"
             >
-              Tous
-            </button>
-            <button
-              onClick={() => setTypeFilter("TEXT")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                typeFilter === "TEXT"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              Texte
-            </button>
-            <button
-              onClick={() => setTypeFilter("AUDIO")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                typeFilter === "AUDIO"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <Mic className="w-4 h-4" />
-              Audio
-            </button>
-            <button
-              onClick={() => setTypeFilter("VIDEO")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                typeFilter === "VIDEO"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <Video className="w-4 h-4" />
-              Vidéo
-            </button>
+              <option value="ALL">Tous types</option>
+              <option value="TEXT">Texte</option>
+              <option value="AUDIO">Audio</option>
+              <option value="VIDEO">Vidéo</option>
+            </select>
           </div>
         </div>
       </div>
 
       {/* Rooms List */}
-      <PrayerRoomList
-        rooms={rooms}
-        onJoin={handleJoin}
-        onView={handleView}
-        loading={loading}
-      />
+      {loading ? (
+        <div className="animate-pulse space-y-4">
+          <div className="h-32 bg-gray-200 rounded-xl" />
+          <div className="h-32 bg-gray-200 rounded-xl" />
+          <div className="h-32 bg-gray-200 rounded-xl" />
+        </div>
+      ) : rooms.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600">Aucune salle trouvée</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {rooms.map((room) => (
+            <PrayerRoomCard
+              key={room.id}
+              room={room}
+              onJoin={handleJoin}
+              onView={handleView}
+              onShare={handleShare}
+            />
+          ))}
+        </div>
+      )}
+
+      {showCreateModal && (
+        <CreatePrayerRoomModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={async (data) => {
+            try {
+              const res = await fetch("/api/prayers/rooms", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                await fetchRooms();
+              }
+            } catch (error) {
+              console.error("Erreur création salle:", error);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

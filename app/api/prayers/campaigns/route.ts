@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    const userId = (session?.user as { id?: string } | undefined)?.id;
 
     if (!userId) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
@@ -18,10 +18,19 @@ export async function GET(req: NextRequest) {
     const isActive = searchParams.get("isActive");
     const type = searchParams.get("type");
 
-    const where: any = {};
-    if (churchId) where.churchId = churchId;
-    if (isActive !== null) where.isActive = isActive === "true";
-    if (type) where.type = type;
+    const where: Record<string, unknown> = {};
+
+    if (churchId) {
+      where.churchId = churchId;
+    }
+
+    if (isActive !== null) {
+      where.isActive = isActive === "true";
+    }
+
+    if (type) {
+      where.type = type;
+    }
 
     const campaigns = await prisma.prayerCampaign.findMany({
       where,
@@ -58,12 +67,15 @@ export async function GET(req: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
     return NextResponse.json(campaigns);
   } catch (error) {
     console.error("Erreur récupération campagnes:", error);
+
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }
@@ -75,13 +87,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    const userId = (session?.user as { id?: string } | undefined)?.id;
 
     if (!userId) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Non autorisé" },
+        { status: 401 }
+      );
     }
 
     const body = await req.json();
+
     const {
       title,
       description,
@@ -94,13 +110,22 @@ export async function POST(req: NextRequest) {
 
     if (!title || !type || !startDate || !endDate) {
       return NextResponse.json(
-        { error: "title, type, startDate et endDate requis" },
+        {
+          error:
+            "title, type, startDate et endDate requis",
+        },
         { status: 400 }
       );
     }
 
-    // Valider le type de campagne
-    const validTypes = ["FAST", "PRAYER", "VIGIL", "NATIONAL", "GLOBAL"];
+    const validTypes = [
+      "FAST",
+      "PRAYER",
+      "VIGIL",
+      "NATIONAL",
+      "GLOBAL",
+    ];
+
     if (!validTypes.includes(type)) {
       return NextResponse.json(
         { error: "Type de campagne invalide" },
@@ -108,21 +133,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Valider les dates
     const start = new Date(startDate);
     const end = new Date(endDate);
-    if (end <= start) {
+
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime())
+    ) {
       return NextResponse.json(
-        { error: "La date de fin doit être après la date de début" },
+        { error: "Dates invalides" },
         { status: 400 }
       );
     }
 
-    // Vérifier que l'église existe si spécifiée
+    if (end <= start) {
+      return NextResponse.json(
+        {
+          error:
+            "La date de fin doit être après la date de début",
+        },
+        { status: 400 }
+      );
+    }
+
     if (churchId) {
       const church = await prisma.church.findUnique({
         where: { id: churchId },
+        select: { id: true },
       });
+
       if (!church) {
         return NextResponse.json(
           { error: "Église introuvable" },
@@ -131,16 +170,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Créer la campagne
     const campaign = await prisma.prayerCampaign.create({
       data: {
-        title,
-        description,
-        imageUrl,
+        title: title.trim(),
+        description: description?.trim() || null,
+        imageUrl: imageUrl || null,
         type,
         startDate: start,
         endDate: end,
-        churchId,
+        churchId: churchId || null,
         createdBy: userId,
         isActive: true,
       },
@@ -177,6 +215,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(campaign, { status: 201 });
   } catch (error) {
     console.error("Erreur création campagne:", error);
+
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }

@@ -36,7 +36,7 @@ export function PrayerCampaignCard({ campaign, onJoin, onView }: PrayerCampaignC
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       {/* Header with image */}
       {campaign.imageUrl && (
-        <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 relative">
+        <div className="h-32 bg-gradient-to-br from-emerald-500 to-teal-600 relative">
           <img
             src={campaign.imageUrl}
             alt={campaign.title}
@@ -67,7 +67,7 @@ export function PrayerCampaignCard({ campaign, onJoin, onView }: PrayerCampaignC
               </span>
             </div>
             {daysRemaining > 0 && (
-              <span className="text-blue-600 font-medium">{daysRemaining} jours restants</span>
+              <span className="text-emerald-600 font-medium">{daysRemaining} jours restants</span>
             )}
           </div>
 
@@ -88,7 +88,7 @@ export function PrayerCampaignCard({ campaign, onJoin, onView }: PrayerCampaignC
         <div className="mt-4 flex gap-2">
           <button
             onClick={() => onView?.(campaign.id)}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
             Voir les chaînes
           </button>

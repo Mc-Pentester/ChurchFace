@@ -126,6 +126,14 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
     });
   };
 
+  // Fonction pour convertir les URLs en liens cliquables
+  const linkify = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-emerald-600 hover:text-emerald-700 underline">${url}</a>`;
+    });
+  };
+
   /**
    * ================= LOAD POSTS =================
    */
@@ -518,7 +526,11 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
           </div>
 
           {/* CONTENT */}
+
           <p className="text-sm md:text-base">{p.content}</p>
+
+          <p className="text-sm md:text-base" dangerouslySetInnerHTML={{ __html: linkify(p.content) }} />
+
 
           {/* HASHTAGS */}
           {p.hashtags && p.hashtags.length > 0 && (
