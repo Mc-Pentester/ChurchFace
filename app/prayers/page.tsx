@@ -5,11 +5,17 @@ import { useRouter } from "next/navigation";
 import { Heart, Users, Flame, Video, Plus, Search, Bell } from "lucide-react";
 import { PrayerAdvancedSearch } from "@/components/prayer/search/PrayerAdvancedSearch";
 import { PrayerNotificationCenter } from "@/components/prayer/notifications/PrayerNotificationCenter";
+import { CreatePrayerChainModal } from "@/components/prayer/modals/CreatePrayerChainModal";
+import { CreatePrayerCampaignModal } from "@/components/prayer/modals/CreatePrayerCampaignModal";
+import { CreatePrayerRoomModal } from "@/components/prayer/modals/CreatePrayerRoomModal";
 
 export default function PrayersPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"chains" | "campaigns" | "rooms">("chains");
   const [showSearch, setShowSearch] = useState(false);
+  const [showCreateChainModal, setShowCreateChainModal] = useState(false);
+  const [showCreateCampaignModal, setShowCreateCampaignModal] = useState(false);
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
 
   const TABS = [
     { id: "chains" as const, label: "Chaînes", icon: Users, href: "/prayers/chains" },
@@ -135,13 +141,88 @@ export default function PrayersPage() {
               groups={[]}
               ministries={[]}
             />
-            <button className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors w-full">
+            <button 
+              onClick={() => {
+                if (activeTab === "chains") {
+                  setShowCreateChainModal(true);
+                } else if (activeTab === "campaigns") {
+                  setShowCreateCampaignModal(true);
+                } else if (activeTab === "rooms") {
+                  setShowCreateRoomModal(true);
+                }
+              }}
+              className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors w-full"
+            >
               <Plus className="w-4 h-4" />
               Nouveau
             </button>
           </div>
         </div>
       </div>
+
+      {/* Modals de création */}
+      {showCreateChainModal && (
+        <CreatePrayerChainModal
+          isOpen={showCreateChainModal}
+          onClose={() => setShowCreateChainModal(false)}
+          onSubmit={async (data) => {
+            try {
+              const res = await fetch("/api/prayers/chain", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                setShowCreateChainModal(false);
+              }
+            } catch (error) {
+              console.error("Erreur création chaîne:", error);
+            }
+          }}
+        />
+      )}
+
+      {showCreateCampaignModal && (
+        <CreatePrayerCampaignModal
+          isOpen={showCreateCampaignModal}
+          onClose={() => setShowCreateCampaignModal(false)}
+          onSubmit={async (data) => {
+            try {
+              const res = await fetch("/api/prayers/campaigns", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                setShowCreateCampaignModal(false);
+              }
+            } catch (error) {
+              console.error("Erreur création campagne:", error);
+            }
+          }}
+        />
+      )}
+
+      {showCreateRoomModal && (
+        <CreatePrayerRoomModal
+          isOpen={showCreateRoomModal}
+          onClose={() => setShowCreateRoomModal(false)}
+          onSubmit={async (data) => {
+            try {
+              const res = await fetch("/api/prayers/rooms", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                setShowCreateRoomModal(false);
+              }
+            } catch (error) {
+              console.error("Erreur création salle:", error);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
