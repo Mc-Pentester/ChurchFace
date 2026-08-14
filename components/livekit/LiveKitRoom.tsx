@@ -95,8 +95,9 @@ export default function LiveKitRoom({
   useEffect(() => {
 
 
-    let mounted = true;
-
+    let active = true;
+    let room: Room | null = null;
+    let localVideoTimeout: ReturnType<typeof setTimeout> | null = null;
 
 
     async function start() {
@@ -114,7 +115,9 @@ export default function LiveKitRoom({
          */
 
 
-        const room =
+        if (!active) return;
+
+        room =
           new Room({
 
             adaptiveStream: true,
@@ -124,9 +127,7 @@ export default function LiveKitRoom({
           });
 
 
-
         roomRef.current = room;
-
 
 
         room.on(
@@ -134,7 +135,7 @@ export default function LiveKitRoom({
           () => {
 
 
-            if(!mounted)
+            if(!active)
               return;
 
 
@@ -154,13 +155,12 @@ export default function LiveKitRoom({
         );
 
 
-
         room.on(
           RoomEvent.Disconnected,
           () => {
 
 
-            if(!mounted)
+            if(!active)
               return;
 
 
@@ -174,8 +174,6 @@ export default function LiveKitRoom({
         );
 
 
-
-
         room.on(
           RoomEvent.TrackSubscribed,
           (
@@ -183,6 +181,7 @@ export default function LiveKitRoom({
             publication,
             participant
           ) => {
+            if(!active) return;
             console.log('Track subscribed:', track.kind, participant.identity);
 
             if(track.kind === Track.Kind.Video){
@@ -198,7 +197,9 @@ export default function LiveKitRoom({
         room.on(
           RoomEvent.TrackUnsubscribed,
           (track, publication, participant) => {
+            if(!active) return;
             console.log('Track unsubscribed:', participant.identity);
+            track.detach();
             setRemoteParticipants(prev => {
               const newMap = new Map(prev);
               newMap.delete(participant.identity);
@@ -211,6 +212,7 @@ export default function LiveKitRoom({
         room.localParticipant.on(
           'trackPublished',
           (publication: any) => {
+            if(!active) return;
             console.log('Track published:', publication);
             if (publication.track && publication.track.kind === Track.Kind.Video) {
               console.log('Video track found, attaching...');
@@ -224,7 +226,10 @@ export default function LiveKitRoom({
         );
 
 
-
+        if (!active) {
+          await room.disconnect();
+          return;
+        }
 
 
         await room.connect(
@@ -232,7 +237,10 @@ export default function LiveKitRoom({
           token
         );
 
-
+        if (!active) {
+          await room.disconnect();
+          return;
+        }
 
 
         /**
@@ -244,11 +252,19 @@ export default function LiveKitRoom({
         await room.localParticipant
           .setCameraEnabled(true);
 
+        if (!active) {
+          await room.disconnect();
+          return;
+        }
 
 
         await room.localParticipant
           .setMicrophoneEnabled(true);
 
+        if (!active) {
+          await room.disconnect();
+          return;
+        }
 
 
         setIsVideoEnabled(true);
@@ -256,7 +272,8 @@ export default function LiveKitRoom({
         setIsMuted(false);
 
         // Attendre un court délai pour que le track soit publié puis l'afficher
-        setTimeout(() => {
+        localVideoTimeout = setTimeout(() => {
+          if (!active || !room) return;
           console.log('Attempting to attach local video...');
           // Essayer de récupérer le track vidéo local via différentes méthodes
           try {
@@ -289,9 +306,12 @@ export default function LiveKitRoom({
         }, 1000);
 
 
-
       } catch(error) {
 
+
+        if (!active) {
+          return;
+        }
 
         console.error(
           "LiveKit connection error:",
@@ -305,28 +325,25 @@ export default function LiveKitRoom({
     }
 
 
-
-
     start();
-
-
 
 
     return () => {
 
 
-      mounted = false;
+      active = false;
 
+      if (localVideoTimeout) {
+        clearTimeout(localVideoTimeout);
+        localVideoTimeout = null;
+      }
 
-      if(roomRef.current){
+      if (room) {
+        room.disconnect();
+      }
 
-
-        roomRef.current.disconnect();
-
-
+      if (roomRef.current === room) {
         roomRef.current = null;
-
-
       }
 
 
