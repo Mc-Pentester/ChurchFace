@@ -3,13 +3,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import UnifiedPrayerCard from '@/components/prayer/UnifiedPrayerCard';
 import { UnifiedPrayer, UnifiedPrayerFilters, PrayerType } from '@/types/prayer';
-import { Search } from 'lucide-react';
+import { Search, Plus, ChevronDown } from 'lucide-react';
+import { CreatePrayerChainModal } from '@/components/prayer/modals/CreatePrayerChainModal';
+import { CreatePrayerCampaignModal } from '@/components/prayer/modals/CreatePrayerCampaignModal';
+import { CreatePrayerRoomModal } from '@/components/prayer/modals/CreatePrayerRoomModal';
 
 export default function UnifiedPrayersPage() {
   const [prayers, setPrayers] = useState<UnifiedPrayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<PrayerType | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [showChainModal, setShowChainModal] = useState(false);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [showRoomModal, setShowRoomModal] = useState(false);
 
   const fetchPrayers = async (typeFilter: PrayerType | "ALL") => {
     try {
@@ -176,16 +183,148 @@ export default function UnifiedPrayersPage() {
     }
   };
 
+  const handleCreateChain = async (data: any) => {
+    try {
+      const response = await fetch('/api/prayers/chain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', ...data })
+      });
+      if (response.ok) {
+        setShowChainModal(false);
+        fetchPrayers(filter);
+      }
+    } catch (error) {
+      console.error("Erreur création chaîne:", error);
+    }
+  };
+
+  const handleCreateCampaign = async (data: any) => {
+    try {
+      const response = await fetch('/api/prayers/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (response.ok) {
+        setShowCampaignModal(false);
+        fetchPrayers(filter);
+      }
+    } catch (error) {
+      console.error("Erreur création campagne:", error);
+    }
+  };
+
+  const handleCreateRoom = async (data: any) => {
+    try {
+      const response = await fetch('/api/prayers/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (response.ok) {
+        setShowRoomModal(false);
+        fetchPrayers(filter);
+      }
+    } catch (error) {
+      console.error("Erreur création salle:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Réseau d'Intercession Collaborative
-          </h1>
-          <p className="text-gray-600">
-            Démonstration du nouveau système unifié de prière
-          </p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Réseau d'Intercession Collaborative
+            </h1>
+            <p className="text-gray-600">
+              Démonstration du nouveau système unifié de prière
+            </p>
+          </div>
+          
+          {/* Bouton Créer avec menu déroulant */}
+          <div className="relative">
+            <button
+              onClick={() => setShowCreateMenu(!showCreateMenu)}
+              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition"
+            >
+              <Plus className="w-5 h-5" />
+              Créer
+              <ChevronDown className={`w-4 h-4 transition-transform ${showCreateMenu ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showCreateMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                <div className="py-2">
+                  <button
+                    onClick={() => {
+                      setShowChainModal(true);
+                      setShowCreateMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <span className="text-purple-600">🔗</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Chaîne collaborative</div>
+                      <div className="text-xs text-gray-500">Créer une chaîne de prière</div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowCampaignModal(true);
+                      setShowCreateMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                      <span className="text-orange-600">🎯</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Campagne collaborative</div>
+                      <div className="text-xs text-gray-500">Créer une campagne de prière</div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowRoomModal(true);
+                      setShowCreateMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600">🎥</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Salle live</div>
+                      <div className="text-xs text-gray-500">Créer une salle de prière live</div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      window.location.href = '/prayer-space';
+                      setShowCreateMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600">🙏</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Demande individuelle</div>
+                      <div className="text-xs text-gray-500">Créer une demande de prière</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Barre de recherche */}
@@ -324,6 +463,31 @@ export default function UnifiedPrayersPage() {
           </ul>
         </div>
       </div>
+      
+      {/* Modals de création */}
+      {showChainModal && (
+        <CreatePrayerChainModal
+          isOpen={showChainModal}
+          onClose={() => setShowChainModal(false)}
+          onSubmit={handleCreateChain}
+        />
+      )}
+      
+      {showCampaignModal && (
+        <CreatePrayerCampaignModal
+          isOpen={showCampaignModal}
+          onClose={() => setShowCampaignModal(false)}
+          onSubmit={handleCreateCampaign}
+        />
+      )}
+      
+      {showRoomModal && (
+        <CreatePrayerRoomModal
+          isOpen={showRoomModal}
+          onClose={() => setShowRoomModal(false)}
+          onSubmit={handleCreateRoom}
+        />
+      )}
     </div>
   );
 }
