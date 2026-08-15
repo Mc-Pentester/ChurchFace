@@ -10,12 +10,14 @@ export async function GET(req: Request) {
     const prayerChainId = searchParams.get("prayerChainId");
     const churchId = searchParams.get("churchId");
     const roomType = searchParams.get("roomType");
+    const id = searchParams.get("id");
 
     const where: any = {};
     if (isActive !== null) where.isActive = isActive === "true";
     if (prayerChainId) where.prayerChainId = prayerChainId;
     if (churchId) where.churchId = churchId;
     if (roomType && roomType !== "ALL") where.roomType = roomType;
+    if (id) where.id = id;
 
     // Utiliser PrayerRoom comme source principale
     const rooms = await prisma.prayerRoom.findMany({

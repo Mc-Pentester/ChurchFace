@@ -67,6 +67,77 @@ export async function GET(req: Request) {
       prisma.prayer.count({ where }),
     ]);
 
+    // Si type est ALL ou LIVE_ROOM, inclure aussi PrayerRoom
+    if (!type || type === "ALL" || type === "LIVE_ROOM") {
+      const prayerRooms = await prisma.prayerRoom.findMany({
+        where: {
+          id: {
+            notIn: prayers.map((p: any) => p.id),
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          _count: { select: { participants: true } },
+        },
+      });
+
+      // Convertir PrayerRoom au format UnifiedPrayer
+      const convertedRooms = prayerRooms.map((room: any) => ({
+        id: room.id,
+        type: "LIVE_ROOM",
+        title: room.title,
+        description: room.description,
+        imageUrl: null,
+        visibility: room.isPublic ? "PUBLIC" : "PRIVATE",
+        churchId: room.churchId,
+        groupId: null,
+        ministryId: null,
+        eventId: null,
+        createdBy: room.moderatorId,
+        createdAt: room.createdAt,
+        
+        content: null,
+        category: null,
+        isUrgent: false,
+        isAnswered: false,
+        
+        isActive: room.isActive,
+        roomType: room.roomType,
+        isPublic: room.isPublic,
+        maxParticipants: room.maxParticipants,
+        scheduledStart: room.scheduledStart,
+        scheduledEnd: room.scheduledEnd,
+        endedAt: room.endedAt,
+        
+        campaignType: null,
+        startDate: null,
+        endDate: null,
+        
+        parentPrayerId: room.prayerChainId,
+        
+        _count: room._count,
+        
+        // Propriétés relationnelles requises par le type
+        childPrayers: [],
+        prayerCreator: room.moderator ? {
+          id: room.moderator.id,
+          name: room.moderator.name,
+          image: room.moderator.image,
+        } : {
+          id: room.moderatorId,
+          name: null,
+          image: null,
+        },
+        prayerChurch: room.church ? {
+          id: room.church.id,
+          name: room.church.name,
+          slug: room.church.slug,
+        } : null,
+      }));
+
+      prayers.push(...convertedRooms);
+    }
+
     return NextResponse.json({ prayers, total, page, limit });
   } catch (error) {
     console.error("Erreur récupération prières unifiées:", error);
