@@ -16,12 +16,14 @@ interface CreatePrayerRoomModalProps {
     scheduledEnd?: string;
     prayerChainId?: string;
   }) => void;
+  availableChains?: Array<{ id: string; title: string }>;
 }
 
 export function CreatePrayerRoomModal({
   isOpen,
   onClose,
   onSubmit,
+  availableChains = [],
 }: CreatePrayerRoomModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -174,15 +176,20 @@ export function CreatePrayerRoomModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              ID de la chaîne de prière (optionnel)
+              Chaîne de prière (optionnel)
             </label>
-            <input
-              type="text"
+            <select
               value={prayerChainId}
               onChange={(e) => setPrayerChainId(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Lier à une chaîne existante"
-            />
+            >
+              <option value="">Aucune chaîne</option>
+              {availableChains.map((chain) => (
+                <option key={chain.id} value={chain.id}>
+                  {chain.title}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Actions */}

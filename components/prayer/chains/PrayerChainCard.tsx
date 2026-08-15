@@ -3,16 +3,17 @@
 import { useState, useEffect } from "react";
 import { PrayerChainWithLinks } from "@/types/prayer";
 import { usePrayerParticipants } from "@/hooks/usePrayers";
-import { Users, Calendar, Lock, Globe } from "lucide-react";
+import { Users, Calendar, Lock, Globe, Settings } from "lucide-react";
 
 interface PrayerChainCardProps {
   chain: PrayerChainWithLinks;
   onJoin?: (chainId: string) => void;
   onView?: (chainId: string) => void;
+  onSettings?: (chainId: string) => void;
   isMember?: boolean;
 }
 
-export function PrayerChainCard({ chain, onJoin, onView, isMember = false }: PrayerChainCardProps) {
+export function PrayerChainCard({ chain, onJoin, onView, onSettings, isMember = false }: PrayerChainCardProps) {
   const { fetchParticipants } = usePrayerParticipants();
   const [participantCount, setParticipantCount] = useState(chain._count?.links || 0);
 
@@ -95,6 +96,15 @@ export function PrayerChainCard({ chain, onJoin, onView, isMember = false }: Pra
         >
           Détails
         </button>
+        {onSettings && (
+          <button
+            onClick={() => onSettings(chain.id)}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            title="Paramètres"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

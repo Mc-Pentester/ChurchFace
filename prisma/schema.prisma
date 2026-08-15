@@ -57,9 +57,16 @@ model User {
   prayerLiveRoomParticipants PrayerLiveRoomParticipant[]
   prayerReactions            PrayerReaction[]
   prayerRequests             PrayerRequest[]
+  unifiedPrayers             Prayer[]                     @relation("UnifiedPrayerCreator")
   prayerResponses            PrayerResponse[]
   prayerTestimonies          PrayerTestimony[]
   prayerVerses               PrayerVerse[]
+  prayerParticipants         PrayerParticipant[]
+  prayerSchedules            PrayerSchedule[]
+  prayerRoomParticipants     PrayerRoomParticipant[]
+  prayerRoomsModerated       PrayerRoom[]
+  prayerCampaignsCreated     PrayerCampaign[]
+  prayerEngagements          PrayerEngagement[]
   preachings                 Preaching[]
   preachingBookmarks         PreachingBookmark[]
   preachingComments          PreachingComment[]
@@ -711,6 +718,9 @@ model Church {
   users           User[]         @relation("UserChurch")
   prayerRequests  PrayerRequest[]
   trainingRooms   TrainingRoom[] @relation("TrainingChurch")
+  prayerRooms     PrayerRoom[]
+  prayerCampaigns PrayerCampaign[]
+  unifiedPrayers  Prayer[]        @relation("UnifiedPrayerChurch")
 
 }
 
@@ -1025,6 +1035,7 @@ model PrayerRequest {
   testimony     PrayerTestimony?
   verses        PrayerVerse[]
   church        Church?          @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  engagements   PrayerEngagement[]
 
   @@index([churchId])
 }
@@ -1077,14 +1088,20 @@ model PrayerLiveRoomParticipant {
 }
 
 model PrayerChain {
-  id              String            @id @default(cuid())
+  id              String              @id @default(cuid())
   prayerRequestId String?
+  prayerCampaignId String?
   title           String
   description     String?
-  isActive        Boolean           @default(true)
-  createdAt       DateTime          @default(now())
+  visibility      String              @default("PUBLIC")
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
   links           PrayerChainLink[]
   prayerRequests  PrayerRequest[]
+  participants    PrayerParticipant[]
+  schedules       PrayerSchedule[]
+  rooms           PrayerRoom[]
+  prayerCampaign  PrayerCampaign?     @relation(fields: [prayerCampaignId], references: [id])
 }
 
 model PrayerChainLink {
@@ -1145,6 +1162,130 @@ model PrayerTestimony {
   createdAt       DateTime      @default(now())
   prayerRequest   PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PrayerParticipant {
+  id                String      @id @default(cuid())
+  prayerChainId     String
+  userId            String
+  role              String      @default("PARTICIPANT")
+  joinedAt          DateTime    @default(now())
+  lastPrayedAt      DateTime?
+  prayerCount       Int        @default(0)
+  notificationEnabled Boolean    @default(true)
+  prayerChain       PrayerChain @relation(fields: [prayerChainId], references: [id], onDelete: Cascade)
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([prayerChainId, userId])
+  @@index([prayerChainId])
+  @@index([userId])
+  @@index([role])
+}
+
+model PrayerSchedule {
+  id             String      @id @default(cuid())
+  prayerChainId  String
+  userId         String
+  hour           Int
+  dayOfWeek      Int?
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  prayerChain    PrayerChain @relation(fields: [prayerChainId], references: [id], onDelete: Cascade)
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([prayerChainId, userId, hour, dayOfWeek])
+  @@index([prayerChainId])
+  @@index([userId])
+  @@index([hour])
+}
+
+model PrayerRoom {
+  id              String                @id @default(cuid())
+  prayerChainId   String?
+  churchId        String?
+  title           String
+  description     String?
+  roomType        String                @default("TEXT")
+  isPublic        Boolean               @default(true)
+  isActive        Boolean               @default(true)
+  moderatorId     String
+  maxParticipants Int?
+  scheduledStart  DateTime?
+  scheduledEnd    DateTime?
+  createdAt       DateTime              @default(now())
+  endedAt         DateTime?
+  prayerChain     PrayerChain?          @relation(fields: [prayerChainId], references: [id], onDelete: Cascade)
+  church          Church?               @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  moderator       User                  @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+  participants    PrayerRoomParticipant[]
+  campaigns       PrayerCampaignRoom[]
+
+  @@index([prayerChainId])
+  @@index([churchId])
+  @@index([moderatorId])
+  @@index([isActive])
+  @@index([scheduledStart])
+}
+
+model PrayerRoomParticipant {
+  id        String     @id @default(cuid())
+  roomId    String
+  userId    String
+  joinedAt  DateTime   @default(now())
+  room      PrayerRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model PrayerCampaign {
+  id          String                @id @default(cuid())
+  title       String
+  description String?
+  imageUrl    String?
+  type        String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean               @default(true)
+  churchId    String?
+  createdBy   String
+  createdAt   DateTime              @default(now())
+  church      Church?               @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  creator     User                  @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  chains      PrayerChain[]
+  rooms       PrayerCampaignRoom[]
+
+  @@index([churchId])
+  @@index([createdBy])
+  @@index([startDate, endDate])
+}
+
+model PrayerCampaignRoom {
+  id           String        @id @default(cuid())
+  campaignId   String
+  roomId       String
+  createdAt    DateTime      @default(now())
+  campaign     PrayerCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  room         PrayerRoom     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, roomId])
+  @@index([campaignId])
+  @@index([roomId])
+}
+
+model PrayerEngagement {
+  id              String        @id @default(cuid())
+  prayerRequestId String
+  userId          String
+  type            String
+  createdAt       DateTime      @default(now())
+  prayerRequest   PrayerRequest @relation(fields: [prayerRequestId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([prayerRequestId])
+  @@index([userId])
 }
 
 model AudioTrack {
@@ -1438,4 +1579,67 @@ model TrainingSession {
 
   @@index([trainingRoomId])
   @@index([startedAt])
+}
+
+// ============================================
+// MODÈLE UNIFIÉ PRIÈRE (PHASE 1 MIGRATION)
+// ============================================
+// Ce modèle unifié remplace progressivement:
+// - PrayerRequest (type = "INDIVIDUAL")
+// - PrayerChain (type = "COLLABORATIVE_CHAIN")
+// - PrayerCampaign (type = "COLLABORATIVE_CAMPAIGN")
+// - PrayerRoom (type = "LIVE_ROOM")
+// ============================================
+
+model Prayer {
+  id          String   @id @default(cuid())
+  type        String   // "INDIVIDUAL" | "COLLABORATIVE_CHAIN" | "COLLABORATIVE_CAMPAIGN" | "LIVE_ROOM"
+  title       String
+  description String?
+  imageUrl    String?
+  visibility  String?  // "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS"
+  churchId    String?
+  groupId     String?
+  ministryId  String?
+  eventId     String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  
+  // Champs individuels (type = "INDIVIDUAL")
+  content     String?
+  category    String?
+  isUrgent    Boolean  @default(false)
+  isAnswered  Boolean  @default(false)
+  
+  // Champs collaboratifs (type = "COLLABORATIVE_CHAIN" | "COLLABORATIVE_CAMPAIGN" | "LIVE_ROOM")
+  isActive    Boolean  @default(true)
+  roomType    String?  // "TEXT" | "AUDIO" | "VIDEO"
+  isPublic    Boolean  @default(true)
+  maxParticipants Int?
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  endedAt     DateTime?
+  
+  // Champs campagne (type = "COLLABORATIVE_CAMPAIGN")
+  campaignType String?  // "FAST" | "PRAYER" | "VIGIL" | "NATIONAL" | "GLOBAL"
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  // Relations hiérarchiques (pour chaînes dans campagnes)
+  parentPrayerId String?
+  parentPrayer   Prayer?  @relation("PrayerHierarchy", fields: [parentPrayerId], references: [id], onDelete: Cascade)
+  childPrayers   Prayer[] @relation("PrayerHierarchy")
+  
+  // Relations communes (noms uniques pour éviter conflits)
+  prayerCreator User     @relation("UnifiedPrayerCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  prayerChurch  Church?  @relation("UnifiedPrayerChurch", fields: [churchId], references: [id], onDelete: Cascade)
+  
+  // Relations spécifiques par type (seront ajoutées lors de la migration complète)
+  // Pour Phase 1, nous gardons les modèles existants intactes
+
+  @@index([type])
+  @@index([churchId])
+  @@index([createdBy])
+  @@index([isActive])
+  @@index([parentPrayerId])
 }

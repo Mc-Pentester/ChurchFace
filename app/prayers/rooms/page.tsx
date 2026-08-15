@@ -12,6 +12,7 @@ export default function PrayerRoomsPage() {
   useRevalidateOnMount();
 
   const [rooms, setRooms] = useState<PrayerRoom[]>([]);
+  const [chains, setChains] = useState<Array<{ id: string; title: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "ENDED">("ALL");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -20,12 +21,14 @@ export default function PrayerRoomsPage() {
 
   useEffect(() => {
     fetchRooms();
+    fetchChains();
   }, [filter, typeFilter]);
 
   // Écouter l'événement de revalidation (navigation arrière)
   useEffect(() => {
     const handleRevalidate = () => {
       fetchRooms();
+      fetchChains();
     };
 
     window.addEventListener('revalidate-data', handleRevalidate);
@@ -38,24 +41,30 @@ export default function PrayerRoomsPage() {
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/prayers/rooms");
+      const params = new URLSearchParams();
+      if (filter === "ACTIVE") params.set("isActive", "true");
+      else if (filter === "ENDED") params.set("isActive", "false");
+      if (typeFilter !== "ALL") params.set("roomType", typeFilter);
+      
+      const url = `/api/prayers/rooms${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url);
       const data = await res.json();
       
-      let filteredRooms = data.rooms || [];
-      if (filter === "ACTIVE") {
-        filteredRooms = filteredRooms.filter((r: PrayerRoom) => r.isActive);
-      } else if (filter === "ENDED") {
-        filteredRooms = filteredRooms.filter((r: PrayerRoom) => !r.isActive);
-      }
-      if (typeFilter !== "ALL") {
-        filteredRooms = filteredRooms.filter((r: PrayerRoom) => r.roomType === typeFilter);
-      }
-      
-      setRooms(filteredRooms);
+      setRooms(data.rooms || []);
     } catch (error) {
       console.error("Erreur récupération salles:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchChains = async () => {
+    try {
+      const res = await fetch("/api/prayers/chain");
+      const data = await res.json();
+      setChains(data.chains || []);
+    } catch (error) {
+      console.error("Erreur récupération chaînes:", error);
     }
   };
 
@@ -174,6 +183,7 @@ export default function PrayerRoomsPage() {
         <CreatePrayerRoomModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
+          availableChains={chains}
           onSubmit={async (data) => {
             try {
               const res = await fetch("/api/prayers/rooms", {

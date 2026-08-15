@@ -1,12 +1,13 @@
 "use client";
 
 import { PrayerCampaign } from "@/types/prayer";
-import { Calendar, Users, Flame, Church, Globe } from "lucide-react";
+import { Calendar, Users, Flame, Church, Globe, Settings } from "lucide-react";
 
 interface PrayerCampaignCardProps {
   campaign: PrayerCampaign;
   onJoin?: (campaignId: string) => void;
   onView?: (campaignId: string) => void;
+  onSettings?: (campaignId: string) => void;
 }
 
 const CAMPAIGN_ICONS = {
@@ -25,7 +26,7 @@ const CAMPAIGN_LABELS = {
   GLOBAL: "Global",
 };
 
-export function PrayerCampaignCard({ campaign, onJoin, onView }: PrayerCampaignCardProps) {
+export function PrayerCampaignCard({ campaign, onJoin, onView, onSettings }: PrayerCampaignCardProps) {
   const Icon = CAMPAIGN_ICONS[campaign.type];
   const label = CAMPAIGN_LABELS[campaign.type];
   const daysRemaining = Math.ceil(
@@ -92,6 +93,15 @@ export function PrayerCampaignCard({ campaign, onJoin, onView }: PrayerCampaignC
           >
             Voir les chaînes
           </button>
+          {onSettings && (
+            <button
+              onClick={() => onSettings(campaign.id)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              title="Paramètres"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

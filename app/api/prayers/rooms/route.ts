@@ -7,15 +7,42 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const isActive = searchParams.get("isActive");
+    const prayerChainId = searchParams.get("prayerChainId");
+    const churchId = searchParams.get("churchId");
+    const roomType = searchParams.get("roomType");
 
     const where: any = {};
     if (isActive !== null) where.isActive = isActive === "true";
+    if (prayerChainId) where.prayerChainId = prayerChainId;
+    if (churchId) where.churchId = churchId;
+    if (roomType && roomType !== "ALL") where.roomType = roomType;
 
-    const rooms = await prisma.prayerLiveRoom.findMany({
+    // Utiliser PrayerRoom comme source principale
+    const rooms = await prisma.prayerRoom.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {
-        _count: { select: { PrayerLiveRoomMember: true } },
+        _count: { select: { participants: true } },
+        prayerChain: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        church: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        moderator: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
       },
     });
 
@@ -34,22 +61,49 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { title, description, roomType, isPublic, maxParticipants, scheduledStart, scheduledEnd } = body;
+    const { title, description, roomType = "TEXT", isPublic = true, maxParticipants, scheduledStart, scheduledEnd, prayerChainId, churchId } = body;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: "Missing title" }, { status: 400 });
     }
 
-    const room = await prisma.prayerLiveRoom.create({
+    // Créer dans PrayerRoom
+    const room = await prisma.prayerRoom.create({
       data: {
         title: title.trim(),
         description: description?.trim() || null,
-        isPublic: isPublic ?? true,
+        roomType,
+        isPublic,
         moderatorId: session.user.id,
+        maxParticipants: maxParticipants || null,
+        scheduledStart: scheduledStart ? new Date(scheduledStart) : null,
+        scheduledEnd: scheduledEnd ? new Date(scheduledEnd) : null,
+        prayerChainId: prayerChainId || null,
+        churchId: churchId || null,
         isActive: true,
       },
       include: {
-        _count: { select: { PrayerLiveRoomMember: true } },
+        _count: { select: { participants: true } },
+        prayerChain: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        church: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        moderator: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
       },
     });
 

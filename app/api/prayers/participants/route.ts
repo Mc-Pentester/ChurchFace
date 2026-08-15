@@ -11,25 +11,25 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get("limit") || "50");
     const skip = (page - 1) * limit;
 
-    // Utiliser PrayerChainLink pour récupérer les participants (liens)
+    // Utiliser PrayerParticipant comme source principale
     const where: any = {};
-    if (prayerChainId) where.chainId = prayerChainId;
+    if (prayerChainId) where.prayerChainId = prayerChainId;
 
     const [participants, total] = await Promise.all([
-      prisma.prayerChainLink.findMany({
+      prisma.prayerParticipant.findMany({
         where,
         include: {
           user: { select: { id: true, name: true, image: true } },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { joinedAt: "desc" },
         skip,
         take: limit,
       }),
-      prisma.prayerChainLink.count({ where }),
+      prisma.prayerParticipant.count({ where }),
     ]);
 
-    return NextResponse.json({ 
-      participants, 
+    return NextResponse.json({
+      participants,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     });
   } catch (error) {
@@ -46,24 +46,48 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { prayerChainId, message } = body;
+    const { prayerChainId, role = "PARTICIPANT" } = body;
 
     if (!prayerChainId) {
       return NextResponse.json({ error: "Missing prayerChainId" }, { status: 400 });
     }
 
-    const participant = await prisma.prayerChainLink.create({
-      data: {
-        chainId: prayerChainId,
-        userId: session.user.id,
-        message: message || null,
-      },
-      include: {
-        user: { select: { id: true, name: true, image: true } },
-      },
-    });
+    try {
+      const participant = await prisma.prayerParticipant.create({
+        data: {
+          prayerChainId,
+          userId: session.user.id,
+          role: "PARTICIPANT",
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+      });
 
-    return NextResponse.json({ participant });
+      // Maintenir la compatibilité avec PrayerChainLink
+      await prisma.prayerChainLink.create({
+        data: {
+          chainId: prayerChainId,
+          userId: session.user.id,
+        },
+      }).catch(() => {
+        // Ignore si existe déjà
+      });
+
+      return NextResponse.json({ participant });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        // Unique constraint violation - already joined
+        return NextResponse.json({ error: "Already joined" }, { status: 409 });
+      }
+      throw error;
+    }
   } catch (error) {
     console.error("Erreur création participant:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
@@ -84,9 +108,28 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    await prisma.prayerChainLink.delete({
+    // Supprimer de PrayerParticipant
+    await prisma.prayerParticipant.delete({
       where: { id },
     });
+
+    // Maintenir la compatibilité avec PrayerChainLink
+    // Supprimer le lien correspondant si existe
+    const participant = await prisma.prayerParticipant.findUnique({
+      where: { id },
+      select: { prayerChainId: true, userId: true },
+    });
+
+    if (participant) {
+      await prisma.prayerChainLink.deleteMany({
+        where: {
+          chainId: participant.prayerChainId,
+          userId: participant.userId,
+        },
+      }).catch(() => {
+        // Ignore si n'existe pas
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

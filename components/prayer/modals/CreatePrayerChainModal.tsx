@@ -11,18 +11,22 @@ interface CreatePrayerChainModalProps {
     description: string;
     visibility: "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS";
     imageUrl?: string;
+    prayerCampaignId?: string;
   }) => void;
+  availableCampaigns?: Array<{ id: string; title: string }>;
 }
 
 export function CreatePrayerChainModal({
   isOpen,
   onClose,
   onSubmit,
+  availableCampaigns = [],
 }: CreatePrayerChainModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS">("PUBLIC");
   const [imageUrl, setImageUrl] = useState("");
+  const [prayerCampaignId, setPrayerCampaignId] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -33,6 +37,7 @@ export function CreatePrayerChainModal({
     try {
       const data: any = { title, description, visibility };
       if (imageUrl) data.imageUrl = imageUrl;
+      if (prayerCampaignId) data.prayerCampaignId = prayerCampaignId;
       await onSubmit(data);
       onClose();
       // Reset form
@@ -40,6 +45,7 @@ export function CreatePrayerChainModal({
       setDescription("");
       setVisibility("PUBLIC");
       setImageUrl("");
+      setPrayerCampaignId("");
     } catch (error) {
       console.error("Erreur création chaîne:", error);
     } finally {
@@ -102,6 +108,24 @@ export function CreatePrayerChainModal({
               <option value="PUBLIC">Public</option>
               <option value="PRIVATE">Privé</option>
               <option value="CHURCH_MEMBERS">Membres de l'église</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Campagne de prière (optionnel)
+            </label>
+            <select
+              value={prayerCampaignId}
+              onChange={(e) => setPrayerCampaignId(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Aucune campagne</option>
+              {availableCampaigns.map((campaign) => (
+                <option key={campaign.id} value={campaign.id}>
+                  {campaign.title}
+                </option>
+              ))}
             </select>
           </div>
 

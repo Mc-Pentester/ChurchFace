@@ -37,20 +37,16 @@ export default function PrayerCampaignsPage() {
   const fetchCampaigns = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/prayers/campaigns");
+      const params = new URLSearchParams();
+      if (filter === "ACTIVE") params.set("isActive", "true");
+      else if (filter === "ENDED") params.set("isActive", "false");
+      if (typeFilter !== "ALL") params.set("type", typeFilter);
+      
+      const url = `/api/prayers/campaigns${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url);
       const data = await res.json();
       
-      let filteredCampaigns = data || [];
-      if (filter === "ACTIVE") {
-        filteredCampaigns = filteredCampaigns.filter((c: PrayerCampaign) => c.isActive);
-      } else if (filter === "ENDED") {
-        filteredCampaigns = filteredCampaigns.filter((c: PrayerCampaign) => !c.isActive);
-      }
-      if (typeFilter !== "ALL") {
-        filteredCampaigns = filteredCampaigns.filter((c: PrayerCampaign) => c.type === typeFilter);
-      }
-      
-      setCampaigns(filteredCampaigns);
+      setCampaigns(data.campaigns || []);
     } catch (error) {
       console.error("Erreur récupération campagnes:", error);
     } finally {
@@ -60,6 +56,10 @@ export default function PrayerCampaignsPage() {
 
   const handleView = (campaignId: string) => {
     window.location.href = `/prayers/campaigns/${campaignId}`;
+  };
+
+  const handleSettings = (campaignId: string) => {
+    window.location.href = `/prayers/campaigns/${campaignId}/settings`;
   };
 
   return (
@@ -149,6 +149,7 @@ export default function PrayerCampaignsPage() {
               key={campaign.id}
               campaign={campaign}
               onView={handleView}
+              onSettings={handleSettings}
             />
           ))}
         </div>

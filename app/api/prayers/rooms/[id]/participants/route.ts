@@ -9,7 +9,8 @@ export async function GET(
     const resolvedParams = await params;
     const roomId = resolvedParams.id;
 
-    const participants = await prisma.prayerLiveRoomMember.findMany({
+    // Utiliser PrayerRoomParticipant comme source principale
+    const participants = await prisma.prayerRoomParticipant.findMany({
       where: { roomId },
       include: {
         user: {

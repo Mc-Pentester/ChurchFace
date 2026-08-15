@@ -15,13 +15,14 @@ export default function PrayerChainDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"participants" | "schedule" | "rooms">("participants");
 
-  const { participants, loading: participantsLoading } = usePrayerParticipants(chainId);
+  const { participants, loading: participantsLoading, fetchParticipants } = usePrayerParticipants(chainId);
   const { schedules, loading: schedulesLoading } = usePrayerSchedule(chainId);
   const { rooms, loading: roomsLoading } = usePrayerRooms({ prayerChainId: chainId });
 
   useEffect(() => {
     fetchChain();
-  }, [chainId]);
+    fetchParticipants();
+  }, [chainId, fetchParticipants]);
 
   const fetchChain = async () => {
     setLoading(true);

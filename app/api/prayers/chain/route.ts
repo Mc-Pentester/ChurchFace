@@ -3,16 +3,24 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const visibility = searchParams.get("visibility");
+  
+  const where: any = { isActive: true };
+  if (visibility && visibility !== "ALL") {
+    where.visibility = visibility;
+  }
+  
   const chains = await prisma.prayerChain.findMany({
-    where: { isActive: true },
+    where,
     orderBy: { createdAt: "desc" },
     take: 10,
     include: {
-      _count: { select: { links: true } },
-      links: {
+      _count: { select: { participants: true } },
+      participants: {
         take: 5,
-        orderBy: { createdAt: "asc" },
+        orderBy: { joinedAt: "asc" },
         include: { user: { select: { id: true, name: true, image: true } } },
       },
     },
@@ -27,7 +35,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { action, chainId, prayerRequestId, title, description, message } = body;
+  const { action, chainId, prayerRequestId, prayerCampaignId, title, description, message } = body;
 
   if (action === "create") {
     if (!title?.trim()) {
@@ -38,11 +46,19 @@ export async function POST(req: Request) {
         title: title.trim(),
         description: description?.trim() || null,
         prayerRequestId: prayerRequestId || null,
+        prayerCampaignId: prayerCampaignId || null,
+        visibility: body.visibility || "PUBLIC",
       },
       include: {
-        _count: { select: { links: true } },
-        links: {
+        _count: { select: { participants: true } },
+        participants: {
           include: { user: { select: { id: true, name: true, image: true } } },
+        },
+        prayerCampaign: {
+          select: {
+            id: true,
+            title: true,
+          },
         },
       },
     });
@@ -52,36 +68,48 @@ export async function POST(req: Request) {
   if (action === "join") {
     if (!chainId) return NextResponse.json({ error: "Missing chainId" }, { status: 400 });
 
-    const existing = await prisma.prayerChainLink.findUnique({
-      where: { chainId_userId: { chainId, userId: session.user.id } },
+    // Utiliser PrayerParticipant comme modèle principal
+    const existing = await prisma.prayerParticipant.findUnique({
+      where: {
+        prayerChainId_userId: {
+          prayerChainId: chainId,
+          userId: session.user.id
+        }
+      },
     });
 
     if (existing) {
       return NextResponse.json({ error: "Already joined" }, { status: 409 });
     }
 
-    const link = await prisma.prayerChainLink.create({
+    const participant = await prisma.prayerParticipant.create({
       data: {
-        chainId,
+        prayerChainId: chainId,
         userId: session.user.id,
-        message: message?.trim() || null,
+        role: "PARTICIPANT",
       },
       include: {
         user: { select: { id: true, name: true, image: true } },
-        chain: {
+        prayerChain: {
           include: {
-            _count: { select: { links: true } },
-            links: {
-              take: 5,
-              orderBy: { createdAt: "asc" },
-              include: { user: { select: { id: true, name: true, image: true } } },
-            },
+            _count: { select: { participants: true } },
           },
         },
       },
     });
 
-    return NextResponse.json({ link }, { status: 201 });
+    // Maintenir la compatibilité avec PrayerChainLink
+    await prisma.prayerChainLink.create({
+      data: {
+        chainId,
+        userId: session.user.id,
+        message: message?.trim() || null,
+      },
+    }).catch(() => {
+      // Ignore si existe déjà
+    });
+
+    return NextResponse.json({ participant }, { status: 201 });
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });

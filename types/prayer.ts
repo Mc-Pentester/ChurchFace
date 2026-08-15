@@ -152,6 +152,7 @@ export interface PrayerSchedule {
 export interface PrayerRoom {
   id: string;
   prayerChainId?: string;
+  churchId?: string;
   title: string;
   description?: string;
   roomType: "TEXT" | "AUDIO" | "VIDEO";
@@ -165,6 +166,20 @@ export interface PrayerRoom {
   endedAt?: string;
   _count?: {
     participants?: number;
+  };
+  prayerChain?: {
+    id: string;
+    title: string;
+  };
+  church?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  moderator?: {
+    id: string;
+    name: string | null;
+    image: string | null;
   };
 }
 
@@ -184,7 +199,11 @@ export interface PrayerCampaign {
     id: string;
     name: string;
     slug: string;
-    logo?: string;
+  };
+  creator?: {
+    id: string;
+    name: string | null;
+    image: string | null;
   };
   _count?: {
     chains?: number;
@@ -228,3 +247,73 @@ export const PRAYER_CATEGORIES: { key: PrayerCategory; label: string; emoji: str
   { key: "MARIAGE", label: "Mariage", emoji: "💍" },
   { key: "EVANGELISATION", label: "Évangélisation", emoji: "📢" },
 ];
+
+// ============================================
+// TYPES UNIFIÉS PRIÈRE (PHASE 4 MIGRATION)
+// ============================================
+
+export type PrayerType = "INDIVIDUAL" | "COLLABORATIVE_CHAIN" | "COLLABORATIVE_CAMPAIGN" | "LIVE_ROOM";
+export type PrayerVisibility = "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS";
+export type RoomType = "TEXT" | "AUDIO" | "VIDEO";
+export type CampaignType = "FAST" | "PRAYER" | "VIGIL" | "NATIONAL" | "GLOBAL";
+
+export interface UnifiedPrayer {
+  id: string;
+  type: PrayerType;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  visibility: PrayerVisibility | null;
+  churchId: string | null;
+  groupId: string | null;
+  ministryId: string | null;
+  eventId: string | null;
+  createdBy: string;
+  createdAt: string;
+  
+  // Champs individuels (type = "INDIVIDUAL")
+  content: string | null;
+  category: string | null;
+  isUrgent: boolean;
+  isAnswered: boolean;
+  
+  // Champs collaboratifs
+  isActive: boolean;
+  roomType: RoomType | null;
+  isPublic: boolean;
+  maxParticipants: number | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  endedAt: string | null;
+  
+  // Champs campagne (type = "COLLABORATIVE_CAMPAIGN")
+  campaignType: CampaignType | null;
+  startDate: string | null;
+  endDate: string | null;
+  
+  // Relations hiérarchiques
+  parentPrayerId: string | null;
+  childPrayers?: UnifiedPrayer[];
+  
+  // Relations communes
+  prayerCreator: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+  prayerChurch?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+export interface UnifiedPrayerFilters {
+  type?: PrayerType | "ALL";
+  category?: string;
+  filter?: "recent" | "popular" | "urgent" | "answered";
+  churchId?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}

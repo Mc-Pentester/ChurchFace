@@ -267,8 +267,8 @@ export function usePrayerCampaigns(filters?: { churchId?: string; isActive?: boo
       
       const res = await fetch(`/api/prayers/campaigns?${searchParams.toString()}`);
       const data = await res.json();
-      setCampaigns(data || []);
-      return data || [];
+      setCampaigns(data.campaigns || []);
+      return data.campaigns || [];
     } catch (error) {
       console.error("Erreur récupération campagnes:", error);
       return [];

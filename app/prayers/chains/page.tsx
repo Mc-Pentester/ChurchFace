@@ -13,6 +13,7 @@ export default function PrayerChainsPage() {
   useRevalidateOnMount();
 
   const [chains, setChains] = useState<PrayerChainWithLinks[]>([]);
+  const [campaigns, setCampaigns] = useState<Array<{ id: string; title: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"ALL" | "PUBLIC" | "PRIVATE">("ALL");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -20,12 +21,14 @@ export default function PrayerChainsPage() {
 
   useEffect(() => {
     fetchChains();
+    fetchCampaigns();
   }, [filter]);
 
   // Écouter l'événement de revalidation (navigation arrière)
   useEffect(() => {
     const handleRevalidate = () => {
       fetchChains();
+      fetchCampaigns();
     };
 
     window.addEventListener('revalidate-data', handleRevalidate);
@@ -38,21 +41,27 @@ export default function PrayerChainsPage() {
   const fetchChains = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/prayers/chain");
+      const url = filter === "ALL" 
+        ? "/api/prayers/chain" 
+        : `/api/prayers/chain?visibility=${filter}`;
+      const res = await fetch(url);
       const data = await res.json();
       
-      let filteredChains = data.chains || [];
-      if (filter === "PUBLIC") {
-        filteredChains = filteredChains.filter((chain: PrayerChainWithLinks) => chain.visibility === "PUBLIC");
-      } else if (filter === "PRIVATE") {
-        filteredChains = filteredChains.filter((chain: PrayerChainWithLinks) => chain.visibility === "PRIVATE");
-      }
-      
-      setChains(filteredChains);
+      setChains(data.chains || []);
     } catch (error) {
       console.error("Erreur récupération chaînes:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCampaigns = async () => {
+    try {
+      const res = await fetch("/api/prayers/campaigns");
+      const data = await res.json();
+      setCampaigns(data.campaigns || []);
+    } catch (error) {
+      console.error("Erreur récupération campagnes:", error);
     }
   };
 
@@ -67,6 +76,10 @@ export default function PrayerChainsPage() {
 
   const handleView = (chainId: string) => {
     window.location.href = `/prayers/chains/${chainId}`;
+  };
+
+  const handleSettings = (chainId: string) => {
+    window.location.href = `/prayers/chains/${chainId}/settings`;
   };
 
   return (
@@ -141,6 +154,7 @@ export default function PrayerChainsPage() {
               chain={chain}
               onJoin={handleJoin}
               onView={handleView}
+              onSettings={handleSettings}
             />
           ))}
         </div>
@@ -150,12 +164,13 @@ export default function PrayerChainsPage() {
         <CreatePrayerChainModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
+          availableCampaigns={campaigns}
           onSubmit={async (data) => {
             try {
               const res = await fetch("/api/prayers/chain", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify({ action: "create", ...data }),
               });
               if (res.ok) {
                 await fetchChains();
