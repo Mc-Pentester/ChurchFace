@@ -51,7 +51,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ rooms });
   } catch (error) {
-    console.error("Erreur récupération salles:", error);
+    console.error("Erreur rï¿½cupï¿½ration salles:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing title" }, { status: 400 });
     }
 
-    // Créer dans PrayerRoom
+    // Crï¿½er dans PrayerRoom
     const room = await prisma.prayerRoom.create({
       data: {
         title: title.trim(),
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ room });
   } catch (error) {
-    console.error("Erreur création salle:", error);
+    console.error("Erreur crï¿½ation salle:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
