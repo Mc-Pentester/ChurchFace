@@ -19,9 +19,9 @@ import { useEffect, useState, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
-import { notificationSound } from "@/lib/sounds";
 import HamburgerMenu from "./HamburgerMenu";
 import { usePushSubscription } from "@/lib/hooks/usePushSubscription";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 type Notification = {
   id: string;
@@ -49,13 +49,19 @@ export default function Navbar({ onOpenLogin }: NavbarProps) {
   // Subscribe to push notifications when user is logged in
   usePushSubscription();
 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    isLoading: notificationsLoading
+  } = useNotifications();
+
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [messagesUnread, setMessagesUnread] = useState(0);
   const [pendingRequests, setPendingRequests] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -64,72 +70,20 @@ export default function Navbar({ onOpenLogin }: NavbarProps) {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   /**
-   * SOCKET
+   * SOCKET - Only for non-notification events
    */
   useEffect(() => {
     socket.on("presence:update", setOnlineUsers);
 
-    socket.on("notification:new", () => {
-      setUnreadNotifications((p) => p + 1);
-      notificationSound?.play();
-      fetchNotifications();
-    });
-
     socket.on("message:new", () => {
       setMessagesUnread((p) => p + 1);
-      notificationSound?.play();
     });
-
-    // Register user with socket when session is available
-    if (session?.user?.id && socket.connected) {
-      socket.emit("register", session.user.id);
-    }
-
-    // Re-register on reconnect
-    const handleReconnect = () => {
-      if (session?.user?.id) {
-        socket.emit("register", session.user.id);
-      }
-    };
-
-    socket.on("connect", handleReconnect);
 
     return () => {
       socket.off("presence:update");
-      socket.off("notification:new");
       socket.off("message:new");
-      socket.off("connect", handleReconnect);
     };
-  }, [session?.user?.id]);
-
-  /**
-   * FETCH NOTIFICATIONS
-   */
-  const fetchNotifications = async () => {
-    if (!session?.user?.id) return;
-    setLoadingNotifications(true);
-    try {
-      const res = await fetch("/api/notifications");
-      if (!res.ok) {
-        console.error("Failed to fetch notifications:", res.status);
-        return;
-      }
-      const data = await res.json();
-      setNotifications(data.notifications || []);
-      setUnreadNotifications(data.unreadCount || 0);
-    } catch (e) {
-      console.error("Error fetching notifications:", e);
-    } finally {
-      setLoadingNotifications(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchNotifications();
-      fetchPendingRequests();
-    }
-  }, [session?.user?.id]);
+  }, []);
 
   const fetchPendingRequests = async () => {
     if (!session?.user?.id) return;
@@ -147,44 +101,18 @@ export default function Navbar({ onOpenLogin }: NavbarProps) {
     }
   };
 
-  /**
-   * MARK AS READ
-   */
-  const markAsRead = async (notificationIds?: string[]) => {
-    try {
-      const res = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          notificationIds,
-          markAll: !notificationIds,
-        }),
-      });
-      if (res.ok) {
-        fetchNotifications();
-      }
-    } catch (e) {
-      console.error("Error marking notifications as read:", e);
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchPendingRequests();
     }
-  };
+  }, [session?.user?.id]);
 
   /**
    * HANDLE NOTIFICATION CLICK
    */
   const handleNotificationClick = async (notif: Notification) => {
-    // Supprimer la notification
-    try {
-      await fetch("/api/notifications", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationIds: [notif.id] }),
-      });
-    } catch (e) {
-      console.error("Error deleting notification:", e);
-    }
-
-    // Rafraîchir la liste
-    fetchNotifications();
+    // Mark as read
+    await markAsRead([notif.id]);
 
     // Naviguer vers l'entité concernée
     if (notif.entityId && notif.entityType) {
@@ -342,14 +270,13 @@ export default function Navbar({ onOpenLogin }: NavbarProps) {
           <button
             onClick={() => {
               setShowNotifications(!showNotifications);
-              if (!showNotifications) fetchNotifications();
             }}
             className="relative w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition"
           >
             <Bell size={18} className="text-white" />
-            {unreadNotifications > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {unreadNotifications}
+                {unreadCount}
               </span>
             )}
           </button>
@@ -360,7 +287,7 @@ export default function Navbar({ onOpenLogin }: NavbarProps) {
               <div className="p-4 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-800">Notifications</h3>
                 <button
-                  onClick={() => markAsRead()}
+                  onClick={() => markAllAsRead()}
                   className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
                 >
                   Tout marquer comme lu
@@ -368,7 +295,7 @@ export default function Navbar({ onOpenLogin }: NavbarProps) {
               </div>
 
               <div className="max-h-80 overflow-y-auto">
-                {loadingNotifications ? (
+                {notificationsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 bg-emerald-500/10" />
                   </div>

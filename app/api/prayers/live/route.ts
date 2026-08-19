@@ -43,13 +43,13 @@ export async function POST(req: Request) {
 
   // Create notification for room started
   await createNotification({
-    toUserId: session.user.id,
-    fromUserId: session.user.id,
+    userId: session.user.id,
+    senderId: session.user.id,
     type: "PRAYER_ROOM_STARTED",
     message: `Your prayer room "${room.title}" is now active`,
     entityId: room.id,
     entityType: "prayerLiveRoom",
-    data: { roomId: room.id },
+    metadata: { roomId: room.id },
   });
 
   return NextResponse.json({ room }, { status: 201 });

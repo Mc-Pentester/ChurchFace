@@ -130,13 +130,13 @@ export async function POST(req: Request) {
       for (const member of churchMembers) {
         if (member.userId !== session.user.id) {
           await createNotification({
-            toUserId: member.userId,
-            fromUserId: session.user.id,
+            userId: member.userId,
+            senderId: session.user.id,
             type: "PRAYER_CAMPAIGN_CREATED",
             message: `${session.user.name || "Someone"} created a new prayer campaign`,
             entityId: campaign.id,
             entityType: "prayerCampaign",
-            data: { campaignId: campaign.id, churchId },
+            metadata: { campaignId: campaign.id, churchId },
           });
         }
       }

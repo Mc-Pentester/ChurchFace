@@ -305,11 +305,13 @@ model Notification {
   entityId   String?
   entityType String?
   read       Boolean  @default(false)
+  readAt     DateTime?
   metadata   Json?
   sender     User?    @relation("NotificationSender", fields: [senderId], references: [id])
   user       User     @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, read])
   @@index([senderId])
   @@index([createdAt])
 }

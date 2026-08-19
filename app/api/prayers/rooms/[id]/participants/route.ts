@@ -91,13 +91,13 @@ export async function POST(
     // Create notification for room moderator
     if (participant.room.moderator && participant.room.moderator.id !== session.user.id) {
       await createNotification({
-        toUserId: participant.room.moderator.id,
-        fromUserId: session.user.id,
+        userId: participant.room.moderator.id,
+        senderId: session.user.id,
         type: "PRAYER_ROOM_JOINED",
         message: `${session.user.name || "Someone"} joined your prayer room`,
         entityId: participant.id,
         entityType: "prayerRoomParticipant",
-        data: { roomId },
+        metadata: { roomId },
       });
     }
 

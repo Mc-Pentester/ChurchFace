@@ -110,13 +110,13 @@ export async function POST(req: Request) {
       for (const member of churchMembers) {
         if (member.userId !== session.user.id) {
           await createNotification({
-            toUserId: member.userId,
-            fromUserId: session.user.id,
+            userId: member.userId,
+            senderId: session.user.id,
             type: "PRAYER_CHAIN_CREATED",
             message: `${session.user.name || "Someone"} created a new prayer chain`,
             entityId: chain.id,
             entityType: "prayerChain",
-            data: { chainId: chain.id, churchId: body.churchId },
+            metadata: { chainId: chain.id, churchId: body.churchId },
           });
         }
       }
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
         message: message?.trim() || null,
       },
     }).catch(() => {
-      // Ignore si existe déj�
+      // Ignore si existe déjà
     });
 
     // Create notification for chain creator (first participant with ADMIN/CREATOR role)
@@ -180,13 +180,13 @@ export async function POST(req: Request) {
 
     if (chainCreator && chainCreator.userId !== session.user.id) {
       await createNotification({
-        toUserId: chainCreator.userId,
-        fromUserId: session.user.id,
+        userId: chainCreator.userId,
+        senderId: session.user.id,
         type: "PRAYER_CHAIN_JOINED",
         message: `${session.user.name || "Someone"} joined your prayer chain`,
         entityId: participant.id,
         entityType: "prayerParticipant",
-        data: { chainId },
+        metadata: { chainId },
       });
     }
 
@@ -202,13 +202,13 @@ export async function POST(req: Request) {
     for (const otherParticipant of otherParticipants) {
       if (otherParticipant.userId !== chainCreator?.userId) {
         await createNotification({
-          toUserId: otherParticipant.userId,
-          fromUserId: session.user.id,
+          userId: otherParticipant.userId,
+          senderId: session.user.id,
           type: "CHAIN_NEW_PARTICIPANT",
           message: `${session.user.name || "Someone"} joined the prayer chain`,
           entityId: participant.id,
           entityType: "prayerParticipant",
-          data: { chainId },
+          metadata: { chainId },
         });
       }
     }

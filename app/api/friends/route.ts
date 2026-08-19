@@ -147,8 +147,8 @@ export async function POST(request: Request) {
 
   // Create notification with socket emission
   await createNotification({
-    toUserId: receiverId,
-    fromUserId: session.user.id,
+    userId: receiverId,
+    senderId: session.user.id,
     type: "FRIEND_REQUEST",
     message: `${session.user.name || "Someone"} wants to be your friend`,
     entityId: friendship.id,

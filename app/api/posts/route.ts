@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { canPublishContent } from "@/lib/moderation/ModerationService";
 import { getClientIp, rateLimit } from "@/lib/rateLimit";
 import { sanitizeText } from "@/lib/sanitize";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -258,6 +259,11 @@ export async function POST(req: NextRequest) {
       (m) => m[0].slice(1).toLowerCase()
     );
 
+    // Extract mentions from content (@username format)
+    const mentions = [...content.matchAll(/@([a-zA-Z0-9_]+)/g)].map(
+      (m) => m[1]
+    );
+
     // Support both old format (imageUrl/videoUrl) and new format (medias array)
     const imageUrl =
       typeof body?.imageUrl === "string" && body.imageUrl.trim() !== ""
@@ -293,7 +299,7 @@ export async function POST(req: NextRequest) {
 
     if (!moderationCheck.allowed) {
       return NextResponse.json(
-        { 
+        {
           error: "Contenu non autorisé",
           moderationResult: moderationCheck.result,
           reason: moderationCheck.result.reasons.join(', ')
@@ -447,6 +453,51 @@ export async function POST(req: NextRequest) {
     }
 
     // Return the created post (not a non-existent `posts` variable).
+
+    // Create notifications for mentioned users
+    if (mentions.length > 0) {
+      for (const username of mentions) {
+        // Find user by username (assuming username is stored in the name field or there's a username field)
+        const mentionedUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { name: { contains: username, mode: 'insensitive' } },
+              { email: { contains: username, mode: 'insensitive' } },
+            ],
+          },
+        });
+
+        if (mentionedUser && mentionedUser.id !== userId) {
+          await createNotification({
+            userId: mentionedUser.id,
+            senderId: userId,
+            type: "USER_MENTIONED",
+            message: `${session?.user?.name || "Someone"} mentioned you`,
+            entityId: post.id,
+            entityType: "post",
+          });
+        }
+      }
+    }
+
+    // Create notifications for followers when a user creates a post
+    const followers = await prisma.userFollow.findMany({
+      where: { followingId: userId },
+      select: { followerId: true },
+    });
+
+    for (const follower of followers) {
+      await createNotification({
+        userId: follower.followerId,
+        senderId: userId,
+        type: "POST_CREATED",
+        message: `${session?.user?.name || "Someone"} posted something new`,
+        entityId: post.id,
+        entityType: "post",
+        metadata: { postId: post.id },
+      });
+    }
+
     return NextResponse.json({ post });
   } catch (error) {
     console.error("CREATE POST ERROR:", error);

@@ -154,13 +154,13 @@ export async function POST(req: Request) {
     for (const participant of chainParticipants) {
       if (participant.userId !== session.user.id) {
         await createNotification({
-          toUserId: participant.userId,
-          fromUserId: session.user.id,
+          userId: participant.userId,
+          senderId: session.user.id,
           type: "CAMPAIGN_MOBILIZES_CHAIN",
           message: `La campagne "${campaign.title}" mobilise votre chaîne de prière`,
           entityId: campaign.id,
           entityType: "prayerCampaign",
-          data: { campaignId, chainId },
+          metadata: { campaignId, chainId },
         });
       }
     }
@@ -244,13 +244,13 @@ export async function DELETE(req: Request) {
     for (const participant of chainParticipants) {
       if (participant.userId !== session.user.id) {
         await createNotification({
-          toUserId: participant.userId,
-          fromUserId: session.user.id,
+          userId: participant.userId,
+          senderId: session.user.id,
           type: "CAMPAIGN_CHAIN_REMOVED",
           message: `La chaîne de prière a été retirée de la campagne`,
           entityId: campaignId,
           entityType: "prayerCampaign",
-          data: { campaignId, chainId },
+          metadata: { campaignId, chainId },
         });
       }
     }

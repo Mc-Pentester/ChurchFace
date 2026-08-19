@@ -168,13 +168,13 @@ export class MobileLiveService {
 
         if (shouldNotify) {
           await createNotification({
-            toUserId: follower.senderId,
-            fromUserId: broadcast.authorId,
+            userId: follower.senderId,
+            senderId: broadcast.authorId,
             type: "LIVE_STARTED",
             message: `est en direct : ${broadcast.title}`,
             entityId: broadcast.id,
             entityType: "LIVE_BROADCAST",
-            data: { broadcastId: broadcast.id },
+            metadata: { broadcastId: broadcast.id },
           });
         }
       }
@@ -200,13 +200,13 @@ export class MobileLiveService {
 
         if (shouldNotify) {
           await createNotification({
-            toUserId: follower.userId,
-            fromUserId: broadcast.authorId,
+            userId: follower.userId,
+            senderId: broadcast.authorId,
             type: "CHURCH_LIVE_STARTED",
             message: `est en direct : ${broadcast.title}`,
             entityId: broadcast.id,
             entityType: "LIVE_BROADCAST",
-            data: { broadcastId: broadcast.id, churchId: broadcast.ownerId },
+            metadata: { broadcastId: broadcast.id, churchId: broadcast.ownerId },
           });
         }
       }
@@ -225,13 +225,13 @@ export class MobileLiveService {
 
         if (shouldNotify) {
           await createNotification({
-            toUserId: member.userId,
-            fromUserId: broadcast.authorId,
+            userId: member.userId,
+            senderId: broadcast.authorId,
             type: "CHURCH_LIVE_STARTED",
             message: `est en direct : ${broadcast.title}`,
             entityId: broadcast.id,
             entityType: "LIVE_BROADCAST",
-            data: { broadcastId: broadcast.id, churchId: broadcast.ownerId },
+            metadata: { broadcastId: broadcast.id, churchId: broadcast.ownerId },
           });
         }
       }

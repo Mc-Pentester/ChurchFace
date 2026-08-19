@@ -12,16 +12,25 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const unreadOnly = searchParams.get("unread") === "true";
+  const limit = parseInt(searchParams.get("limit") || "50", 10);
+  const cursor = searchParams.get("cursor");
+  const type = searchParams.get("type");
+  const entityType = searchParams.get("entityType");
+
+  const where: any = {
+    userId: session.user.id,
+    ...(unreadOnly ? { read: false } : {}),
+    ...(type ? { type } : {}),
+    ...(entityType ? { entityType } : {}),
+  };
 
   const notifications = await prisma.notification.findMany({
-    where: {
-      userId: session.user.id,
-      ...(unreadOnly ? { read: false } : {}),
-    },
+    where,
     orderBy: {
       createdAt: "desc",
     },
-    take: 50,
+    take: Math.min(limit, 100), // Max 100
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
 
   const unreadCount = await prisma.notification.count({
@@ -31,7 +40,9 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.json({ notifications, unreadCount });
+  const nextCursor = notifications.length === limit ? notifications[notifications.length - 1].id : null;
+
+  return NextResponse.json({ notifications, unreadCount, nextCursor });
 }
 
 // PATCH /api/notifications - Mark notifications as read
@@ -51,6 +62,7 @@ export async function PATCH(request: Request) {
       },
       data: {
         read: true,
+        readAt: new Date(),
       },
     });
   } else if (notificationIds && Array.isArray(notificationIds)) {
@@ -61,6 +73,7 @@ export async function PATCH(request: Request) {
       },
       data: {
         read: true,
+        readAt: new Date(),
       },
     });
   }

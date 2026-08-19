@@ -51,8 +51,8 @@ export async function POST(request: Request) {
 
     // Create notification for sender
     await createNotification({
-      toUserId: friendship.senderId,
-      fromUserId: session.user.id,
+      userId: friendship.senderId,
+      senderId: session.user.id,
       type: "FRIEND_ACCEPTED",
       message: `${session.user.name || "Someone"} a accepté votre demande d'ami`,
       entityId: friendship.id,

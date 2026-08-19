@@ -56,8 +56,8 @@ export async function PATCH(
   // If accepted, create notification for sender
   if (status === "ACCEPTED") {
     await createNotification({
-      toUserId: friendship.senderId,
-      fromUserId: session.user.id,
+      userId: friendship.senderId,
+      senderId: session.user.id,
       type: "FRIEND_ACCEPTED",
       message: `${session.user.name || "Someone"} accepted your friend request`,
       entityId: friendship.id,

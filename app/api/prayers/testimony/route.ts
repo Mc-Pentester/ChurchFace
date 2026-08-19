@@ -54,13 +54,13 @@ export async function POST(req: Request) {
   for (const prayer of prayers) {
     if (prayer.userId !== session.user.id) {
       await createNotification({
-        toUserId: prayer.userId,
-        fromUserId: session.user.id,
+        userId: prayer.userId,
+        senderId: session.user.id,
         type: "PRAYER_ANSWERED",
         message: `${session.user.name || "Someone"} marked a prayer you prayed for as answered`,
         entityId: testimony.id,
         entityType: "prayerTestimony",
-        data: { prayerRequestId, testimonyId: testimony.id },
+        metadata: { prayerRequestId, testimonyId: testimony.id },
       });
     }
   }
