@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET(req: Request) {
   try {
@@ -32,6 +33,19 @@ export async function GET(req: Request) {
             id: true,
             name: true,
             image: true,
+          },
+        },
+        campaignChains: {
+          include: {
+            chain: {
+              include: {
+                _count: {
+                  select: {
+                    participants: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -90,8 +104,43 @@ export async function POST(req: Request) {
             image: true,
           },
         },
+        campaignChains: {
+          include: {
+            chain: {
+              include: {
+                _count: {
+                  select: {
+                    participants: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    // Create notification for church members if church is associated
+    if (churchId) {
+      const churchMembers = await prisma.churchMember.findMany({
+        where: { churchId },
+        select: { userId: true },
+      });
+
+      for (const member of churchMembers) {
+        if (member.userId !== session.user.id) {
+          await createNotification({
+            toUserId: member.userId,
+            fromUserId: session.user.id,
+            type: "PRAYER_CAMPAIGN_CREATED",
+            message: `${session.user.name || "Someone"} created a new prayer campaign`,
+            entityId: campaign.id,
+            entityType: "prayerCampaign",
+            data: { campaignId: campaign.id, churchId },
+          });
+        }
+      }
+    }
 
     return NextResponse.json({ campaign });
   } catch (error) {

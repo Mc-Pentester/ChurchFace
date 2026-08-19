@@ -95,6 +95,10 @@ export interface PrayerChainWithLinks {
   title: string;
   description: string | null;
   isActive: boolean;
+  status: "ACTIVE" | "SUSPENDED" | "ARCHIVED" | "DELETED";
+  suspendedAt?: string | null;
+  archivedAt?: string | null;
+  deletedAt?: string | null;
   createdAt: string;
   ownerId?: string;
   ownerType?: string;
@@ -104,7 +108,8 @@ export interface PrayerChainWithLinks {
   eventId?: string;
   imageUrl?: string;
   visibility?: "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS";
-  prayerCampaignId?: string;
+  prayerCampaignId?: string; // @deprecated: Use campaigns instead
+  campaigns?: PrayerCampaignChain[];
   scheduledStart?: string;
   scheduledEnd?: string;
   _count?: {
@@ -121,6 +126,15 @@ export interface PrayerChainWithLinks {
       image: string | null;
     };
   }[];
+}
+
+export interface PrayerCampaignChain {
+  id: string;
+  campaignId: string;
+  chainId: string;
+  joinedAt: string;
+  campaign?: PrayerCampaign;
+  chain?: PrayerChainWithLinks;
 }
 
 export interface PrayerParticipant {
@@ -206,8 +220,9 @@ export interface PrayerCampaign {
     image: string | null;
   };
   _count?: {
-    chains?: number;
+    chains?: number; // @deprecated: Use campaignChains count instead
   };
+  campaignChains?: PrayerCampaignChain[];
 }
 
 export interface PrayerEngagement {

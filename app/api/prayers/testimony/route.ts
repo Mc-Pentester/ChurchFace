@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -43,6 +44,26 @@ export async function POST(req: Request) {
       data: { isAnswered: true },
     }),
   ]);
+
+  // Create notifications for users who prayed for this prayer
+  const prayers = await prisma.prayerEngagement.findMany({
+    where: { prayerRequestId },
+    select: { userId: true },
+  });
+
+  for (const prayer of prayers) {
+    if (prayer.userId !== session.user.id) {
+      await createNotification({
+        toUserId: prayer.userId,
+        fromUserId: session.user.id,
+        type: "PRAYER_ANSWERED",
+        message: `${session.user.name || "Someone"} marked a prayer you prayed for as answered`,
+        entityId: testimony.id,
+        entityType: "prayerTestimony",
+        data: { prayerRequestId, testimonyId: testimony.id },
+      });
+    }
+  }
 
   return NextResponse.json({ testimony, prayer: updated }, { status: 201 });
 }

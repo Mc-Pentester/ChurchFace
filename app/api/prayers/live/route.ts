@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET() {
   const rooms = await prisma.prayerLiveRoom.findMany({
@@ -38,6 +39,17 @@ export async function POST(req: Request) {
     include: {
       _count: { select: { participants: true } },
     },
+  });
+
+  // Create notification for room started
+  await createNotification({
+    toUserId: session.user.id,
+    fromUserId: session.user.id,
+    type: "PRAYER_ROOM_STARTED",
+    message: `Your prayer room "${room.title}" is now active`,
+    entityId: room.id,
+    entityType: "prayerLiveRoom",
+    data: { roomId: room.id },
   });
 
   return NextResponse.json({ room }, { status: 201 });

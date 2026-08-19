@@ -1090,11 +1090,15 @@ model PrayerLiveRoomParticipant {
 model PrayerChain {
   id              String              @id @default(cuid())
   prayerRequestId String?
-  prayerCampaignId String?
+  prayerCampaignId String?             // @deprecated: Use PrayerCampaignChain instead (kept for backward compatibility)
   title           String
   description     String?
   visibility      String              @default("PUBLIC")
   isActive        Boolean             @default(true)
+  status          String              @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED, DELETED
+  suspendedAt     DateTime?
+  archivedAt      DateTime?
+  deletedAt       DateTime?
   createdAt       DateTime            @default(now())
   links           PrayerChainLink[]
   prayerRequests  PrayerRequest[]
@@ -1102,6 +1106,7 @@ model PrayerChain {
   schedules       PrayerSchedule[]
   rooms           PrayerRoom[]
   prayerCampaign  PrayerCampaign?     @relation(fields: [prayerCampaignId], references: [id])
+  campaignChains  PrayerCampaignChain[]
 }
 
 model PrayerChainLink {
@@ -1254,7 +1259,8 @@ model PrayerCampaign {
   createdAt   DateTime              @default(now())
   church      Church?               @relation(fields: [churchId], references: [id], onDelete: Cascade)
   creator     User                  @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  chains      PrayerChain[]
+  chains      PrayerChain[]         // @deprecated: Use PrayerCampaignChain instead (kept for backward compatibility)
+  campaignChains PrayerCampaignChain[]
   rooms       PrayerCampaignRoom[]
 
   @@index([churchId])
@@ -1273,6 +1279,19 @@ model PrayerCampaignRoom {
   @@unique([campaignId, roomId])
   @@index([campaignId])
   @@index([roomId])
+}
+
+model PrayerCampaignChain {
+  id           String        @id @default(cuid())
+  campaignId   String
+  chainId      String
+  joinedAt     DateTime      @default(now())
+  campaign     PrayerCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  chain        PrayerChain    @relation(fields: [chainId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, chainId])
+  @@index([campaignId])
+  @@index([chainId])
 }
 
 model PrayerEngagement {
