@@ -1,6 +1,7 @@
 /**
  * API Route for optimized media upload using MediaService
  * POST /api/media/upload
+ * Content-Type: multipart/form-data
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,8 +21,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { file } = body;
+    // Parse FormData
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
 
     if (!file) {
       return NextResponse.json(
@@ -30,25 +32,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert base64 to File if needed
-    let fileObj: File;
-    if (file.base64) {
-      const response = await fetch(file.base64);
-      const blob = await response.blob();
-      fileObj = new File([blob], file.name || "upload", { type: file.type });
-    } else {
+    // Validate file type
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
       return NextResponse.json(
-        { error: "Format de fichier non supporté" },
+        { error: "Type de fichier non supporté. Seuls les images et vidéos sont autorisées." },
         { status: 400 }
       );
     }
 
     // Upload and optimize using MediaService
     let result;
-    if (fileObj.type.startsWith("video/")) {
-      result = await MediaService.uploadVideo(fileObj);
-    } else if (fileObj.type.startsWith("image/")) {
-      result = await MediaService.uploadImage(fileObj);
+    if (file.type.startsWith("video/")) {
+      result = await MediaService.uploadVideo(file);
+    } else if (file.type.startsWith("image/")) {
+      result = await MediaService.uploadImage(file);
     } else {
       return NextResponse.json(
         { error: "Type de fichier non supporté. Seuls les images et vidéos sont autorisées." },
@@ -62,7 +59,7 @@ export async function POST(req: NextRequest) {
       metadata: result.metadata,
     });
   } catch (error) {
-    console.error("Media upload error:", error);
+    console.error("[MediaUpload] Error:", error instanceof Error ? error.message : "Upload failed");
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Erreur lors de l'upload" },
       { status: 500 }

@@ -43,26 +43,33 @@ export default function ProfileHeader({
   const [showMenu, setShowMenu] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
-  const { isUploading, uploadFile } = useMediaUploadOptimized();
+  const { uploadFile } = useMediaUploadOptimized();
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const result = await uploadFile(files[0]);
-      if (result) {
-        await fetch("/api/profile/avatar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            file: {
-              url: result.originalUrl,
-              type: result.metadata.mimeType || "image/jpeg",
-              thumbnail: result.variants.thumbnail?.url,
-            }
-          }),
-        });
-        window.location.reload();
+      setIsUploadingAvatar(true);
+      try {
+        const result = await uploadFile(files[0]);
+        if (result) {
+          await fetch("/api/profile/avatar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              file: {
+                url: result.originalUrl,
+                type: result.metadata.mimeType || "image/jpeg",
+                thumbnail: result.variants.thumbnail?.url,
+              }
+            }),
+          });
+          window.location.reload();
+        }
+      } finally {
+        setIsUploadingAvatar(false);
       }
     }
   };
@@ -70,20 +77,25 @@ export default function ProfileHeader({
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const result = await uploadFile(files[0]);
-      if (result) {
-        await fetch("/api/profile/cover", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            file: {
-              url: result.originalUrl,
-              type: result.metadata.mimeType || "image/jpeg",
-              thumbnail: result.variants.thumbnail?.url,
-            }
-          }),
-        });
-        window.location.reload();
+      setIsUploadingCover(true);
+      try {
+        const result = await uploadFile(files[0]);
+        if (result) {
+          await fetch("/api/profile/cover", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              file: {
+                url: result.originalUrl,
+                type: result.metadata.mimeType || "image/jpeg",
+                thumbnail: result.variants.thumbnail?.url,
+              }
+            }),
+          });
+          window.location.reload();
+        }
+      } finally {
+        setIsUploadingCover(false);
       }
     }
   };
@@ -103,7 +115,7 @@ export default function ProfileHeader({
 
         {isOwnProfile && (
           <label className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white px-3 py-1.5 rounded-lg cursor-pointer text-sm transition" onClick={(e) => e.stopPropagation()}>
-            {isUploading ? (
+            {isUploadingCover ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 <span>Upload...</span>
@@ -115,7 +127,7 @@ export default function ProfileHeader({
               type="file"
               accept="image/*"
               onChange={handleCoverUpload}
-              disabled={isUploading}
+              disabled={isUploadingCover}
               className="hidden"
             />
           </label>
@@ -147,7 +159,7 @@ export default function ProfileHeader({
 
             {isOwnProfile && (
               <label className="absolute bottom-2 right-2 bg-white hover:bg-gray-100 p-2 rounded-full shadow cursor-pointer transition" onClick={(e) => e.stopPropagation()}>
-                {isUploading ? (
+                {isUploadingAvatar ? (
                   <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <Upload className="w-4 h-4 text-gray-700" />
@@ -156,7 +168,7 @@ export default function ProfileHeader({
                   type="file"
                   accept="image/*"
                   onChange={handleAvatarUpload}
-                  disabled={isUploading}
+                  disabled={isUploadingAvatar}
                   className="hidden"
                 />
               </label>
@@ -196,7 +208,7 @@ export default function ProfileHeader({
                   {friendshipStatus === "PENDING_SENT" && (
                     <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg font-medium">
                       <UserPlus size={18} />
-                      Demande envoyÃ©e
+                      Demande envoyée
                     </div>
                   )}
 

@@ -14,6 +14,7 @@ import type {
   MediaMetadata,
   ImageValidationConfig,
   VideoValidationConfig,
+  OptimizedMedia,
 } from "./MediaTypes";
 import { MediaValidator } from "./MediaValidation";
 import { ImageOptimizer } from "./ImageOptimizer";
@@ -32,32 +33,79 @@ export class MediaService {
     file: File,
     config?: ImageValidationConfig
   ): Promise<MediaUploadResult> {
-    console.log("[MediaService] Uploading image:", file.name);
+    const sanitizedName = MediaValidator.sanitizeFilename(file.name);
+    console.log("[MediaService] Uploading image:", sanitizedName);
 
-    // Validate image
-    const metadata = await MediaValidator.validateImage(file, config);
-    console.log("[MediaService] Image validated:", metadata);
+    let originalUrl: string | null = null;
+    const uploadedUrls: string[] = [];
 
-    // Upload to storage
-    const originalUrl = await MediaStorage.upload(file);
-    console.log("[MediaService] Image uploaded:", originalUrl);
+    try {
+      // Validate image
+      const metadata = await MediaValidator.validateImage(file, config);
+      console.log("[MediaService] Image validated:", { width: metadata.width, height: metadata.height, size: metadata.size });
 
-    // Convert file to buffer for optimization
-    const buffer = await file.arrayBuffer();
+      // Upload original to storage
+      originalUrl = await MediaStorage.upload(file);
+      uploadedUrls.push(originalUrl);
+      console.log("[MediaService] Original uploaded");
 
-    // Generate optimized variants
-    const variants = await ImageOptimizer.optimizeImage(
-      Buffer.from(buffer),
-      originalUrl,
-      metadata
-    );
-    console.log("[MediaService] Variants generated:", Object.keys(variants));
+      // Convert file to buffer for optimization
+      const buffer = await file.arrayBuffer();
 
-    return {
-      originalUrl,
-      variants,
-      metadata,
-    };
+      // Generate optimized variants
+      const variants = await ImageOptimizer.optimizeImage(
+        Buffer.from(buffer),
+        originalUrl,
+        metadata
+      );
+      console.log("[MediaService] Variants generated:", Object.keys(variants));
+
+      // Upload each variant buffer
+      const uploadedVariants: Partial<Record<MediaVariant, OptimizedMedia>> = {};
+
+      for (const [variantName, variantData] of Object.entries(variants)) {
+        const variant = variantName as MediaVariant;
+
+        // Skip original - already uploaded
+        if (variant === "original") {
+          uploadedVariants[variant] = variantData;
+          continue;
+        }
+
+        // Upload variant buffer if available
+        if (variantData.buffer) {
+          try {
+            const variantUrl = await MediaStorage.uploadBuffer(
+              variantData.buffer,
+              this.generateVariantPath(originalUrl, variant),
+              { contentType: variantData.mimeType }
+            );
+            uploadedUrls.push(variantUrl);
+            uploadedVariants[variant] = {
+              ...variantData,
+              url: variantUrl,
+            };
+            console.log("[MediaService] Variant uploaded:", variant);
+          } catch (error) {
+            console.error("[MediaService] Failed to upload variant:", variant, error);
+            // Continue with other variants even if one fails
+          }
+        }
+      }
+
+      return {
+        originalUrl,
+        variants: uploadedVariants,
+        metadata,
+      };
+    } catch (error) {
+      // Cleanup on error
+      console.error("[MediaService] Upload failed, cleaning up");
+      if (uploadedUrls.length > 0) {
+        await this.cleanupUploads(uploadedUrls);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -67,32 +115,76 @@ export class MediaService {
     file: File,
     config?: VideoValidationConfig
   ): Promise<MediaUploadResult> {
-    console.log("[MediaService] Uploading video:", file.name);
+    const sanitizedName = MediaValidator.sanitizeFilename(file.name);
+    console.log("[MediaService] Uploading video:", sanitizedName);
 
-    // Validate video
-    const metadata = await MediaValidator.validateVideo(file, config);
-    console.log("[MediaService] Video validated:", metadata);
+    let originalUrl: string | null = null;
+    const uploadedUrls: string[] = [];
 
-    // Upload to storage
-    const originalUrl = await MediaStorage.upload(file);
-    console.log("[MediaService] Video uploaded:", originalUrl);
+    try {
+      // Validate video
+      const metadata = await MediaValidator.validateVideo(file, config);
+      console.log("[MediaService] Video validated:", { size: metadata.size, duration: metadata.duration });
 
-    // Convert file to buffer for optimization
-    const buffer = await file.arrayBuffer();
+      // Upload original to storage
+      originalUrl = await MediaStorage.upload(file);
+      uploadedUrls.push(originalUrl);
+      console.log("[MediaService] Video uploaded");
 
-    // Generate optimized variants (placeholder for now)
-    const variants = await VideoOptimizer.optimizeVideo(
-      Buffer.from(buffer),
-      originalUrl,
-      metadata
+      // Generate optimized variants (placeholder for now)
+      const variants = await VideoOptimizer.optimizeVideo(
+        Buffer.from(await file.arrayBuffer()),
+        originalUrl,
+        metadata
+      );
+      console.log("[MediaService] Variants generated:", Object.keys(variants));
+
+      return {
+        originalUrl,
+        variants,
+        metadata,
+      };
+    } catch (error) {
+      // Cleanup on error
+      console.error("[MediaService] Upload failed, cleaning up");
+      if (uploadedUrls.length > 0) {
+        await this.cleanupUploads(uploadedUrls);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Cleanup uploaded files on error
+   */
+  private static async cleanupUploadedFiles(urls: string[]): Promise<void> {
+    if (urls.length === 0) return;
+
+    console.log("[MediaService] Cleaning up uploaded files:", urls.length);
+    const cleanupPromises = urls.map(url =>
+      MediaStorage.delete(url).catch(err =>
+        console.error("[MediaService] Failed to cleanup file:", err)
+      )
     );
-    console.log("[MediaService] Variants generated:", Object.keys(variants));
 
-    return {
-      originalUrl,
-      variants,
-      metadata,
-    };
+    await Promise.allSettled(cleanupPromises);
+  }
+
+  /**
+   * Generates a variant path from original URL
+   */
+  private static generateVariantPath(originalUrl: string, variant: MediaVariant): string {
+    // Extract filename from URL and append variant suffix
+    const url = new URL(originalUrl);
+    const pathname = url.pathname;
+    const lastDot = pathname.lastIndexOf('.');
+
+    if (lastDot === -1) {
+      return `${pathname}-${variant}.webp`;
+    }
+
+    const base = pathname.substring(0, lastDot);
+    return `${base}-${variant}.webp`;
   }
 
   /**

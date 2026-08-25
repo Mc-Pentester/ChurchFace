@@ -8,6 +8,12 @@ export type PrayerCategory =
   | "MARIAGE"
   | "EVANGELISATION";
 
+export type PrayerContextType =
+  | "PERSONAL"
+  | "CAMPAIGN"
+  | "CHAIN"
+  | "ROOM";
+
 export interface PrayerRequestWithUser {
   id: string;
   userId: string;

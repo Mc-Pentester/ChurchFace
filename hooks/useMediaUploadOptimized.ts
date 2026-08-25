@@ -1,5 +1,6 @@
 /**
  * Client-side hook for optimized media upload using MediaService
+ * Uses FormData instead of Base64 for better performance
  */
 
 import { useState } from "react";
@@ -33,27 +34,14 @@ export function useMediaUploadOptimized() {
     setIsUploading(true);
 
     try {
-      // Convert file to base64 for API
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Create FormData
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const base64 = await base64Promise;
-
-      // Upload to MediaService API
+      // Upload to MediaService API using FormData
       const response = await fetch("/api/media/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          file: {
-            base64,
-            name: file.name,
-            type: file.type,
-          },
-        }),
+        body: formData,
       });
 
       if (!response.ok) {

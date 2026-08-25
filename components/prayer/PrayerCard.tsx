@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -94,7 +95,9 @@ export default function PrayerCard({
 
       {/* Content */}
       <div className="mt-4">
-        <h3 className="font-bold text-gray-900 text-base">{prayer.title}</h3>
+        <Link href="/prayers-unified">
+          <h3 className="font-bold text-gray-900 text-base hover:text-emerald-600 cursor-pointer transition">{prayer.title}</h3>
+        </Link>
         <p className="text-gray-600 text-sm mt-1 line-clamp-3">{prayer.content}</p>
       </div>
 

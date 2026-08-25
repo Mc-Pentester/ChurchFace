@@ -73,12 +73,43 @@ export async function POST(req: Request) {
   const churchIdFromQuery = searchParams.get("churchId");
 
   const body = await req.json();
-  const { title, content, category, isUrgent, churchId: churchIdFromBody, prayerChainId, prayerCampaignId } = body;
+  const { title, content, category, isUrgent, churchId: churchIdFromBody, prayerChainId, prayerCampaignId, prayerRoomId } = body;
 
   const churchId = churchIdFromBody || churchIdFromQuery || null;
 
-  if (!title?.trim() || !content?.trim() || !category) {
+  if (!title?.trim() || !category) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+
+  // Validate context selection - if a context ID is provided, verify it exists
+  if (prayerCampaignId) {
+    const campaign = await prisma.prayerCampaign.findUnique({
+      where: { id: prayerCampaignId },
+      select: { id: true },
+    });
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    }
+  }
+
+  if (prayerChainId) {
+    const chain = await prisma.prayerChain.findUnique({
+      where: { id: prayerChainId },
+      select: { id: true },
+    });
+    if (!chain) {
+      return NextResponse.json({ error: "Chain not found" }, { status: 404 });
+    }
+  }
+
+  if (prayerRoomId) {
+    const room = await prisma.prayerRoom.findUnique({
+      where: { id: prayerRoomId },
+      select: { id: true },
+    });
+    if (!room) {
+      return NextResponse.json({ error: "Room not found" }, { status: 404 });
+    }
   }
 
   const prayer = await prisma.prayerRequest.create({
@@ -91,12 +122,14 @@ export async function POST(req: Request) {
       churchId,
       prayerChainId: prayerChainId || null,
       prayerCampaignId: prayerCampaignId || null,
+      prayerRoomId: prayerRoomId || null,
     },
     include: {
       user: { select: { id: true, name: true, image: true } },
       church: { select: { id: true, name: true, slug: true } },
       prayerChain: { select: { id: true, title: true } },
       prayerCampaign: { select: { id: true, title: true } },
+      prayerRoom: { select: { id: true, title: true } },
       _count: { select: { reactions: true, responses: true, verses: true } },
     },
   });

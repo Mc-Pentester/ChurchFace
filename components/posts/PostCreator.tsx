@@ -360,8 +360,9 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Upload en cours... ({uploads.size} fichier(s))</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-emerald-600 h-2 rounded-full animate-pulse" style={{ width: "100%" }} />
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
+                <span className="text-sm text-gray-500">Traitement en cours...</span>
               </div>
             </div>
           )}

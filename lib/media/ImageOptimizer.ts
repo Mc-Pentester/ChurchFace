@@ -12,9 +12,19 @@ import type {
 } from "./MediaTypes";
 import { IMAGE_VARIANTS } from "./MediaTypes";
 
+export interface OptimizedVariant {
+  variant: MediaVariant;
+  buffer: Buffer;
+  width: number;
+  height: number;
+  size: number;
+  mimeType: string;
+}
+
 export class ImageOptimizer {
   /**
    * Optimizes an image and generates variants
+   * Returns buffers for each variant to be uploaded separately
    */
   static async optimizeImage(
     buffer: Buffer,
@@ -26,54 +36,101 @@ export class ImageOptimizer {
     // Generate each variant
     for (const [variantName, dimensions] of Object.entries(IMAGE_VARIANTS)) {
       const variant = variantName as MediaVariant;
-      variants[variant] = await this.generateVariant(
+
+      // Skip original - it's already uploaded
+      if (variant === "original") {
+        variants[variant] = {
+          url: originalUrl,
+          kind: "IMAGE",
+          variant,
+          dimensions: {
+            width: metadata.width || 0,
+            height: metadata.height || 0,
+          },
+          size: buffer.length,
+          mimeType: metadata.mimeType || "image/jpeg",
+        };
+        continue;
+      }
+
+      const optimized = await this.generateVariant(
         buffer,
         variant,
         dimensions.width,
         dimensions.height,
-        originalUrl,
         metadata
       );
+
+      variants[variant] = {
+        url: "", // Will be filled by MediaService after upload
+        kind: "IMAGE",
+        variant,
+        dimensions: {
+          width: optimized.width,
+          height: optimized.height,
+        },
+        size: optimized.size,
+        mimeType: optimized.mimeType,
+        buffer: optimized.buffer, // Include buffer for upload
+      };
     }
 
     return variants;
   }
 
   /**
-   * Generates a single image variant
+   * Generates a single image variant with actual dimensions
    */
   private static async generateVariant(
     buffer: Buffer,
     variant: MediaVariant,
     targetWidth: number,
     targetHeight: number,
-    originalUrl: string,
     metadata: MediaMetadata
-  ): Promise<OptimizedMedia> {
+  ): Promise<OptimizedVariant> {
     let sharpInstance = sharp(buffer);
 
-    // Resize maintaining aspect ratio
-    sharpInstance = sharpInstance.resize(targetWidth, targetHeight, {
-      fit: "inside",
-      withoutEnlargement: true,
-    });
+    // Get original metadata for aspect ratio
+    const originalMetadata = await sharp(buffer).metadata();
+    const originalWidth = originalMetadata.width || targetWidth;
+    const originalHeight = originalMetadata.height || targetHeight;
+
+    // Calculate actual dimensions maintaining aspect ratio
+    let actualWidth = targetWidth;
+    let actualHeight = targetHeight;
+
+    if (variant === "thumbnail") {
+      // Thumbnail uses cover fit (square)
+      sharpInstance = sharpInstance.resize(targetWidth, targetHeight, {
+        fit: "cover",
+        position: "center",
+      });
+    } else {
+      // Other variants use inside fit (maintain aspect ratio)
+      sharpInstance = sharpInstance.resize(targetWidth, targetHeight, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+
+      // Get actual dimensions after resize
+      const resizedMetadata = await sharpInstance.metadata();
+      actualWidth = resizedMetadata.width || targetWidth;
+      actualHeight = resizedMetadata.height || targetHeight;
+    }
 
     // Convert to WebP for better compression
     sharpInstance = sharpInstance.webp({
       quality: this.getQualityForVariant(variant),
-      effort: 4, // Balance between speed and compression
+      effort: 4,
     });
 
     const optimizedBuffer = await sharpInstance.toBuffer();
 
     return {
-      url: this.buildVariantUrl(originalUrl, variant),
-      kind: "IMAGE",
       variant,
-      dimensions: {
-        width: targetWidth,
-        height: targetHeight,
-      },
+      buffer: optimizedBuffer,
+      width: actualWidth,
+      height: actualHeight,
       size: optimizedBuffer.length,
       mimeType: "image/webp",
     };
@@ -95,24 +152,11 @@ export class ImageOptimizer {
   }
 
   /**
-   * Builds a variant URL from the original URL
-   * This is a placeholder - actual implementation depends on storage backend
-   */
-  private static buildVariantUrl(originalUrl: string, variant: MediaVariant): string {
-    // For now, append variant to URL as query parameter
-    // In production, this would use a CDN or storage service that supports variants
-    const url = new URL(originalUrl);
-    url.searchParams.set("variant", variant);
-    return url.toString();
-  }
-
-  /**
    * Generates a thumbnail from an image
    */
   static async generateThumbnail(
-    buffer: Buffer,
-    originalUrl: string
-  ): Promise<OptimizedMedia> {
+    buffer: Buffer
+  ): Promise<OptimizedVariant> {
     const { width, height } = IMAGE_VARIANTS.thumbnail;
     let sharpInstance = sharp(buffer);
 
@@ -124,12 +168,13 @@ export class ImageOptimizer {
       .webp({ quality: 70, effort: 4 });
 
     const optimizedBuffer = await sharpInstance.toBuffer();
+    const metadata = await sharp(optimizedBuffer).metadata();
 
     return {
-      url: this.buildVariantUrl(originalUrl, "thumbnail"),
-      kind: "IMAGE",
       variant: "thumbnail",
-      dimensions: { width, height },
+      buffer: optimizedBuffer,
+      width: metadata.width || width,
+      height: metadata.height || height,
       size: optimizedBuffer.length,
       mimeType: "image/webp",
     };

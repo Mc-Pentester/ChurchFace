@@ -16,9 +16,14 @@
 import { uploadFiles } from "@/lib/uploadthing";
 
 export interface StorageBackend {
-  upload(file: File | Buffer, path: string): Promise<string>;
+  upload(file: File | Buffer, path: string, options?: StorageUploadOptions): Promise<string>;
   delete(url: string): Promise<void>;
   getUrl(path: string): string;
+}
+
+export interface StorageUploadOptions {
+  contentType?: string;
+  cacheControl?: string;
 }
 
 /**
@@ -26,7 +31,7 @@ export interface StorageBackend {
  * Current implementation using UploadThing
  */
 class UploadThingStorage implements StorageBackend {
-  async upload(file: File | Buffer, path: string): Promise<string> {
+  async upload(file: File | Buffer, path: string, options?: StorageUploadOptions): Promise<string> {
     if (!(file instanceof File)) {
       throw new Error("Buffer upload not supported by UploadThing backend");
     }
@@ -77,9 +82,20 @@ export class MediaStorage {
   /**
    * Uploads a file to storage
    */
-  static async upload(file: File | Buffer, path?: string): Promise<string> {
+  static async upload(file: File | Buffer, path?: string, options?: StorageUploadOptions): Promise<string> {
     const uploadPath = path || this.generatePath(file);
-    return this.backend.upload(file, uploadPath);
+    return this.backend.upload(file, uploadPath, options);
+  }
+
+  /**
+   * Uploads a buffer to storage (for variant uploads)
+   */
+  static async uploadBuffer(
+    buffer: Buffer,
+    path: string,
+    options?: StorageUploadOptions
+  ): Promise<string> {
+    return this.backend.upload(buffer, path, options);
   }
 
   /**
@@ -87,13 +103,14 @@ export class MediaStorage {
    */
   static async uploadMultiple(
     files: (File | Buffer)[],
-    basePath?: string
+    basePath?: string,
+    options?: StorageUploadOptions
   ): Promise<string[]> {
     const uploadPromises = files.map((file, index) => {
       const path = basePath
         ? `${basePath}/${index}`
         : this.generatePath(file);
-      return this.backend.upload(file, path);
+      return this.backend.upload(file, path, options);
     });
 
     return Promise.all(uploadPromises);

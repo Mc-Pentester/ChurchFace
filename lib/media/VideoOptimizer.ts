@@ -24,46 +24,14 @@ export class VideoOptimizer {
     buffer: Buffer,
     originalUrl: string,
     metadata: MediaMetadata
-  ): Promise<Record<MediaVariant, OptimizedMedia>> {
-    // Placeholder implementation
+  ): Promise<Partial<Record<MediaVariant, OptimizedMedia>>> {
+    // Placeholder implementation - only original is available
     // In production, this would:
     // 1. Transcode to different resolutions (360p, 480p, 720p, 1080p)
     // 2. Generate poster images
     // 3. Optimize codec settings
     
-    const variants: Record<MediaVariant, OptimizedMedia> = {
-      thumbnail: {
-        url: this.buildVariantUrl(originalUrl, "thumbnail"),
-        kind: "VIDEO",
-        variant: "thumbnail",
-        dimensions: { width: 200, height: 200 },
-        size: buffer.length,
-        mimeType: metadata.mimeType || "video/mp4",
-      },
-      small: {
-        url: this.buildVariantUrl(originalUrl, "small"),
-        kind: "VIDEO",
-        variant: "small",
-        dimensions: { width: 480, height: 360 },
-        size: buffer.length,
-        mimeType: metadata.mimeType || "video/mp4",
-      },
-      medium: {
-        url: this.buildVariantUrl(originalUrl, "medium"),
-        kind: "VIDEO",
-        variant: "medium",
-        dimensions: { width: 720, height: 480 },
-        size: buffer.length,
-        mimeType: metadata.mimeType || "video/mp4",
-      },
-      large: {
-        url: this.buildVariantUrl(originalUrl, "large"),
-        kind: "VIDEO",
-        variant: "large",
-        dimensions: { width: 1080, height: 720 },
-        size: buffer.length,
-        mimeType: metadata.mimeType || "video/mp4",
-      },
+    const variants: Partial<Record<MediaVariant, OptimizedMedia>> = {
       original: {
         url: originalUrl,
         kind: "VIDEO",

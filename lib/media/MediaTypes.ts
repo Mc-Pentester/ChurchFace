@@ -32,11 +32,12 @@ export interface OptimizedMedia {
   dimensions?: MediaDimensions;
   size?: number;
   mimeType?: string;
+  buffer?: Buffer; // For variant uploads
 }
 
 export interface MediaUploadResult {
   originalUrl: string;
-  variants: Record<MediaVariant, OptimizedMedia>;
+  variants: Partial<Record<MediaVariant, OptimizedMedia>>;
   metadata: MediaMetadata;
 }
 
