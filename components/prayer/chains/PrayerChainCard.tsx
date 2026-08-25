@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { PrayerChainWithLinks } from "@/types/prayer";
 import { usePrayerParticipants } from "@/hooks/usePrayers";
 import { Users, Calendar, Lock, Globe, Settings } from "lucide-react";
+import Image from "next/image";
 
 interface PrayerChainCardProps {
   chain: PrayerChainWithLinks;
@@ -26,7 +27,7 @@ export function PrayerChainCard({ chain, onJoin, onView, onSettings, isMember = 
   }, [chain.id, fetchParticipants]);
 
   const visibilityIcon = chain.visibility === "PRIVATE" ? Lock : Globe;
-  const visibilityLabel = chain.visibility === "PRIVATE" ? "Privé" : "Public";
+  const visibilityLabel = chain.visibility === "PRIVATE" ? "PrivÃ©" : "Public";
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -40,11 +41,16 @@ export function PrayerChainCard({ chain, onJoin, onView, onSettings, isMember = 
             )}
           </div>
           {chain.imageUrl && (
-            <img
-              src={chain.imageUrl}
-              alt={chain.title}
-              className="w-16 h-16 rounded-lg object-cover ml-3"
-            />
+            <div className="w-16 h-16 rounded-lg overflow-hidden ml-3 relative">
+              <Image
+                src={chain.imageUrl}
+                alt={chain.title}
+                fill
+                className="object-cover"
+                sizes="64px"
+                loading="lazy"
+              />
+            </div>
           )}
         </div>
       </div>
@@ -80,7 +86,7 @@ export function PrayerChainCard({ chain, onJoin, onView, onSettings, isMember = 
             onClick={() => onView?.(chain.id)}
             className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
-            Voir la chaîne
+            Voir la chaÃ®ne
           </button>
         ) : (
           <button
@@ -94,13 +100,13 @@ export function PrayerChainCard({ chain, onJoin, onView, onSettings, isMember = 
           onClick={() => onView?.(chain.id)}
           className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          Détails
+          DÃ©tails
         </button>
         {onSettings && (
           <button
             onClick={() => onSettings(chain.id)}
             className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-            title="Paramètres"
+            title="ParamÃ¨tres"
           >
             <Settings className="w-4 h-4" />
           </button>

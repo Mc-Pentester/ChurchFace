@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import { publishPrayerTestimony } from "@/lib/feedPublisher";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
 
   const prayer = await prisma.prayerRequest.findUnique({
     where: { id: prayerRequestId },
-    select: { userId: true },
+    select: { userId: true, churchId: true },
   });
 
   if (!prayer) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -63,6 +64,15 @@ export async function POST(req: Request) {
         metadata: { prayerRequestId, testimonyId: testimony.id },
       });
     }
+  }
+
+  // Publish to Feed if prayer is associated with a church
+  if (prayer.churchId) {
+    await publishPrayerTestimony({
+      prayerRequestId,
+      churchId: prayer.churchId,
+      authorId: session.user.id,
+    });
   }
 
   return NextResponse.json({ testimony, prayer: updated }, { status: 201 });

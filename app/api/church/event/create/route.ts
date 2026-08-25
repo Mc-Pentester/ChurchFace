@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createPostForEntity } from "@/lib/content";
 import { userHasChurchRole } from "@/lib/church-perms";
+import { publishChurchEvent } from "@/lib/feedPublisher";
 
 export async function POST(req: Request) {
   try {
@@ -70,17 +71,13 @@ export async function POST(req: Request) {
       console.log("Event created successfully:", event.id);
 
       try {
-        await createPostForEntity({
+        await publishChurchEvent({
+          eventId: event.id,
           churchId: church.id,
-          type: "event",
-          entityId: event.id,
-          title: `📅 Événement : ${event.title}`,
-          summary: event.description || null,
-          tx,
           authorId: session.user.id,
         });
       } catch (err) {
-        console.error("Failed to create post for event:", err);
+        console.error("Failed to publish event to Feed:", err);
         // do not rollback the event creation because post creation failure should not block the event
       }
 

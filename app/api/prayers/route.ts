@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
+import { publishPrayerRequest } from "@/lib/feedPublisher";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -67,8 +69,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const churchIdFromQuery = searchParams.get("churchId");
+
   const body = await req.json();
-  const { title, content, category, isUrgent, churchId } = body;
+  const { title, content, category, isUrgent, churchId: churchIdFromBody, prayerChainId, prayerCampaignId } = body;
+
+  const churchId = churchIdFromBody || churchIdFromQuery || null;
 
   if (!title?.trim() || !content?.trim() || !category) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -81,14 +88,49 @@ export async function POST(req: Request) {
       category,
       isUrgent: !!isUrgent,
       userId: session.user.id,
-      churchId: churchId || null,
+      churchId,
+      prayerChainId: prayerChainId || null,
+      prayerCampaignId: prayerCampaignId || null,
     },
     include: {
       user: { select: { id: true, name: true, image: true } },
       church: { select: { id: true, name: true, slug: true } },
+      prayerChain: { select: { id: true, title: true } },
+      prayerCampaign: { select: { id: true, title: true } },
       _count: { select: { reactions: true, responses: true, verses: true } },
     },
   });
+
+  // Create notification for church members if church is associated
+  if (churchId) {
+    const churchMembers = await prisma.churchMember.findMany({
+      where: { churchId },
+      select: { userId: true },
+    });
+
+    for (const member of churchMembers) {
+      if (member.userId !== session.user.id) {
+        await createNotification({
+          userId: member.userId,
+          senderId: session.user.id,
+          type: "PRAYER_REQUEST_CREATED",
+          message: `${session.user.name || "Someone"} created a new prayer request`,
+          entityId: prayer.id,
+          entityType: "prayerRequest",
+          metadata: { prayerRequestId: prayer.id, churchId },
+        });
+      }
+    }
+
+    // Publish to Feed if prayer is urgent and associated with a church
+    if (prayer.isUrgent) {
+      await publishPrayerRequest({
+        prayerRequestId: prayer.id,
+        churchId,
+        authorId: session.user.id,
+      });
+    }
+  }
 
   return NextResponse.json({ prayer }, { status: 201 });
 }

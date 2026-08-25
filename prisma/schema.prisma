@@ -1020,26 +1020,29 @@ model PlaylistItem {
 }
 
 model PrayerRequest {
-  id            String           @id @default(cuid())
-  userId        String
-  title         String
-  content       String
-  category      String?
-  isUrgent      Boolean          @default(false)
-  isAnswered    Boolean          @default(false)
-  createdAt     DateTime         @default(now())
-  prayerChainId String?
-  churchId      String?
-  reactions     PrayerReaction[]
-  prayerChain   PrayerChain?     @relation(fields: [prayerChainId], references: [id])
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  responses     PrayerResponse[]
-  testimony     PrayerTestimony?
-  verses        PrayerVerse[]
-  church        Church?          @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  engagements   PrayerEngagement[]
+  id               String           @id @default(cuid())
+  userId           String
+  title            String
+  content          String
+  category         String?
+  isUrgent         Boolean          @default(false)
+  isAnswered       Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  prayerChainId    String?
+  prayerCampaignId String?
+  churchId         String?
+  reactions        PrayerReaction[]
+  prayerChain      PrayerChain?     @relation(fields: [prayerChainId], references: [id])
+  prayerCampaign   PrayerCampaign?  @relation(fields: [prayerCampaignId], references: [id])
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses        PrayerResponse[]
+  testimony        PrayerTestimony?
+  verses           PrayerVerse[]
+  church           Church?          @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  engagements      PrayerEngagement[]
 
   @@index([churchId])
+  @@index([prayerCampaignId])
 }
 
 model PrayerLiveRoom {
@@ -1248,22 +1251,23 @@ model PrayerRoomParticipant {
 }
 
 model PrayerCampaign {
-  id          String                @id @default(cuid())
-  title       String
-  description String?
-  imageUrl    String?
-  type        String
-  startDate   DateTime
-  endDate     DateTime
-  isActive    Boolean               @default(true)
-  churchId    String?
-  createdBy   String
-  createdAt   DateTime              @default(now())
-  church      Church?               @relation(fields: [churchId], references: [id], onDelete: Cascade)
-  creator     User                  @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  chains      PrayerChain[]         // @deprecated: Use PrayerCampaignChain instead (kept for backward compatibility)
-  campaignChains PrayerCampaignChain[]
-  rooms       PrayerCampaignRoom[]
+  id              String                @id @default(cuid())
+  title           String
+  description     String?
+  imageUrl        String?
+  type            String
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean               @default(true)
+  churchId        String?
+  createdBy       String
+  createdAt       DateTime              @default(now())
+  church          Church?               @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  creator         User                  @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  chains          PrayerChain[]         // @deprecated: Use PrayerCampaignChain instead (kept for backward compatibility)
+  campaignChains  PrayerCampaignChain[]
+  rooms           PrayerCampaignRoom[]
+  prayerRequests  PrayerRequest[]
 
   @@index([churchId])
   @@index([createdBy])
@@ -1603,9 +1607,9 @@ model TrainingSession {
 }
 
 // ============================================
-// MODÈLE UNIFIÉ PRIÈRE (PHASE 1 MIGRATION)
+// MODÃˆLE UNIFIÃ‰ PRIÃˆRE (PHASE 1 MIGRATION)
 // ============================================
-// Ce modèle unifié remplace progressivement:
+// Ce modÃ¨le unifiÃ© remplace progressivement:
 // - PrayerRequest (type = "INDIVIDUAL")
 // - PrayerChain (type = "COLLABORATIVE_CHAIN")
 // - PrayerCampaign (type = "COLLABORATIVE_CAMPAIGN")
@@ -1646,17 +1650,17 @@ model Prayer {
   startDate   DateTime?
   endDate     DateTime?
   
-  // Relations hiérarchiques (pour chaînes dans campagnes)
+  // Relations hiÃ©rarchiques (pour chaÃ®nes dans campagnes)
   parentPrayerId String?
   parentPrayer   Prayer?  @relation("PrayerHierarchy", fields: [parentPrayerId], references: [id], onDelete: Cascade)
   childPrayers   Prayer[] @relation("PrayerHierarchy")
   
-  // Relations communes (noms uniques pour éviter conflits)
+  // Relations communes (noms uniques pour Ã©viter conflits)
   prayerCreator User     @relation("UnifiedPrayerCreator", fields: [createdBy], references: [id], onDelete: Cascade)
   prayerChurch  Church?  @relation("UnifiedPrayerChurch", fields: [churchId], references: [id], onDelete: Cascade)
   
-  // Relations spécifiques par type (seront ajoutées lors de la migration complète)
-  // Pour Phase 1, nous gardons les modèles existants intactes
+  // Relations spÃ©cifiques par type (seront ajoutÃ©es lors de la migration complÃ¨te)
+  // Pour Phase 1, nous gardons les modÃ¨les existants intactes
 
   @@index([type])
   @@index([churchId])

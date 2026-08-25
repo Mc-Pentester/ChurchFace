@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -44,7 +44,7 @@ export default function HomePage() {
       {/* BODY */}
       <section className="w-full">
 
-        <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-[200px_1fr] lg:grid-cols-[200px_1fr_200px] gap-4 px-3 py-6">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-[200px_1fr] lg:grid-cols-[200px_1fr_200px] gap-4 md:px-3 md:py-6">
 
           {/* LEFT SIDEBAR - Hidden on mobile, visible on tablet+ */}
           <aside className="hidden md:block sticky top-20 h-fit">

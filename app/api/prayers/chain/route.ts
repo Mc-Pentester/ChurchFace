@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
+import { publishPrayerChain } from "@/lib/feedPublisher";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -120,6 +121,15 @@ export async function POST(req: Request) {
           });
         }
       }
+
+      // Publish to Feed if chain is public and associated with a church
+      if (chain.visibility === "PUBLIC") {
+        await publishPrayerChain({
+          prayerChainId: chain.id,
+          churchId: body.churchId,
+          authorId: session.user.id,
+        });
+      }
     }
 
     return NextResponse.json({ chain }, { status: 201 });
@@ -128,7 +138,7 @@ export async function POST(req: Request) {
   if (action === "join") {
     if (!chainId) return NextResponse.json({ error: "Missing chainId" }, { status: 400 });
 
-    // Utiliser PrayerParticipant comme modèle principal
+    // Utiliser PrayerParticipant comme modÃ¨le principal
     const existing = await prisma.prayerParticipant.findUnique({
       where: {
         prayerChainId_userId: {
@@ -158,7 +168,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // Maintenir la compatibilité avec PrayerChainLink
+    // Maintenir la compatibilitÃ© avec PrayerChainLink
     await prisma.prayerChainLink.create({
       data: {
         chainId,
@@ -166,7 +176,7 @@ export async function POST(req: Request) {
         message: message?.trim() || null,
       },
     }).catch(() => {
-      // Ignore si existe déjà
+      // Ignore si existe dÃ©jÃ 
     });
 
     // Create notification for chain creator (first participant with ADMIN/CREATOR role)

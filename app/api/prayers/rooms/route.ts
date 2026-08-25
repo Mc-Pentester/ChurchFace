@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import { publishPrayerRoom } from "@/lib/feedPublisher";
 
 export async function GET(req: Request) {
   try {
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ rooms });
   } catch (error) {
-    console.error("Erreur r�cup�ration salles:", error);
+    console.error("Erreur rï¿½cupï¿½ration salles:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing title" }, { status: 400 });
     }
 
-    // Cr�er dans PrayerRoom
+    // Crï¿½er dans PrayerRoom
     const room = await prisma.prayerRoom.create({
       data: {
         title: title.trim(),
@@ -130,11 +131,20 @@ export async function POST(req: Request) {
           });
         }
       }
+
+      // Publish to Feed if room is public and associated with a church
+      if (room.isPublic) {
+        await publishPrayerRoom({
+          prayerRoomId: room.id,
+          churchId,
+          authorId: session.user.id,
+        });
+      }
     }
 
     return NextResponse.json({ room });
   } catch (error) {
-    console.error("Erreur cr�ation salle:", error);
+    console.error("Erreur crï¿½ation salle:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

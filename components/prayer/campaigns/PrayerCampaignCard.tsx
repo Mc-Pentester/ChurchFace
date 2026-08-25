@@ -2,6 +2,7 @@
 
 import { PrayerCampaign } from "@/types/prayer";
 import { Calendar, Users, Flame, Church, Globe, Settings } from "lucide-react";
+import Image from "next/image";
 
 interface PrayerCampaignCardProps {
   campaign: PrayerCampaign;
@@ -19,9 +20,9 @@ const CAMPAIGN_ICONS = {
 };
 
 const CAMPAIGN_LABELS = {
-  FAST: "Jeûne",
-  PRAYER: "Prière",
-  VIGIL: "Veillée",
+  FAST: "JeÃ»ne",
+  PRAYER: "PriÃ¨re",
+  VIGIL: "VeillÃ©e",
   NATIONAL: "National",
   GLOBAL: "Global",
 };
@@ -38,10 +39,13 @@ export function PrayerCampaignCard({ campaign, onJoin, onView, onSettings }: Pra
       {/* Header with image */}
       {campaign.imageUrl && (
         <div className="h-32 bg-gradient-to-br from-emerald-500 to-teal-600 relative">
-          <img
+          <Image
             src={campaign.imageUrl}
             alt={campaign.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 400px"
+            loading="lazy"
           />
           <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
             <Icon className="w-3 h-3" />
@@ -81,7 +85,7 @@ export function PrayerCampaignCard({ campaign, onJoin, onView, onSettings }: Pra
 
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Users className="w-4 h-4" />
-            <span>{campaign._count?.chains || 0} chaîne{campaign._count?.chains !== 1 ? "s" : ""}</span>
+            <span>{campaign._count?.chains || 0} chaÃ®ne{campaign._count?.chains !== 1 ? "s" : ""}</span>
           </div>
         </div>
 
@@ -91,13 +95,13 @@ export function PrayerCampaignCard({ campaign, onJoin, onView, onSettings }: Pra
             onClick={() => onView?.(campaign.id)}
             className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
-            Voir les chaînes
+            Voir les chaÃ®nes
           </button>
           {onSettings && (
             <button
               onClick={() => onSettings(campaign.id)}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              title="Paramètres"
+              title="ParamÃ¨tres"
             >
               <Settings className="w-4 h-4" />
             </button>

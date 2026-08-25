@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import ShareMenu from "./ShareMenu";
 import ReportButton from "../moderation/ReportButton";
 import UploadProgress from "@/components/upload/UploadProgress";
@@ -456,7 +457,7 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Exprime-toi en Christ ✨"
+          placeholder="Exprime-toi en Christ âœ¨"
           className="w-full bg-gradient-to-r from-emerald-50 to-purple-50 p-4 rounded-xl outline-none resize-none focus:ring-2 focus:ring-emerald-300"
         />
 
@@ -495,7 +496,7 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
             ) : (
               <img
                 src={mediaUrl}
-                alt="Aperçu"
+                alt="AperÃ§u"
                 className="rounded-xl w-full max-h-96 object-contain bg-gradient-to-br from-emerald-100 to-purple-100"
               />
             )}
@@ -506,10 +507,10 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
               }}
               className="absolute top-2 right-2 bg-gradient-to-r from-emerald-600 to-purple-600 hover:from-emerald-700 hover:to-purple-700 text-white text-xs px-2 py-1 rounded-full transition"
             >
-              ✕ Retirer
+              âœ• Retirer
             </button>
             <span className="absolute bottom-2 left-2 bg-gradient-to-r from-emerald-600 to-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full">
-              {mediaIsVideo ? "🎬 Vidéo" : "🖼️ Image"}
+              {mediaIsVideo ? "ðŸŽ¬ VidÃ©o" : "ðŸ–¼ï¸ Image"}
             </span>
           </div>
         )}
@@ -518,19 +519,21 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
 
       {/* POSTS */}
       {posts.map((p) => (
-        <div key={p.id} className="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-4 md:p-5 shadow-sm space-y-3 border border-purple-100">
+        <div key={p.id} className="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-sm space-y-3 border border-purple-100">
 
           {/* AUTHOR */}
-          <div className="font-semibold bg-gradient-to-r from-emerald-700 to-purple-700 bg-clip-text text-transparent text-base md:text-lg">
+          <div className="px-3 md:px-5 pt-4 md:pt-5 font-semibold bg-gradient-to-r from-emerald-700 to-purple-700 bg-clip-text text-transparent text-base md:text-lg">
             {p.author?.name || "Utilisateur"}
           </div>
 
           {/* CONTENT */}
-          <p>{p.content}</p>
+          <div className="px-3 md:px-5">
+            <p>{p.content}</p>
+          </div>
 
           {/* HASHTAGS */}
           {p.hashtags && p.hashtags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="px-3 md:px-5 flex flex-wrap gap-2">
               {p.hashtags.map((tag, idx) => (
                 <span
                   key={idx}
@@ -545,32 +548,36 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
 
           {/* MEDIA */}
           {p.generatedType === "CHURCH_PRAYER" && p.generatedId ? (
-            <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full">🙏 PRIÈRE</span>
-                <span className="text-sm font-semibold text-gray-700">Demande de prière urgente</span>
+            <div className="px-3 md:px-5">
+              <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full">ðŸ™ PRIÃˆRE</span>
+                  <span className="text-sm font-semibold text-gray-700">Demande de priÃ¨re urgente</span>
+                </div>
+                {p.church && (
+                  <a
+                    href={`/church/${p.church.slug}/prayers`}
+                    className="block text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                  >
+                    Voir les priÃ¨res de {p.church.name} â†’
+                  </a>
+                )}
               </div>
-              {p.church && (
-                <a
-                  href={`/church/${p.church.slug}/prayers`}
-                  className="block text-emerald-600 hover:text-emerald-700 text-sm font-medium"
-                >
-                  Voir les prières de {p.church.name} →
-                </a>
-              )}
             </div>
           ) : p.generatedType === "CHURCH_LIVE" && p.generatedId ? (
-            <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">LIVE</span>
-                <span className="text-sm font-semibold text-gray-700">Diffusion en direct</span>
+            <div className="px-3 md:px-5">
+              <div className="bg-gradient-to-br from-emerald-100 to-purple-100 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">LIVE</span>
+                  <span className="text-sm font-semibold text-gray-700">Diffusion en direct</span>
+                </div>
+                <a
+                  href={`/church/${p.church?.slug}/live`}
+                  className="block text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                >
+                  Voir la diffusion â†’
+                </a>
               </div>
-              <a
-                href={`/church/${p.church?.slug}/live`}
-                className="block text-emerald-600 hover:text-emerald-700 text-sm font-medium"
-              >
-                Voir la diffusion →
-              </a>
             </div>
           ) : p.postMedias && p.postMedias.length > 0 ? (
             <div className={`grid gap-2 ${p.postMedias.length === 1 ? 'grid-cols-1' : p.postMedias.length === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
@@ -592,36 +599,58 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
                       className="rounded-xl w-full max-h-[600px] object-cover"
                     />
                   ) : (
-                    <img
-                      src={media.thumbnail || media.url}
-                      alt=""
-                      className="rounded-xl w-full object-cover"
-                    />
+                    <div className="relative w-full aspect-square">
+                      <Image
+                        src={media.thumbnail || media.url}
+                        alt=""
+                        fill
+                        className="rounded-xl object-cover"
+                        sizes="(max-width: 768px) 50vw, 33vw"
+                        loading="lazy"
+                      />
+                    </div>
                   )}
                 </div>
               ))}
             </div>
           ) : p.videoUrl ? (
-            <video
-              src={p.videoUrl}
-              controls
-              preload="metadata"
-              playsInline
-              className="rounded-xl w-full max-h-[600px] object-cover"
-            />
+            <div className="cursor-pointer" onClick={() => {
+              setModalMedia([{ id: p.id, type: "VIDEO", url: p.videoUrl, thumbnail: null, order: 0 }]);
+              setModalInitialIndex(0);
+            }}>
+              <video
+                src={p.videoUrl}
+                controls
+                preload="metadata"
+                playsInline
+                className="rounded-xl w-full max-h-[600px] object-cover"
+              />
+            </div>
           ) : p.imageUrl ? (
-            <img src={p.imageUrl} alt="" className="rounded-xl w-full" />
+            <div className="cursor-pointer relative w-full aspect-video" onClick={() => {
+              setModalMedia([{ id: p.id, type: "IMAGE", url: p.imageUrl, thumbnail: p.imageUrl, order: 0 }]);
+              setModalInitialIndex(0);
+            }}>
+              <Image
+                src={p.imageUrl}
+                alt=""
+                fill
+                className="rounded-xl object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                loading="lazy"
+              />
+            </div>
           ) : null}
 
           {/* ACTIONS */}
-          <div className="flex gap-3 md:gap-4 text-sm pt-2">
+          <div className="px-3 md:px-5 flex gap-3 md:gap-4 text-sm pt-2">
 
             <button
               onClick={() => handleLike(p.id)}
               className="flex items-center gap-2 px-4 py-2 min-h-[44px] text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
             >
               <span className="text-lg">
-                {p.likeRelations?.some((l) => l.userId === session?.user?.id) ? "❤️" : "🤍"}
+                {p.likeRelations?.some((l) => l.userId === session?.user?.id) ? "â¤ï¸" : "ðŸ¤"}
               </span>
               <span className="font-medium">({p.likeRelations?.length || 0})</span>
             </button>
@@ -635,13 +664,15 @@ export default function Feed({ userId, hideCreator = false }: { userId?: string;
           </div>
 
           {/* COMMENTS */}
-          <CommentBox
-            postId={p.id}
-            comments={commentsByPost[p.id] || []}
-            sendComment={sendComment}
-            sendReply={sendReply}
-            isAuth={isAuth}
-          />
+          <div className="px-3 md:px-5">
+            <CommentBox
+              postId={p.id}
+              comments={commentsByPost[p.id] || []}
+              sendComment={sendComment}
+              sendReply={sendReply}
+              isAuth={isAuth}
+            />
+          </div>
 
         </div>
       ))}
@@ -702,7 +733,7 @@ function CommentItem({
           onClick={() => setShowReply(!showReply)}
           className="text-xs text-gray-500 hover:text-emerald-600"
         >
-          {showReply ? "Annuler" : "Répondre"}
+          {showReply ? "Annuler" : "RÃ©pondre"}
         </button>
       )}
 
@@ -718,7 +749,7 @@ function CommentItem({
               }
             }}
             className="flex-1 bg-gray-100 px-3 py-3 min-h-[44px] rounded-xl text-base"
-            placeholder="Répondre..."
+            placeholder="RÃ©pondre..."
           />
           <button
             onClick={() => {

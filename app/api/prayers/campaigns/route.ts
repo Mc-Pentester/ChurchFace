@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import { publishPrayerCampaign } from "@/lib/feedPublisher";
 
 export async function GET(req: Request) {
   try {
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ campaigns });
   } catch (error) {
-    console.error("Erreur récupération campagnes:", error);
+    console.error("Erreur rÃ©cupÃ©ration campagnes:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields: type, startDate, endDate" }, { status: 400 });
     }
 
-    // Créer dans PrayerCampaign
+    // CrÃ©er dans PrayerCampaign
     const campaign = await prisma.prayerCampaign.create({
       data: {
         title: title.trim(),
@@ -140,11 +141,18 @@ export async function POST(req: Request) {
           });
         }
       }
+
+      // Publish to Feed if church is associated
+      await publishPrayerCampaign({
+        prayerCampaignId: campaign.id,
+        churchId,
+        authorId: session.user.id,
+      });
     }
 
     return NextResponse.json({ campaign });
   } catch (error) {
-    console.error("Erreur création campagne:", error);
+    console.error("Erreur crÃ©ation campagne:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

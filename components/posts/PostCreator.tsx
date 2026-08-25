@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { UploadButton } from "@/lib/uploadthing";
 import Image from "next/image";
-import { X, Image as ImageIcon, Send, Plus } from "lucide-react";
+import { X, Image as ImageIcon, Send, Plus, Upload } from "lucide-react";
+import { useMediaUploadOptimized } from "@/hooks/useMediaUploadOptimized";
+import type { MediaUploadResult } from "@/lib/media";
 
 interface PostCreatorProps {
   onPostCreated?: () => void;
@@ -24,15 +25,14 @@ interface Album {
 export default function PostCreator({ onPostCreated, userId }: PostCreatorProps) {
   const { data: session } = useSession();
   const [content, setContent] = useState("");
-  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [mediaTypes, setMediaTypes] = useState<("IMAGE" | "VIDEO")[]>([]);
+  const [mediaResults, setMediaResults] = useState<MediaUploadResult[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [albumId, setAlbumId] = useState<string | null>(null);
   const [showAlbumSelector, setShowAlbumSelector] = useState(false);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [isLoadingAlbums, setIsLoadingAlbums] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
+
+  const { uploads, isUploading, uploadFile, clearUploads, removeUpload } = useMediaUploadOptimized();
 
   const currentUserId = userId || (session?.user as any)?.id;
 
@@ -79,28 +79,24 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
     }
   };
 
-  const handleMediaUpload = (res: any[]) => {
-    if (!res || res.length === 0) return;
-    
-    res.forEach((uploadedFile) => {
-      const isVideo = uploadedFile.type && uploadedFile.type.startsWith("video/");
-      
-      if (uploadedFile.url) {
-        setMediaUrls(prev => [...prev, uploadedFile.url]);
-        setMediaTypes(prev => [...prev, isVideo ? "VIDEO" : "IMAGE"]);
+  const handleMediaUpload = async (files: FileList) => {
+    const fileArray = Array.from(files);
+
+    for (const file of fileArray) {
+      const result = await uploadFile(file);
+      if (result) {
+        setMediaResults(prev => [...prev, result]);
       }
-    });
+    }
   };
 
   const handleRemoveMedia = (index: number) => {
-    setMediaUrls(prev => prev.filter((_, i) => i !== index));
-    setMediaTypes(prev => prev.filter((_, i) => i !== index));
+    setMediaResults(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleClearAllMedia = () => {
-    setMediaUrls([]);
-    setMediaTypes([]);
-    setUploadProgress(0);
+    setMediaResults([]);
+    clearUploads();
   };
 
   const handleSubmit = async () => {
@@ -109,7 +105,7 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
       return;
     }
 
-    if (!content && mediaUrls.length === 0) {
+    if (!content && mediaResults.length === 0) {
       alert("Veuillez ajouter du contenu ou un média");
       return;
     }
@@ -118,11 +114,24 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
 
     try {
       // Préparer le tableau de médias pour le nouveau format
-      const medias = mediaUrls.map((url, index) => ({
-        url,
-        type: mediaTypes[index],
-        thumbnail: null,
-      }));
+      const medias = mediaResults.map((result) => {
+        const mimeType = result.metadata.mimeType;
+        const type = mimeType?.startsWith("video/")
+          ? "VIDEO"
+          : mimeType?.startsWith("image/")
+            ? "IMAGE"
+            : null;
+
+        if (!type) {
+          throw new Error(`Type de fichier non supporté: ${mimeType}`);
+        }
+
+        return {
+          url: result.originalUrl,
+          type,
+          thumbnail: result.variants.thumbnail?.url || null,
+        };
+      });
 
       // Créer le post via l'API avec le nouveau format medias
       const response = await fetch("/api/posts", {
@@ -140,14 +149,15 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
       }
 
       // Créer les entrées Media pour la galerie (tous les médias)
-      for (let i = 0; i < mediaUrls.length; i++) {
+      for (const result of mediaResults) {
         await fetch("/api/media", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            file: { 
-              url: mediaUrls[i], 
-              type: mediaTypes[i] === "VIDEO" ? "video/mp4" : "image/jpeg" 
+            file: {
+              url: result.originalUrl,
+              type: result.metadata.mimeType || "image/jpeg",
+              thumbnail: result.variants.thumbnail?.url,
             },
             albumId,
             caption: content.trim() || null,
@@ -174,7 +184,7 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
     }
   };
 
-  const isDisabled = isSubmitting || isUploading || (!content && mediaUrls.length === 0);
+  const isDisabled = isSubmitting || isUploading || (!content && mediaResults.length === 0);
 
   return (
     <div className="bg-white rounded-xl shadow-md p-4 mb-4">
@@ -204,37 +214,42 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
           />
 
           {/* Prévisualisation des médias */}
-          {mediaUrls.length > 0 && (
+          {mediaResults.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              {mediaUrls.map((url, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
-                  {mediaTypes[index] === "IMAGE" ? (
-                    <img
-                      src={url}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <video
-                      src={url}
-                      controls
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  <button
-                    onClick={() => handleRemoveMedia(index)}
-                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
-                    disabled={isSubmitting}
-                  >
-                    <X size={16} />
-                  </button>
-                  {mediaTypes[index] === "VIDEO" && (
-                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                      Vidéo
-                    </div>
-                  )}
-                </div>
-              ))}
+              {mediaResults.map((result, index) => {
+                const isVideo = result.metadata.mimeType?.startsWith("video/");
+                return (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                    {isVideo ? (
+                      <video
+                        src={result.originalUrl}
+                        className="w-full h-full object-cover"
+                        muted
+                        preload="metadata"
+                      />
+                    ) : (
+                      <Image
+                        src={result.variants.small?.url || result.originalUrl}
+                        alt={`Preview ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                    {isVideo && (
+                      <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        Vidéo
+                      </div>
+                    )}
+                    <button
+                      onClick={() => handleRemoveMedia(index)}
+                      className="absolute top-2 left-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
+                      disabled={isSubmitting}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -285,35 +300,26 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {/* Upload Photo/Vidéo */}
-              <UploadButton
-                endpoint="mediaUploader"
-                onClientUploadComplete={(res) => {
-                  handleMediaUpload(res);
-                  setIsUploading(false);
-                  setUploadProgress(100);
-                }}
-                onUploadBegin={() => {
-                  setIsUploading(true);
-                  setUploadProgress(0);
-                }}
-                onUploadError={(error) => {
-                  setIsUploading(false);
-                  setUploadProgress(0);
-                  console.error("Upload error:", error);
-                }}
-                config={{
-                  mode: "auto",
-                }}
-                appearance={{
-                  button: {
-                    background: "#059669",
-                    color: "white",
-                    padding: "8px 16px",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                  },
-                }}
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                onChange={(e) => e.target.files && handleMediaUpload(e.target.files)}
+                disabled={isSubmitting || isUploading}
+                className="hidden"
+                id="media-upload"
               />
+              <label
+                htmlFor="media-upload"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUploading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                ) : (
+                  <Upload size={20} />
+                )}
+                <span>Ajouter média</span>
+              </label>
 
               {/* Sélecteur d'album */}
               <button
@@ -348,18 +354,14 @@ export default function PostCreator({ onPostCreated, userId }: PostCreatorProps)
             </button>
           </div>
 
-          {/* Progression d'upload détaillée */}
-          {isUploading && (
+          {/* Progression d'upload */}
+          {isUploading && uploads.size > 0 && (
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Upload en cours...</span>
-                <span className="text-emerald-600 font-medium">{uploadProgress}%</span>
+                <span className="text-gray-600">Upload en cours... ({uploads.size} fichier(s))</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
+                <div className="bg-emerald-600 h-2 rounded-full animate-pulse" style={{ width: "100%" }} />
               </div>
             </div>
           )}

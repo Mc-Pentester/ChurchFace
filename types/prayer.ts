@@ -19,6 +19,8 @@ export interface PrayerRequestWithUser {
   createdAt: string;
   updatedAt: string;
   churchId?: string;
+  prayerChainId?: string;
+  prayerCampaignId?: string;
   user: {
     id: string;
     name: string | null;
@@ -28,6 +30,14 @@ export interface PrayerRequestWithUser {
     id: string;
     name: string;
     slug: string;
+  };
+  prayerChain?: {
+    id: string;
+    title: string;
+  };
+  prayerCampaign?: {
+    id: string;
+    title: string;
   };
   _count?: {
     reactions: number;
@@ -100,18 +110,12 @@ export interface PrayerChainWithLinks {
   archivedAt?: string | null;
   deletedAt?: string | null;
   createdAt: string;
-  ownerId?: string;
-  ownerType?: string;
   churchId?: string;
-  groupId?: string;
-  ministryId?: string;
-  eventId?: string;
-  imageUrl?: string;
   visibility?: "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS";
   prayerCampaignId?: string; // @deprecated: Use campaigns instead
   campaigns?: PrayerCampaignChain[];
-  scheduledStart?: string;
-  scheduledEnd?: string;
+  imageUrl?: string; // TODO: Add to Prisma model if needed
+  scheduledStart?: string; // TODO: Add to Prisma model if needed
   _count?: {
     links: number;
     participants?: number;
@@ -253,18 +257,18 @@ export interface PrayerLiveRoomWithCount {
 }
 
 export const PRAYER_CATEGORIES: { key: PrayerCategory; label: string; emoji: string }[] = [
-  { key: "SANTE", label: "Santé", emoji: "💊" },
-  { key: "FAMILLE", label: "Famille", emoji: "👨‍👩‍👧‍👦" },
-  { key: "TRAVAIL", label: "Travail", emoji: "💼" },
-  { key: "ETUDES", label: "Études", emoji: "📚" },
-  { key: "MINISTERE", label: "Ministère", emoji: "⛪" },
-  { key: "FINANCES", label: "Finances", emoji: "💰" },
-  { key: "MARIAGE", label: "Mariage", emoji: "💍" },
-  { key: "EVANGELISATION", label: "Évangélisation", emoji: "📢" },
+  { key: "SANTE", label: "SantÃ©", emoji: "ðŸ’Š" },
+  { key: "FAMILLE", label: "Famille", emoji: "ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦" },
+  { key: "TRAVAIL", label: "Travail", emoji: "ðŸ’¼" },
+  { key: "ETUDES", label: "Ã‰tudes", emoji: "ðŸ“š" },
+  { key: "MINISTERE", label: "MinistÃ¨re", emoji: "â›ª" },
+  { key: "FINANCES", label: "Finances", emoji: "ðŸ’°" },
+  { key: "MARIAGE", label: "Mariage", emoji: "ðŸ’" },
+  { key: "EVANGELISATION", label: "Ã‰vangÃ©lisation", emoji: "ðŸ“¢" },
 ];
 
 // ============================================
-// TYPES UNIFIÉS PRIÈRE (PHASE 4 MIGRATION)
+// TYPES UNIFIÃ‰S PRIÃˆRE (PHASE 4 MIGRATION)
 // ============================================
 
 export type PrayerType = "INDIVIDUAL" | "COLLABORATIVE_CHAIN" | "COLLABORATIVE_CAMPAIGN" | "LIVE_ROOM";
@@ -306,7 +310,7 @@ export interface UnifiedPrayer {
   startDate: string | null;
   endDate: string | null;
   
-  // Relations hiérarchiques
+  // Relations hiÃ©rarchiques
   parentPrayerId: string | null;
   childPrayers?: UnifiedPrayer[];
   

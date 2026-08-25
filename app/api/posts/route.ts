@@ -436,7 +436,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Determine media type
-      const mediaType = videoUrl ? "VIDEO" : "PHOTO";
+      const mediaType = videoUrl ? "VIDEO" : "IMAGE";
 
       // Create media entry
       await prisma.media.create({
