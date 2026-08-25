@@ -12,8 +12,21 @@ export async function POST(req: Request) {
 
   const subscription = await req.json();
 
-  if (!subscription.endpoint || !subscription.keys) {
-    return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
+  // Validate subscription
+  if (!subscription.endpoint) {
+    return NextResponse.json({ error: "Invalid subscription: endpoint required" }, { status: 400 });
+  }
+
+  if (!subscription.keys) {
+    return NextResponse.json({ error: "Invalid subscription: keys required" }, { status: 400 });
+  }
+
+  if (!subscription.keys.p256dh) {
+    return NextResponse.json({ error: "Invalid subscription: p256dh required" }, { status: 400 });
+  }
+
+  if (!subscription.keys.auth) {
+    return NextResponse.json({ error: "Invalid subscription: auth required" }, { status: 400 });
   }
 
   try {
@@ -23,25 +36,36 @@ export async function POST(req: Request) {
     });
 
     if (existing) {
-      // Update existing subscription
+      // Update existing subscription - IMPORTANT: also update userId
       await prisma.pushSubscription.update({
         where: { id: existing.id },
         data: {
+          userId: session.user.id,
           keys: subscription.keys,
         },
       });
+
+      return NextResponse.json({
+        success: true,
+        subscriptionId: existing.id,
+        updated: true
+      });
     } else {
       // Create new subscription
-      await prisma.pushSubscription.create({
+      const newSubscription = await prisma.pushSubscription.create({
         data: {
           userId: session.user.id,
           endpoint: subscription.endpoint,
           keys: subscription.keys,
         },
       });
-    }
 
-    return NextResponse.json({ success: true });
+      return NextResponse.json({
+        success: true,
+        subscriptionId: newSubscription.id,
+        updated: false
+      });
+    }
   } catch (error) {
     console.error("Error saving push subscription:", error);
     return NextResponse.json({ error: "Failed to save subscription" }, { status: 500 });
