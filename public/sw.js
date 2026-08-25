@@ -1,13 +1,19 @@
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() || {};
-  
+  let data;
+  try {
+    data = event.data?.json() || {};
+  } catch (e) {
+    data = {};
+  }
+
   const options = {
-    body: data.message || 'Nouvelle notification',
+    body: data.body || data.message || 'Nouvelle notification',
     icon: '/icon-192x192.png',
     badge: '/badge-72x72.png',
     vibrate: [200, 100, 200],
     data: {
-      url: data.url || '/'
+      url: data.url || '/',
+      type: data.type || 'default'
     },
     actions: [
       {
@@ -31,9 +37,11 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'open') {
+  const url = event.notification.data?.url || '/';
+
+  if (event.action === 'open' || !event.action) {
     event.waitUntil(
-      clients.openWindow(event.notification.data.url || '/')
+      clients.openWindow(url)
     );
   }
 });

@@ -26,19 +26,17 @@ export function usePushSubscription() {
       return;
     }
 
-    let registration: ServiceWorkerRegistration | null = null;
-
-    async function registerAndSubscribe() {
+    async function subscribeToPush() {
       try {
-        // Register service worker
-        registration = await navigator.serviceWorker.register("/sw.js");
-        console.log("Service Worker registered:", registration);
+        // Wait for service worker to be ready (registered by ServiceWorkerRegister component)
+        const registration = await navigator.serviceWorker.ready;
 
         // Get existing subscription
         const existingSubscription = await registration.pushManager.getSubscription();
 
         if (existingSubscription) {
-          console.log("Already subscribed to push notifications");
+          // Sync existing subscription with server
+          await syncSubscription(existingSubscription);
           return;
         }
 
@@ -55,27 +53,42 @@ export function usePushSubscription() {
           applicationServerKey: urlBase64ToUint8Array(vapidKey!),
         });
 
-        console.log("Push subscription created:", subscription);
+        console.log("Push subscription created");
 
-        // Send subscription to server
-        await fetch("/api/push/subscribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(subscription),
-        });
-
-        console.log("Push subscription saved to server");
+        // Sync new subscription with server
+        await syncSubscription(subscription);
       } catch (error) {
-        console.error("Error registering push subscription:", error);
+        console.error("Error in push subscription:", error);
       }
     }
 
-    registerAndSubscribe();
+    subscribeToPush();
 
     return () => {
       // Cleanup if needed
     };
   }, [session?.user?.id]);
+}
+
+// Helper function to sync subscription with server
+async function syncSubscription(subscription: PushSubscription) {
+  try {
+    const response = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subscription.toJSON()),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Failed to sync push subscription:", error);
+    } else {
+      const data = await response.json();
+      console.log("Push subscription synced:", data.subscriptionId || "success");
+    }
+  } catch (error) {
+    console.error("Error syncing push subscription:", error);
+  }
 }
 
 // Helper function to convert VAPID key from base64 to Uint8Array
