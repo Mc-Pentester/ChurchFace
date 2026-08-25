@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
       // Create notification for post author if not self-like
       if (postExists.authorId !== userId) {
         await createNotification({
-          toUserId: postExists.authorId,
-          fromUserId: userId,
+          userId: postExists.authorId,
+          senderId: userId,
           type: "POST_LIKE",
           message: "Someone liked your post",
           entityId: postId,

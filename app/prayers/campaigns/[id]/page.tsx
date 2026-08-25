@@ -24,7 +24,7 @@ export default function PrayerCampaignDetailPage() {
     try {
       const res = await fetch("/api/prayers/campaigns");
       const data = await res.json();
-      const foundCampaign = data.find((c: PrayerCampaign) => c.id === campaignId);
+      const foundCampaign = data.campaigns?.find((c: PrayerCampaign) => c.id === campaignId);
       setCampaign(foundCampaign || null);
 
       // Récupérer les chaînes associées à cette campagne

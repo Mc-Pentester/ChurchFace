@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { socket } from "@/lib/socket";
+import { useEffect, useRef, useState } from "react";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 type NotificationToastData = {
   id: string;
@@ -9,88 +9,81 @@ type NotificationToastData = {
 };
 
 export default function NotificationToast() {
-  const [notifications, setNotifications] = useState<
-    NotificationToastData[]
-  >([]);
+  const [toasts, setToasts] = useState<NotificationToastData[]>([]);
+  const { notifications } = useNotifications();
 
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio("/sounds/notification.mp3");
-      audio.volume = 0.5;
-      audio.play().catch(() => {
-        // Ignore autoplay errors
-      });
-    } catch (error) {
-      // Ignore audio errors
-    }
-  };
+  // Garde en mÃ©moire les notifications dÃ©jÃ  affichÃ©es
+  const displayedIds = useRef(new Set<string>());
 
   useEffect(() => {
-    const handleNotification = (data: {
-      message: string;
-    }) => {
-      console.log("Notification received:", data);
-      const notification = {
-        id: crypto.randomUUID(),
-        message: data.message,
-      };
+    if (notifications.length === 0) {
+      return;
+    }
 
-      playNotificationSound();
-
-      setNotifications((prev) => [
-        ...prev,
-        notification,
-      ]);
-
-      setTimeout(() => {
-        setNotifications((prev) =>
-          prev.filter(
-            (item) => item.id !== notification.id
-          )
-        );
-      }, 5000);
-    };
-
-    socket.on(
-      "notification:new",
-      handleNotification
+    const newNotifications = notifications.filter(
+      (notification) => !displayedIds.current.has(notification.id)
     );
 
-    console.log("NotificationToast mounted, listening for notifications");
+    if (newNotifications.length === 0) {
+      return;
+    }
 
-    return () => {
-      socket.off(
-        "notification:new",
-        handleNotification
-      );
-    };
-  }, []);
+    newNotifications.forEach((notification) => {
+      displayedIds.current.add(notification.id);
 
-  if (notifications.length === 0) {
+      const toast: NotificationToastData = {
+        id: notification.id,
+        message: notification.message,
+      };
+
+      setToasts((prev) => [...prev, toast]);
+
+      setTimeout(() => {
+        setToasts((prev) =>
+          prev.filter((item) => item.id !== notification.id)
+        );
+      }, 5000);
+    });
+  }, [notifications]);
+
+  if (toasts.length === 0) {
     return null;
   }
 
   return (
-    <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3">
-      {notifications.map((notification) => (
+    <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
+      {toasts.map((toast) => (
         <div
-          key={notification.id}
-          className="w-80 max-w-[calc(100vw-2rem)] bg-white shadow-xl rounded-2xl p-4 animate-in slide-in-from-right duration-300"
+          key={toast.id}
+          className="pointer-events-auto w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white p-4 shadow-xl animate-in slide-in-from-right duration-300"
         >
           <div className="flex items-start gap-3">
-            <div className="text-xl">
-              🔔
+            <div className="text-xl" aria-hidden="true">
+              ðŸ””
             </div>
 
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">
-                {notification.message}
+                {toast.message}
               </p>
 
               <span className="text-xs text-gray-500">
                 Maintenant
               </span>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setToasts((prev) =>
+                  prev.filter((item) => item.id !== toast.id)
+                );
+              }}
+              className="text-gray-400 hover:text-gray-700"
+              aria-label="Fermer la notification"
+            >
+              Ã—
+            </button>
           </div>
         </div>
       ))}

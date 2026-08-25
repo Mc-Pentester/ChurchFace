@@ -45,13 +45,13 @@ export async function POST(
     // Envoyer une notification d'avertissement au diffuseur
     if (action === "WARN") {
       await createNotification({
-        toUserId: broadcast.authorId,
-        fromUserId: session.user.id,
+        userId: broadcast.authorId,
+        senderId: session.user.id,
         type: "MODERATION_WARNING",
         message: `Avertissement de modération: ${reason}`,
         entityId: sessionId,
         entityType: "LIVE_BROADCAST",
-        data: { broadcastId: sessionId, reason },
+        metadata: { broadcastId: sessionId, reason },
       });
     }
 

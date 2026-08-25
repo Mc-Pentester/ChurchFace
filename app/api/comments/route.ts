@@ -116,8 +116,8 @@ export async function POST(req: NextRequest) {
     // Create notification for post author if not self-comment
     if (postExists.authorId !== userId) {
       await createNotification({
-        toUserId: postExists.authorId,
-        fromUserId: userId,
+        userId: postExists.authorId,
+        senderId: userId,
         type: "POST_COMMENT",
         message: "Someone commented on your post",
         entityId: postId,

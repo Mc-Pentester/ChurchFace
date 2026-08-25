@@ -14,7 +14,7 @@ import {
 
 const navItems = [
   { href: "/", label: "Accueil", icon: Home },
-  { href: "/prayer-space", label: "Prières", icon: HeartHandshake },
+  { href: "/prayers-unified", label: "Prières", icon: HeartHandshake },
   { href: "/church/create", label: "Églises", icon: Church },
   { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/profile", label: "Profil", icon: User },

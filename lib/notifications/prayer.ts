@@ -35,13 +35,13 @@ export async function notifyParticipantJoined({
   participantName: string;
 }) {
   return createNotification({
-    toUserId,
-    fromUserId,
+    userId: toUserId,
+    senderId: fromUserId,
     type: PRAYER_NOTIFICATION_TYPES.NEW_PARTICIPANT,
     message: `${participantName} a rejoint la chaîne de prière "${chainTitle}"`,
     entityId: chainId,
     entityType: "PrayerChain",
-    data: { chainId, chainTitle, participantName },
+    metadata: { chainId, chainTitle, participantName },
   });
 }
 
@@ -62,13 +62,13 @@ export async function notifyParticipantLeft({
   participantName: string;
 }) {
   return createNotification({
-    toUserId,
-    fromUserId,
+    userId: toUserId,
+    senderId: fromUserId,
     type: PRAYER_NOTIFICATION_TYPES.PARTICIPANT_LEFT,
     message: `${participantName} a quitté la chaîne de prière "${chainTitle}"`,
     entityId: chainId,
     entityType: "PrayerChain",
-    data: { chainId, chainTitle, participantName },
+    metadata: { chainId, chainTitle, participantName },
   });
 }
 
@@ -98,13 +98,13 @@ export async function notifyNewEngagement({
   };
 
   return createNotification({
-    toUserId,
-    fromUserId,
+    userId: toUserId,
+    senderId: fromUserId,
     type: PRAYER_NOTIFICATION_TYPES.NEW_ENGAGEMENT,
     message: `${userName} ${engagementLabels[engagementType]} "${prayerTitle}"`,
     entityId: prayerRequestId,
     entityType: "PrayerRequest",
-    data: { prayerRequestId, prayerTitle, engagementType, userName },
+    metadata: { prayerRequestId, prayerTitle, engagementType, userName },
   });
 }
 
@@ -129,12 +129,12 @@ export async function notifyRoomOpened({
   };
 
   return createNotification({
-    toUserId,
+    userId: toUserId,
     type: PRAYER_NOTIFICATION_TYPES.ROOM_OPENED,
     message: `La salle de prière "${roomTitle}" (${typeLabels[roomType]}) est maintenant ouverte`,
     entityId: roomId,
     entityType: "PrayerRoom",
-    data: { roomId, roomTitle, roomType },
+    metadata: { roomId, roomTitle, roomType },
   });
 }
 
@@ -151,12 +151,12 @@ export async function notifyRoomClosed({
   roomTitle: string;
 }) {
   return createNotification({
-    toUserId,
+    userId: toUserId,
     type: PRAYER_NOTIFICATION_TYPES.ROOM_CLOSED,
     message: `La salle de prière "${roomTitle}" est maintenant fermée`,
     entityId: roomId,
     entityType: "PrayerRoom",
-    data: { roomId, roomTitle },
+    metadata: { roomId, roomTitle },
   });
 }
 
@@ -183,12 +183,12 @@ export async function notifyCampaignStarted({
   };
 
   return createNotification({
-    toUserId,
+    userId: toUserId,
     type: PRAYER_NOTIFICATION_TYPES.CAMPAIGN_STARTED,
     message: `La campagne de ${typeLabels[campaignType]} "${campaignTitle}" a commencé`,
     entityId: campaignId,
     entityType: "PrayerCampaign",
-    data: { campaignId, campaignTitle, campaignType },
+    metadata: { campaignId, campaignTitle, campaignType },
   });
 }
 
@@ -205,12 +205,12 @@ export async function notifyCampaignEnded({
   campaignTitle: string;
 }) {
   return createNotification({
-    toUserId,
+    userId: toUserId,
     type: PRAYER_NOTIFICATION_TYPES.CAMPAIGN_ENDED,
     message: `La campagne de prière "${campaignTitle}" est terminée`,
     entityId: campaignId,
     entityType: "PrayerCampaign",
-    data: { campaignId, campaignTitle },
+    metadata: { campaignId, campaignTitle },
   });
 }
 
@@ -231,13 +231,13 @@ export async function notifyChainInvite({
   inviterName: string;
 }) {
   return createNotification({
-    toUserId,
-    fromUserId,
+    userId: toUserId,
+    senderId: fromUserId,
     type: PRAYER_NOTIFICATION_TYPES.CHAIN_INVITE,
     message: `${inviterName} vous invite à rejoindre la chaîne de prière "${chainTitle}"`,
     entityId: chainId,
     entityType: "PrayerChain",
-    data: { chainId, chainTitle, inviterName },
+    metadata: { chainId, chainTitle, inviterName },
   });
 }
 
@@ -261,11 +261,11 @@ export async function notifyScheduleReminder({
   });
 
   return createNotification({
-    toUserId,
+    userId: toUserId,
     type: PRAYER_NOTIFICATION_TYPES.SCHEDULE_REMINDER,
     message: `Rappel : Prière programmée pour "${chainTitle}" à ${timeStr}`,
     entityId: chainId,
     entityType: "PrayerChain",
-    data: { chainId, chainTitle, scheduledTime },
+    metadata: { chainId, chainTitle, scheduledTime },
   });
 }

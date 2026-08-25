@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
+import { publishPrayerCampaign } from "@/lib/feedPublisher";
 
 // GET - Récupérer les campagnes de prière
 export async function GET(req: NextRequest) {
@@ -28,24 +30,14 @@ export async function GET(req: NextRequest) {
       where.isActive = isActive === "true";
     }
 
-    if (type) {
+    if (type && type !== "ALL") {
       where.type = type;
     }
 
     const campaigns = await prisma.prayerCampaign.findMany({
       where,
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        imageUrl: true,
-        type: true,
-        startDate: true,
-        endDate: true,
-        isActive: true,
-        churchId: true,
-        createdBy: true,
-        createdAt: true,
+      orderBy: { createdAt: "desc" },
+      include: {
         church: {
           select: {
             id: true,
@@ -66,16 +58,25 @@ export async function GET(req: NextRequest) {
             chains: true,
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
+        campaignChains: {
+          include: {
+            chain: {
+              include: {
+                _count: {
+                  select: {
+                    participants: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
-    return NextResponse.json(campaigns);
+    return NextResponse.json({ campaigns });
   } catch (error) {
     console.error("Erreur récupération campagnes:", error);
-
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }
@@ -169,7 +170,6 @@ export async function POST(req: NextRequest) {
         );
       }
     }
-
     const campaign = await prisma.prayerCampaign.create({
       data: {
         title: title.trim(),
@@ -178,22 +178,11 @@ export async function POST(req: NextRequest) {
         type,
         startDate: start,
         endDate: end,
+        isActive: true,
         churchId: churchId || null,
         createdBy: userId,
-        isActive: true,
       },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        imageUrl: true,
-        type: true,
-        startDate: true,
-        endDate: true,
-        isActive: true,
-        churchId: true,
-        createdBy: true,
-        createdAt: true,
+      include: {
         church: {
           select: {
             id: true,
@@ -209,13 +198,59 @@ export async function POST(req: NextRequest) {
             image: true,
           },
         },
+        _count: {
+          select: {
+            chains: true,
+          },
+        },
+        campaignChains: {
+          include: {
+            chain: {
+              include: {
+                _count: {
+                  select: {
+                    participants: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    // Create notification for church members if church is associated
+    if (churchId) {
+      const churchMembers = await prisma.churchMember.findMany({
+        where: { churchId },
+        select: { userId: true },
+      });
+
+      for (const member of churchMembers) {
+        if (member.userId !== userId) {
+          await createNotification({
+            userId: member.userId,
+            senderId: userId,
+            type: "PRAYER_CAMPAIGN_CREATED",
+            message: `Nouvelle campagne de prière créée`,
+            entityId: campaign.id,
+            entityType: "prayerCampaign",
+            metadata: { campaignId: campaign.id, churchId },
+          });
+        }
+      }
+
+      // Publish to Feed if church is associated
+      await publishPrayerCampaign({
+        prayerCampaignId: campaign.id,
+        churchId,
+        authorId: userId,
+      });
+    }
 
     return NextResponse.json(campaign, { status: 201 });
   } catch (error) {
     console.error("Erreur création campagne:", error);
-
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }

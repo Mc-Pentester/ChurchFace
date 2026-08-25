@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// @DEPRECATED: This endpoint is deprecated. Use /api/prayers?churchId=xxx instead.
+// This route is kept for backward compatibility only.
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

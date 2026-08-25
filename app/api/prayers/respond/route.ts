@@ -38,13 +38,13 @@ export async function POST(req: Request) {
   // Create notification for prayer author if not self-response
   if (prayerRequest && prayerRequest.userId !== session.user.id) {
     await createNotification({
-      toUserId: prayerRequest.userId,
-      fromUserId: session.user.id,
+      userId: prayerRequest.userId,
+      senderId: session.user.id,
       type: "PRAYER_RESPONSE",
       message: "Someone responded to your prayer request",
       entityId: prayerRequestId,
       entityType: "prayer",
-      data: { churchId: prayerRequest.churchId },
+      metadata: { churchId: prayerRequest.churchId },
     });
   }
 

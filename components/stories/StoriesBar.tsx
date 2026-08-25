@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 
 type Story = {
   id: string;
@@ -98,11 +99,16 @@ export default function StoriesBar() {
               >
                 {/* Story media background */}
                 {firstStory.imageUrl ? (
-                  <img
-                    src={firstStory.imageUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={firstStory.imageUrl}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="96px"
+                      loading="lazy"
+                    />
+                  </div>
                 ) : firstStory.videoUrl ? (
                   <div className="w-full h-full bg-gray-900 relative">
                     <video
@@ -128,11 +134,15 @@ export default function StoriesBar() {
 
                 {/* User info overlay */}
                 <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
-                  <img
-                    src={group.author.image || "/default-avatar.png"}
-                    alt=""
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                  />
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white relative">
+                    <Image
+                      src={group.author.image || "/default-avatar.png"}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="32px"
+                    />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-xs font-semibold truncate">
                       {isCurrentUser ? 'Vous' : group.author.name}

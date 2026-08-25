@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Valider le type d'engagement
-    const validTypes = ["PRAYED", "CONTINUING", "SHARED_VERSE", "ENCOURAGED"];
+    const validTypes = ["PRAYED", "CONTINUING", "SHARED_VERSE", "ENCOURAGED", "SHARED_TESTIMONY"];
     if (!validTypes.includes(type)) {
       return NextResponse.json(
         { error: "Type d'engagement invalide" },
@@ -116,6 +116,13 @@ export async function GET(req: NextRequest) {
     const engagements = await prisma.prayerEngagement.findMany({
       where,
       include: {
+        prayerRequest: {
+          select: {
+            id: true,
+            title: true,
+            content: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -144,6 +151,58 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Erreur récupération engagements:", error);
+    return NextResponse.json(
+      { error: "Erreur serveur" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "id requis" },
+        { status: 400 }
+      );
+    }
+
+    // Verify ownership
+    const engagement = await prisma.prayerEngagement.findUnique({
+      where: { id },
+    });
+
+    if (!engagement) {
+      return NextResponse.json(
+        { error: "Engagement introuvable" },
+        { status: 404 }
+      );
+    }
+
+    if (engagement.userId !== userId) {
+      return NextResponse.json(
+        { error: "Accès non autorisé" },
+        { status: 403 }
+      );
+    }
+
+    await prisma.prayerEngagement.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Erreur suppression engagement:", error);
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }

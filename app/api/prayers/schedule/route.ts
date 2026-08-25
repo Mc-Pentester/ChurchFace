@@ -41,6 +41,12 @@ export async function GET(req: NextRequest) {
         isActive: true,
       },
       include: {
+        prayerChain: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -73,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { prayerChainId, hour, dayOfWeek } = body;
+    const { prayerChainId, hour, dayOfWeek, isActive = true } = body;
 
     if (!prayerChainId || hour === undefined) {
       return NextResponse.json(
@@ -117,9 +123,15 @@ export async function POST(req: NextRequest) {
         userId,
         hour,
         dayOfWeek,
-        isActive: true,
+        isActive,
       },
       include: {
+        prayerChain: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -133,6 +145,58 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(schedule, { status: 201 });
   } catch (error) {
     console.error("Erreur création horaire:", error);
+    return NextResponse.json(
+      { error: "Erreur serveur" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as any)?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "id requis" },
+        { status: 400 }
+      );
+    }
+
+    // Verify ownership
+    const schedule = await prisma.prayerSchedule.findUnique({
+      where: { id },
+    });
+
+    if (!schedule) {
+      return NextResponse.json(
+        { error: "Horaire introuvable" },
+        { status: 404 }
+      );
+    }
+
+    if (schedule.userId !== userId) {
+      return NextResponse.json(
+        { error: "Accès non autorisé" },
+        { status: 403 }
+      );
+    }
+
+    await prisma.prayerSchedule.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Erreur suppression horaire:", error);
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }

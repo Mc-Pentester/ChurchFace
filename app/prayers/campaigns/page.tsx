@@ -121,6 +121,10 @@ export default function PrayerCampaignsPage() {
     }
   };
 
+  const handleSettings = (campaignId: string) => {
+    window.location.href = `/prayers/campaigns/${campaignId}/settings`;
+  };
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6 sm:py-8">
       {/* HEADER */}
@@ -241,6 +245,7 @@ export default function PrayerCampaignsPage() {
               key={campaign.id}
               campaign={campaign}
               onView={handleView}
+              onSettings={handleSettings}
             />
           ))}
         </div>

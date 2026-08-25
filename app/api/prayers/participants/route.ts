@@ -252,6 +252,16 @@ export async function POST(req: NextRequest) {
         },
       });
 
+    // Maintenir la compatibilité avec PrayerChainLink
+    await prisma.prayerChainLink.create({
+      data: {
+        chainId: prayerChainId,
+        userId,
+      },
+    }).catch(() => {
+      // Ignore si existe déjà
+    });
+
     return NextResponse.json(
       {
         participant,
@@ -333,6 +343,16 @@ export async function DELETE(req: NextRequest) {
         },
       });
 
+      // Maintenir la compatibilité avec PrayerChainLink
+      await prisma.prayerChainLink.deleteMany({
+        where: {
+          chainId: participant.prayerChainId,
+          userId: participant.userId,
+        },
+      }).catch(() => {
+        // Ignore si n'existe pas
+      });
+
       return NextResponse.json({
         success: true,
       });
@@ -356,6 +376,8 @@ export async function DELETE(req: NextRequest) {
         },
         select: {
           id: true,
+          prayerChainId: true,
+          userId: true,
         },
       });
 
@@ -373,6 +395,16 @@ export async function DELETE(req: NextRequest) {
       where: {
         id: participant.id,
       },
+    });
+
+    // Maintenir la compatibilité avec PrayerChainLink
+    await prisma.prayerChainLink.deleteMany({
+      where: {
+        chainId: participant.prayerChainId,
+        userId: participant.userId,
+      },
+    }).catch(() => {
+      // Ignore si n'existe pas
     });
 
     return NextResponse.json({

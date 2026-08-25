@@ -71,7 +71,7 @@ export default function PrayerRoomDetailPage() {
   const fetchRoom = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/prayers/rooms?prayerChainId=${roomId}`);
+      const res = await fetch(`/api/prayers/rooms?id=${roomId}`);
       const data = await res.json();
       const foundRoom = data.rooms?.find((r: PrayerRoom) => r.id === roomId);
       setRoom(foundRoom || null);

@@ -4,7 +4,7 @@ import { Server, Socket } from "socket.io";
 
 import { prisma } from "./lib/prisma";
 import { setSocketServer } from "./lib/io";
-import { sendPushNotification } from "./lib/push/sendPushNotification";
+import { createNotification } from "./lib/notifications";
 
 const dev = process.env.NODE_ENV !== "production";
 
@@ -62,63 +62,6 @@ const chat = await getGlobalChat();
 globalChatId = chat.id;
 
 return globalChatId;
-}
-
-// ======================================================
-// NOTIFICATIONS CORE
-// ======================================================
-
-async function sendNotification({
-toUserId,
-fromUserId,
-type,
-message,
-entityId,
-entityType,
-data,
-}: {
-toUserId: string;
-fromUserId?: string;
-type: string;
-message: string;
-entityId?: string;
-entityType?: string;
-data?: any;
-}) {
-const notif = await prisma.notification.create({
-data: {
-userId: toUserId,
-senderId: fromUserId,
-type,
-message,
-entityId,
-entityType,
-metadata: data ?? {},
-},
-});
-
-io.to(`user:${toUserId}`).emit(
-"notification:new",
-notif
-);
-
-try {
-await sendPushNotification(toUserId, {
-title: "ChurchFace",
-body: message,
-url: entityId
-? `/post/${entityId}`
-: "/",
-type,
-});
-} catch (err) {
-console.error(
-"Push notification error:",
-err
-);
-}
-
-return notif;
 }
 
 // ======================================================
@@ -844,22 +787,13 @@ io.on(
             return;
           }
 
-          await sendNotification({
-            toUserId:
-              postOwnerId,
-
-            fromUserId,
-
+          await createNotification({
+            userId: postOwnerId,
+            senderId: fromUserId,
             type: "LIKE",
-
-            message:
-              "a aimé votre publication ❤️",
-
-            entityId:
-              postId,
-
-            entityType:
-              "post",
+            message: "a aimé votre publication ❤️",
+            entityId: postId,
+            entityType: "post",
           });
         } catch (err) {
           console.error(
@@ -888,23 +822,13 @@ io.on(
             return;
           }
 
-          await sendNotification({
-            toUserId:
-              postOwnerId,
-
-            fromUserId,
-
-            type:
-              "COMMENT",
-
-            message:
-              "a commenté votre publication 💬",
-
-            entityId:
-              postId,
-
-            entityType:
-              "post",
+          await createNotification({
+            userId: postOwnerId,
+            senderId: fromUserId,
+            type: "COMMENT",
+            message: "a commenté votre publication 💬",
+            entityId: postId,
+            entityType: "post",
           });
         } catch (err) {
           console.error(
@@ -931,15 +855,11 @@ io.on(
             return;
           }
 
-          await sendNotification({
-            toUserId,
-
-            fromUserId,
-
+          await createNotification({
+            userId: toUserId,
+            senderId: fromUserId,
             type: "FOLLOW",
-
-            message:
-              "a commencé à vous suivre 👤",
+            message: "a commencé à vous suivre 👤",
           });
         } catch (err) {
           console.error(

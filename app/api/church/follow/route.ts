@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -57,12 +58,35 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ following: false });
     } else {
-      await prisma.churchFollow.create({
+      const follow = await prisma.churchFollow.create({
         data: {
           churchId,
           userId: session.user.id,
         },
       });
+
+      // Create notification for church admins
+      const churchAdmins = await prisma.churchMember.findMany({
+        where: {
+          churchId,
+          role: { in: ["ADMIN", "MODERATOR"] },
+        },
+        select: { userId: true },
+      });
+
+      for (const admin of churchAdmins) {
+        if (admin.userId !== session.user.id) {
+          await createNotification({
+            userId: admin.userId,
+            senderId: session.user.id,
+            type: "CHURCH_FOLLOW",
+            message: `${session.user.name || "Someone"} started following your church`,
+            entityId: follow.id,
+            entityType: "churchFollow",
+            metadata: { churchId },
+          });
+        }
+      }
 
       return NextResponse.json({ following: true });
     }

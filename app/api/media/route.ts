@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
 
     // Determine media type from file type
     const isVideo = file.type && file.type.startsWith("video/");
-    const mediaType = isVideo ? "VIDEO" : "PHOTO";
+    const mediaType = isVideo ? "VIDEO" : "IMAGE";
 
     const imageUrl = file.url;
 

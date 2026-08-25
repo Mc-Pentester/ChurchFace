@@ -5,11 +5,13 @@ import { X, Flame } from "lucide-react";
 import { PRAYER_CATEGORIES } from "@/types/prayer";
 
 interface Props {
-  onSubmit: (data: { title: string; content: string; category: string; isUrgent: boolean }) => void;
+  onSubmit: (data: { title: string; content: string; category: string; isUrgent: boolean; prayerChainId?: string; prayerCampaignId?: string }) => void;
   onClose: () => void;
+  prayerChainId?: string;
+  prayerCampaignId?: string;
 }
 
-export default function PrayerForm({ onSubmit, onClose }: Props) {
+export default function PrayerForm({ onSubmit, onClose, prayerChainId, prayerCampaignId }: Props) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("SANTE");
@@ -20,7 +22,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
     setLoading(true);
-    await onSubmit({ title: title.trim(), content: content.trim(), category, isUrgent });
+    await onSubmit({ title: title.trim(), content: content.trim(), category, isUrgent, prayerChainId, prayerCampaignId });
     setLoading(false);
     setTitle("");
     setContent("");
@@ -31,7 +33,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4">
-          <h2 className="font-bold text-gray-800">Nouvelle demande de prière</h2>
+          <h2 className="font-bold text-gray-800">Nouvelle demande de priÃ¨re</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
@@ -44,7 +46,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Prière pour ma guérison"
+              placeholder="Ex: PriÃ¨re pour ma guÃ©rison"
               className="w-full px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base"
               required
             />
@@ -55,7 +57,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Partagez votre besoin en détail..."
+              placeholder="Partagez votre besoin en dÃ©tail..."
               rows={4}
               className="w-full px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-base resize-none"
               required
@@ -63,7 +65,7 @@ export default function PrayerForm({ onSubmit, onClose }: Props) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">CatÃ©gorie</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {PRAYER_CATEGORIES.map((cat) => (
                 <button

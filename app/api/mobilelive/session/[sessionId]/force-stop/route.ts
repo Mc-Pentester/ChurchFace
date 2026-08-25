@@ -67,13 +67,13 @@ export async function POST(
 
     // Notifier le diffuseur
     await createNotification({
-      toUserId: broadcast.authorId,
-      fromUserId: session.user.id,
+      userId: broadcast.authorId,
+      senderId: session.user.id,
       type: "LIVE_FORCE_STOPPED",
       message: `Votre live a été arrêté par un modérateur: ${reason}`,
       entityId: sessionId,
       entityType: "LIVE_BROADCAST",
-      data: { broadcastId: sessionId, reason },
+      metadata: { broadcastId: sessionId, reason },
     });
 
     return NextResponse.json({ success: true });

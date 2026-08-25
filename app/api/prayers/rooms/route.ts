@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
+import { publishPrayerRoom } from "@/lib/feedPublisher";
 
 // GET - Récupérer les salles de prière
 export async function GET(req: NextRequest) {
@@ -21,11 +23,15 @@ export async function GET(req: NextRequest) {
     const prayerChainId = searchParams.get("prayerChainId");
     const isActive = searchParams.get("isActive");
     const roomType = searchParams.get("roomType");
+    const churchId = searchParams.get("churchId");
+    const id = searchParams.get("id");
 
     const where: {
       prayerChainId?: string;
       isActive?: boolean;
       roomType?: "TEXT" | "AUDIO" | "VIDEO";
+      churchId?: string;
+      id?: string;
     } = {};
 
     if (prayerChainId) {
@@ -44,14 +50,19 @@ export async function GET(req: NextRequest) {
       where.roomType = roomType;
     }
 
+    if (churchId) {
+      where.churchId = churchId;
+    }
+
+    if (id) {
+      where.id = id;
+    }
     const rooms = await prisma.prayerRoom.findMany({
       where,
       include: {
-        moderator: {
+        _count: {
           select: {
-            id: true,
-            name: true,
-            image: true,
+            participants: true,
           },
         },
         prayerChain: {
@@ -60,9 +71,18 @@ export async function GET(req: NextRequest) {
             title: true,
           },
         },
-        _count: {
+        church: {
           select: {
-            participants: true,
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        moderator: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
           },
         },
       },
@@ -76,7 +96,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Erreur récupération salles:", error);
-
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }
@@ -105,6 +124,7 @@ export async function POST(req: NextRequest) {
       roomType = "TEXT",
       isPublic = true,
       prayerChainId,
+      churchId,
       maxParticipants,
       scheduledStart,
       scheduledEnd,
@@ -201,6 +221,7 @@ export async function POST(req: NextRequest) {
         isPublic: Boolean(isPublic),
         moderatorId: userId,
         prayerChainId: prayerChainId || null,
+        churchId: churchId || null,
         maxParticipants:
           maxParticipants !== undefined && maxParticipants !== null
             ? maxParticipants
@@ -210,11 +231,9 @@ export async function POST(req: NextRequest) {
         isActive: true,
       },
       include: {
-        moderator: {
+        _count: {
           select: {
-            id: true,
-            name: true,
-            image: true,
+            participants: true,
           },
         },
         prayerChain: {
@@ -223,20 +242,59 @@ export async function POST(req: NextRequest) {
             title: true,
           },
         },
-        _count: {
+        church: {
           select: {
-            participants: true,
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        moderator: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
           },
         },
       },
     });
+
+    // Create notification for church members if church is associated
+    if (churchId) {
+      const churchMembers = await prisma.churchMember.findMany({
+        where: { churchId },
+        select: { userId: true },
+      });
+
+      for (const member of churchMembers) {
+        if (member.userId !== userId) {
+          await createNotification({
+            userId: member.userId,
+            senderId: userId,
+            type: "PRAYER_ROOM_CREATED",
+            message: `Nouvelle salle de prière créée`,
+            entityId: room.id,
+            entityType: "prayerRoom",
+            metadata: { roomId: room.id, churchId },
+          });
+        }
+      }
+
+      // Publish to Feed if room is public and associated with a church
+      if (room.isPublic) {
+        await publishPrayerRoom({
+          prayerRoomId: room.id,
+          churchId,
+          authorId: userId,
+        });
+      }
+    }
 
     return NextResponse.json(room, {
       status: 201,
     });
   } catch (error) {
     console.error("Erreur création salle:", error);
-
     return NextResponse.json(
       { error: "Erreur serveur" },
       { status: 500 }

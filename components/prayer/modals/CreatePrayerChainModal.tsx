@@ -11,18 +11,24 @@ interface CreatePrayerChainModalProps {
     description: string;
     visibility: "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS";
     imageUrl?: string;
+    prayerCampaignId?: string; // @deprecated: kept for backward compatibility
+    campaignIds?: string[]; // New: multiple campaigns
   }) => void;
+  availableCampaigns?: Array<{ id: string; title: string }>;
 }
 
 export function CreatePrayerChainModal({
   isOpen,
   onClose,
   onSubmit,
+  availableCampaigns = [],
 }: CreatePrayerChainModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS">("PUBLIC");
   const [imageUrl, setImageUrl] = useState("");
+  const [prayerCampaignId, setPrayerCampaignId] = useState(""); // @deprecated: kept for backward compatibility
+  const [campaignIds, setCampaignIds] = useState<string[]>([]); // New: multiple campaigns
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -33,6 +39,9 @@ export function CreatePrayerChainModal({
     try {
       const data: any = { title, description, visibility };
       if (imageUrl) data.imageUrl = imageUrl;
+      // Support both old (single) and new (multiple) campaign selection
+      if (prayerCampaignId) data.prayerCampaignId = prayerCampaignId; // @deprecated
+      if (campaignIds.length > 0) data.campaignIds = campaignIds; // New
       await onSubmit(data);
       onClose();
       // Reset form
@@ -40,11 +49,21 @@ export function CreatePrayerChainModal({
       setDescription("");
       setVisibility("PUBLIC");
       setImageUrl("");
+      setPrayerCampaignId("");
+      setCampaignIds([]);
     } catch (error) {
       console.error("Erreur création chaîne:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCampaignToggle = (campaignId: string) => {
+    setCampaignIds((prev) =>
+      prev.includes(campaignId)
+        ? prev.filter((id) => id !== campaignId)
+        : [...prev, campaignId]
+    );
   };
 
   return (
@@ -103,6 +122,29 @@ export function CreatePrayerChainModal({
               <option value="PRIVATE">Privé</option>
               <option value="CHURCH_MEMBERS">Membres de l'église</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Campagnes de prière mobilisées (optionnel)
+            </label>
+            <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+              {availableCampaigns.length === 0 ? (
+                <p className="text-sm text-gray-500">Aucune campagne disponible</p>
+              ) : (
+                availableCampaigns.map((campaign) => (
+                  <label key={campaign.id} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={campaignIds.includes(campaign.id)}
+                      onChange={() => handleCampaignToggle(campaign.id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{campaign.title}</span>
+                  </label>
+                ))
+              )}
+            </div>
           </div>
 
           <div>

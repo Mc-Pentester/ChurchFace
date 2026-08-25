@@ -20,18 +20,16 @@ export interface PrayerRequestWithUser {
   updatedAt: string;
 
   churchId?: string;
-
-  // Integrations
+  prayerChainId?: string;
+  prayerCampaignId?: string;
+  // Integrations futures
   groupId?: string;
   ministryId?: string;
   eventId?: string;
   liveBroadcastId?: string;
-  prayerCampaignId?: string;
   prayerRoomId?: string;
   scheduledAt?: string;
-
   status?: "ACTIVE" | "ANSWERED" | "ARCHIVED";
-
   user: {
     id: string;
     name: string | null;
@@ -43,27 +41,23 @@ export interface PrayerRequestWithUser {
     name: string;
     slug: string;
   };
-
-  // Relations futures
-  // group?: { id: string; name: string };
-  // ministry?: { id: string; name: string };
-  // event?: { id: string; name: string };
-
-  liveBroadcast?: {
+  prayerChain?: {
     id: string;
     title: string;
   };
-
   prayerCampaign?: {
     id: string;
     title: string;
   };
-
+  // Relations futures
+  liveBroadcast?: {
+    id: string;
+    title: string;
+  };
   prayerRoom?: {
     id: string;
     title: string;
   };
-
   _count?: {
     reactions: number;
     responses: number;
@@ -187,36 +181,32 @@ export interface PrayerSchedule {
 export interface PrayerRoom {
   id: string;
   prayerChainId?: string | null;
-
+  churchId?: string | null;
   title: string;
   description?: string | null;
-
   roomType: "TEXT" | "AUDIO" | "VIDEO";
-
   isPublic: boolean;
   isActive: boolean;
-
   moderatorId: string;
-
   maxParticipants?: number | null;
-
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
-
   createdAt: string;
   endedAt?: string | null;
-
   moderator?: {
     id: string;
     name: string | null;
     image: string | null;
   };
-
   prayerChain?: {
     id: string;
     title: string;
   };
-
+  church?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
   _count?: {
     participants?: number;
   };
@@ -229,43 +219,30 @@ export interface PrayerRoom {
 export interface PrayerCampaign {
   id: string;
   title: string;
-
   description?: string | null;
   imageUrl?: string | null;
-
-  type:
-    | "FAST"
-    | "PRAYER"
-    | "VIGIL"
-    | "NATIONAL"
-    | "GLOBAL";
-
+  type: "FAST" | "PRAYER" | "VIGIL" | "NATIONAL" | "GLOBAL";
   startDate: string;
   endDate: string;
-
   isActive: boolean;
-
   churchId?: string | null;
   createdBy: string;
-
   createdAt: string;
-
   church?: {
     id: string;
     name: string;
     slug: string;
     logo?: string | null;
   };
-
   creator?: {
     id: string;
     name: string | null;
     image: string | null;
   };
-
   _count?: {
-    chains?: number;
+    chains?: number; // @deprecated: Use campaignChains count instead
   };
+  campaignChains?: PrayerCampaignChain[];
 }
 
 // ============================================================
@@ -303,68 +280,38 @@ export interface PrayerChainWithLinks {
   description: string | null;
 
   isActive: boolean;
+  status: "ACTIVE" | "SUSPENDED" | "ARCHIVED" | "DELETED";
+  suspendedAt?: string | null;
+  archivedAt?: string | null;
+  deletedAt?: string | null;
   createdAt: string;
-
+  // Champs optionnels
   ownerId?: string | null;
-
-  ownerType?:
-    | "USER"
-    | "CHURCH"
-    | "GROUP"
-    | "MINISTRY"
-    | "EVENT";
-
+  ownerType?: "USER" | "CHURCH" | "GROUP" | "MINISTRY" | "EVENT";
   churchId?: string | null;
   groupId?: string | null;
   ministryId?: string | null;
   eventId?: string | null;
-
   imageUrl?: string | null;
-
-  visibility?:
-    | "PUBLIC"
-    | "PRIVATE"
-    | "CHURCH_ONLY"
-    | "CHURCH_MEMBERS";
-
-  prayerCampaignId?: string | null;
-
+  visibility?: "PUBLIC" | "PRIVATE" | "CHURCH_ONLY" | "CHURCH_MEMBERS";
+  prayerCampaignId?: string | null; // @deprecated: Use campaigns instead
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
-
   owner?: {
     id: string;
     name: string | null;
     image: string | null;
   };
-
   church?: {
     id: string;
     name: string;
     slug: string;
   };
-
-  // Relations futures
-  // group?: {
-  //   id: string;
-  //   name: string;
-  // };
-  //
-  // ministry?: {
-  //   id: string;
-  //   name: string;
-  // };
-  //
-  // event?: {
-  //   id: string;
-  //   name: string;
-  // };
-
   prayerCampaign?: {
     id: string;
     title: string;
   };
-
+  campaigns?: PrayerCampaignChain[];
   _count?: {
     links: number;
     participants?: number;
@@ -394,8 +341,17 @@ export interface PrayerChainWithLinks {
 }
 
 // ============================================================
-// PRAYER LIVE ROOM
+// PRAYER CAMPAIGN CHAIN (Many-to-Many)
 // ============================================================
+
+export interface PrayerCampaignChain {
+  id: string;
+  campaignId: string;
+  chainId: string;
+  joinedAt: string;
+  campaign?: PrayerCampaign;
+  chain?: PrayerChainWithLinks;
+}
 
 export interface PrayerLiveRoomWithCount {
   id: string;
@@ -465,3 +421,73 @@ export const PRAYER_CATEGORIES: {
     emoji: "📢",
   },
 ];
+
+// ============================================
+// TYPES UNIFIÉS PRIÈRE (PHASE 4 MIGRATION)
+// ============================================
+
+export type PrayerType = "INDIVIDUAL" | "COLLABORATIVE_CHAIN" | "COLLABORATIVE_CAMPAIGN" | "LIVE_ROOM";
+export type PrayerVisibility = "PUBLIC" | "PRIVATE" | "CHURCH_MEMBERS";
+export type RoomType = "TEXT" | "AUDIO" | "VIDEO";
+export type CampaignType = "FAST" | "PRAYER" | "VIGIL" | "NATIONAL" | "GLOBAL";
+
+export interface UnifiedPrayer {
+  id: string;
+  type: PrayerType;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  visibility: PrayerVisibility | null;
+  churchId: string | null;
+  groupId: string | null;
+  ministryId: string | null;
+  eventId: string | null;
+  createdBy: string;
+  createdAt: string;
+  
+  // Champs individuels (type = "INDIVIDUAL")
+  content: string | null;
+  category: string | null;
+  isUrgent: boolean;
+  isAnswered: boolean;
+  
+  // Champs collaboratifs
+  isActive: boolean;
+  roomType: RoomType | null;
+  isPublic: boolean;
+  maxParticipants: number | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  endedAt: string | null;
+  
+  // Champs campagne (type = "COLLABORATIVE_CAMPAIGN")
+  campaignType: CampaignType | null;
+  startDate: string | null;
+  endDate: string | null;
+  
+  // Relations hiérarchiques
+  parentPrayerId: string | null;
+  childPrayers?: UnifiedPrayer[];
+  
+  // Relations communes
+  prayerCreator: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+  prayerChurch?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+export interface UnifiedPrayerFilters {
+  type?: PrayerType | "ALL";
+  category?: string;
+  filter?: "recent" | "popular" | "urgent" | "answered";
+  churchId?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
