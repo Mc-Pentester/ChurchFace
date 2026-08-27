@@ -1,5 +1,26 @@
 import { Server, Socket } from "socket.io";
 
+// Fonctions de validation locales
+function isValidCallId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    value.length <= 256
+  );
+}
+
+function isValidUserId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    value.length <= 256
+  );
+}
+
+function isValidObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export function initSocket(server: any) {
   const io = new Server(server, {
     cors: { origin: "*" },
@@ -53,15 +74,45 @@ export function initSocket(server: any) {
     });
 
     /* =========================
-       � CALLS (WebRTC)
+       📞 CALLS (WebRTC)
     ========================== */
     socket.on("call:offer", ({ callId, offer, recipientId, callerId, callerName, callerImage, callType }) => {
+      // Validation des données
+      if (!isValidCallId(callId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:offer", reason: "invalid callId", callId });
+        return;
+      }
+      if (!isValidUserId(recipientId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:offer", reason: "invalid recipientId", recipientId });
+        return;
+      }
+      if (!isValidUserId(callerId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:offer", reason: "invalid callerId", callerId });
+        return;
+      }
+      if (!isValidObject(offer)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:offer", reason: "invalid offer" });
+        return;
+      }
+
+      console.log("[CALL][SERVER][OFFER]", {
+        callId,
+        callerId,
+        recipientId,
+        socketId: socket.id,
+      });
+
       // Transmettre callerName et callerImage pour que le destinataire
       // puisse afficher l'identité de l'appelant sur toutes les pages
       const recipientSockets = onlineUsers.get(recipientId);
 
       if (recipientSockets && recipientSockets.size > 0) {
         recipientSockets.forEach((socketId) => {
+          console.log("[CALL][SERVER][OFFER_ROUTE]", {
+            callId,
+            recipientId,
+            recipientSocketId: socketId,
+          });
           io.to(socketId).emit("call:incoming", {
             callId,
             offer,
@@ -70,11 +121,37 @@ export function initSocket(server: any) {
             callerImage: callerImage ?? null,
             callType,
           });
+          console.log("[CALL][SERVER][INCOMING_DELIVERED]", {
+            callId,
+            recipientId,
+          });
         });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_FOUND]", { recipientId, callId });
       }
     });
 
     socket.on("call:answer", ({ callId, answer, recipientId }) => {
+      // Validation des données
+      if (!isValidCallId(callId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:answer", reason: "invalid callId", callId });
+        return;
+      }
+      if (!isValidUserId(recipientId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:answer", reason: "invalid recipientId", recipientId });
+        return;
+      }
+      if (!isValidObject(answer)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:answer", reason: "invalid answer" });
+        return;
+      }
+
+      console.log("[CALL][SERVER][ANSWER]", {
+        callId,
+        recipientId,
+        socketId: socket.id,
+      });
+
       const recipientSockets = onlineUsers.get(recipientId);
       
       if (recipientSockets && recipientSockets.size > 0) {
@@ -84,10 +161,32 @@ export function initSocket(server: any) {
             answer,
           });
         });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_FOUND]", { recipientId, callId });
       }
     });
 
     socket.on("call:ice", ({ callId, candidate, recipientId }) => {
+      // Validation des données
+      if (!isValidCallId(callId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:ice", reason: "invalid callId", callId });
+        return;
+      }
+      if (!isValidUserId(recipientId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:ice", reason: "invalid recipientId", recipientId });
+        return;
+      }
+      if (!isValidObject(candidate)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:ice", reason: "invalid candidate" });
+        return;
+      }
+
+      console.log("[CALL][SERVER][ICE]", {
+        callId,
+        recipientId,
+        socketId: socket.id,
+      });
+
       const recipientSockets = onlineUsers.get(recipientId);
       
       if (recipientSockets && recipientSockets.size > 0) {
@@ -97,10 +196,28 @@ export function initSocket(server: any) {
             candidate,
           });
         });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_FOUND]", { recipientId, callId });
       }
     });
 
     socket.on("call:end", ({ callId, recipientId }) => {
+      // Validation des données
+      if (!isValidCallId(callId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:end", reason: "invalid callId", callId });
+        return;
+      }
+      if (!isValidUserId(recipientId)) {
+        console.warn("[CALL][SERVER][INVALID_PAYLOAD]", { event: "call:end", reason: "invalid recipientId", recipientId });
+        return;
+      }
+
+      console.log("[CALL][SERVER][END]", {
+        callId,
+        recipientId,
+        socketId: socket.id,
+      });
+
       const recipientSockets = onlineUsers.get(recipientId);
       
       if (recipientSockets && recipientSockets.size > 0) {
@@ -109,6 +226,8 @@ export function initSocket(server: any) {
             callId,
           });
         });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_FOUND]", { recipientId, callId });
       }
     });
 

@@ -84,6 +84,12 @@ Map<string, RadioParticipant>
 > ();
 
 // ======================================================
+// ONLINE USERS REGISTRY (GLOBAL)
+// ======================================================
+
+const onlineUsers = new Map<string, Set<string>>();
+
+// ======================================================
 // RADIO HELPERS
 // ======================================================
 
@@ -642,8 +648,26 @@ io.on(
           `user:${userId}`
         );
 
-        socket.data.userId =
-          userId;
+        socket.data.userId = userId;
+
+        // Also add to onlineUsers registry for call routing
+        if (!onlineUsers.has(userId)) {
+          onlineUsers.set(userId, new Set());
+        }
+
+        onlineUsers.get(userId)!.add(socket.id);
+
+        console.log("[SOCKET][REGISTRY][SET]", {
+          userId,
+          socketId: socket.id,
+          registrySize: onlineUsers.size,
+          registeredUsers: Array.from(onlineUsers.keys()),
+        });
+
+        console.log("[CALL][SERVER][USER_REGISTERED]", {
+          userId,
+          socketId: socket.id,
+        });
       }
     );
 
@@ -750,6 +774,40 @@ io.on(
     // ==================================================
 
     socket.on(
+      "chat:join",
+      (chatId: string) => {
+        if (!chatId) {
+          return;
+        }
+
+        socket.join(chatId);
+
+        console.log("[CHAT][SERVER][JOIN]", {
+          socketId: socket.id,
+          userId: socket.data.userId,
+          chatId,
+        });
+      }
+    );
+
+    socket.on(
+      "chat:leave",
+      (chatId: string) => {
+        if (!chatId) {
+          return;
+        }
+
+        socket.leave(chatId);
+
+        console.log("[CHAT][SERVER][LEAVE]", {
+          socketId: socket.id,
+          userId: socket.data.userId,
+          chatId,
+        });
+      }
+    );
+
+    socket.on(
       "message:send",
       async (msg: any) => {
         if (!msg?.chatId) {
@@ -764,6 +822,199 @@ io.on(
         );
       }
     );
+
+    // ==================================================
+    // WEBRTC CALLS
+    // ==================================================
+
+    socket.on("user:online", (userId: string) => {
+      if (!userId) {
+        return;
+      }
+
+      if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, new Set());
+      }
+
+      onlineUsers.get(userId)!.add(socket.id);
+
+      socket.data.userId = userId;
+
+      console.log("[SOCKET][REGISTRY][SET]", {
+        userId,
+        socketId: socket.id,
+        registrySize: onlineUsers.size,
+        registeredUsers: Array.from(onlineUsers.keys()),
+      });
+
+      console.log("[CALL][SERVER][USER_REGISTERED]", {
+        userId,
+        socketId: socket.id,
+      });
+    });
+
+    socket.on("call:offer", ({ callId, offer, recipientId, callerId, callerName, callerImage, callType }) => {
+      if (!callId || typeof callId !== "string" || callId.length > 256) {
+        console.warn("[CALL][SERVER][INVALID_CALL_ID]", { callId });
+        return;
+      }
+      if (!recipientId || typeof recipientId !== "string") {
+        console.warn("[CALL][SERVER][INVALID_RECIPIENT_ID]", { recipientId });
+        return;
+      }
+      if (!offer || typeof offer !== "object") {
+        console.warn("[CALL][SERVER][INVALID_OFFER]");
+        return;
+      }
+
+      console.log("[CALL][SERVER][OFFER_RECEIVED]", {
+        socketId: socket.id,
+        senderUserId: socket.data.userId,
+        recipientId,
+        callId,
+      });
+
+      const recipientSockets = onlineUsers.get(recipientId);
+
+      console.log("[SOCKET][REGISTRY][LOOKUP]", {
+        recipientId,
+        found: !!recipientSockets,
+        socketId: recipientSockets ? Array.from(recipientSockets) : [],
+        registrySize: onlineUsers.size,
+      });
+
+      if (recipientSockets && recipientSockets.size > 0) {
+        recipientSockets.forEach((targetSocketId) => {
+          console.log("[CALL][SERVER][OFFER_TARGET]", {
+            recipientId,
+            targetSocketId,
+            callId,
+          });
+
+          io.to(targetSocketId).emit("call:incoming", {
+            callId,
+            offer,
+            callerId: socket.data.userId || callerId,
+            callerName: callerName ?? "Inconnu",
+            callerImage: callerImage ?? null,
+            callType,
+          });
+
+          console.log("[CALL][SERVER][INCOMING_EMITTED]", {
+            recipientId,
+            targetSocketId,
+            callId,
+          });
+        });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_REGISTERED]", {
+          recipientId,
+          callId,
+        });
+      }
+    });
+
+    socket.on("call:answer", ({ callId, answer, recipientId }) => {
+      if (!callId || typeof callId !== "string") {
+        console.warn("[CALL][SERVER][INVALID_CALL_ID]", { callId });
+        return;
+      }
+      if (!recipientId || typeof recipientId !== "string") {
+        console.warn("[CALL][SERVER][INVALID_RECIPIENT_ID]", { recipientId });
+        return;
+      }
+      if (!answer || typeof answer !== "object") {
+        console.warn("[CALL][SERVER][INVALID_ANSWER]");
+        return;
+      }
+
+      console.log("[CALL][SERVER][ANSWER_RECEIVED]", {
+        socketId: socket.id,
+        senderUserId: socket.data.userId,
+        recipientId,
+        callId,
+      });
+
+      const recipientSockets = onlineUsers.get(recipientId);
+
+      if (recipientSockets && recipientSockets.size > 0) {
+        recipientSockets.forEach((targetSocketId) => {
+          io.to(targetSocketId).emit("call:answer", {
+            callId,
+            answer,
+          });
+        });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_REGISTERED]", {
+          recipientId,
+          callId,
+        });
+      }
+    });
+
+    socket.on("call:ice", ({ callId, candidate, recipientId }) => {
+      if (!callId || typeof callId !== "string") {
+        console.warn("[CALL][SERVER][INVALID_CALL_ID]", { callId });
+        return;
+      }
+      if (!recipientId || typeof recipientId !== "string") {
+        console.warn("[CALL][SERVER][INVALID_RECIPIENT_ID]", { recipientId });
+        return;
+      }
+      if (!candidate || typeof candidate !== "object") {
+        console.warn("[CALL][SERVER][INVALID_CANDIDATE]");
+        return;
+      }
+
+      const recipientSockets = onlineUsers.get(recipientId);
+
+      if (recipientSockets && recipientSockets.size > 0) {
+        recipientSockets.forEach((targetSocketId) => {
+          io.to(targetSocketId).emit("call:ice", {
+            callId,
+            candidate,
+          });
+        });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_REGISTERED]", {
+          recipientId,
+          callId,
+        });
+      }
+    });
+
+    socket.on("call:end", ({ callId, recipientId }) => {
+      if (!callId || typeof callId !== "string") {
+        console.warn("[CALL][SERVER][INVALID_CALL_ID]", { callId });
+        return;
+      }
+      if (!recipientId || typeof recipientId !== "string") {
+        console.warn("[CALL][SERVER][INVALID_RECIPIENT_ID]", { recipientId });
+        return;
+      }
+
+      console.log("[CALL][SERVER][END_RECEIVED]", {
+        socketId: socket.id,
+        senderUserId: socket.data.userId,
+        recipientId,
+        callId,
+      });
+
+      const recipientSockets = onlineUsers.get(recipientId);
+
+      if (recipientSockets && recipientSockets.size > 0) {
+        recipientSockets.forEach((targetSocketId) => {
+          io.to(targetSocketId).emit("call:end", {
+            callId,
+          });
+        });
+      } else {
+        console.warn("[CALL][SERVER][RECIPIENT_NOT_REGISTERED]", {
+          recipientId,
+          callId,
+        });
+      }
+    });
 
     // ==================================================
     // SOCIAL EVENTS
@@ -1523,6 +1774,31 @@ io.on(
           "Socket disconnected:",
           socket.id
         );
+
+        // Remove socket from onlineUsers registry
+        const userId = socket.data.userId;
+        if (userId) {
+          const userSockets = onlineUsers.get(userId);
+          if (userSockets) {
+            userSockets.delete(socket.id);
+            if (userSockets.size === 0) {
+              onlineUsers.delete(userId);
+              console.log("[SOCKET][REGISTRY][DELETE]", {
+                userId,
+                socketId: socket.id,
+                deleted: true,
+                remainingSockets: 0,
+              });
+            } else {
+              console.log("[SOCKET][REGISTRY][DELETE]", {
+                userId,
+                socketId: socket.id,
+                deleted: true,
+                remainingSockets: userSockets.size,
+              });
+            }
+          }
+        }
 
         const memberships =
           removeSocketFromAllRadios(

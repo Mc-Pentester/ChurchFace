@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Phone, PhoneOff, Video, VideoOff } from "lucide-react";
+import { Phone, PhoneOff, Video } from "lucide-react";
 import { socket } from "@/lib/socket";
 
 interface IncomingCallModalProps {
@@ -12,6 +12,7 @@ interface IncomingCallModalProps {
   callType: "audio" | "video";
   callerId: string;
   currentUserId: string;
+  callId: string;
   onAccept: () => void;
 }
 
@@ -23,37 +24,76 @@ export default function IncomingCallModal({
   callType,
   callerId,
   currentUserId,
+  callId: serverCallId,
   onAccept
 }: IncomingCallModalProps) {
-  const [isRinging, setIsRinging] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const callIdRef = useRef<string>("");
+  const modalInitializedRef = useRef(false);
 
   useEffect(() => {
     if (!isOpen) {
       stopRinging();
+      modalInitializedRef.current = false;
       return;
     }
 
-    // Generate unique call ID
-    callIdRef.current = `${callerId}-${currentUserId}-${Date.now()}`;
+    // Use server callId as source of truth
+    if (!modalInitializedRef.current) {
+      if (!serverCallId) {
+        console.error("[CALL][INCOMING_MODAL] No callId from server", {
+          callerId,
+          currentUserId,
+          callerName,
+          callType
+        });
+        onClose();
+        return;
+      }
+      callIdRef.current = serverCallId;
+      modalInitializedRef.current = true;
+      console.log("[CALL][INCOMING_MODAL] Opened", {
+        callId: callIdRef.current,
+        callerId,
+        currentUserId,
+        callerName,
+        callType
+      });
+    } else {
+      console.log("[CALL][INCOMING_MODAL] Already initialized for this callId", {
+        callId: callIdRef.current
+      });
+      return;
+    }
 
     // Play ringing sound
     playRinging();
 
     // Listen for call end
     const handleCallEnd = () => {
+      console.log("[CALL][INCOMING_MODAL] Call ended", callIdRef.current);
       stopRinging();
       onClose();
     };
 
+    console.log("[CALL][SOCKET_LISTENER_ADD]", {
+      event: "call:end",
+      socketId: socket.id,
+      callId: callIdRef.current
+    });
+
     socket.on("call:end", handleCallEnd);
 
     return () => {
+      console.log("[CALL][SOCKET_LISTENER_REMOVE]", {
+        event: "call:end",
+        socketId: socket.id,
+        callId: callIdRef.current
+      });
       socket.off("call:end", handleCallEnd);
       stopRinging();
     };
-  }, [isOpen, callerId, currentUserId]);
+  }, [isOpen, serverCallId]); // Dépendance unique isOpen = listener enregistré une fois par ouverture
 
   const playRinging = () => {
     if (audioRef.current) {
@@ -67,7 +107,6 @@ export default function IncomingCallModal({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    setIsRinging(false);
   };
 
   const handleReject = () => {
@@ -97,13 +136,13 @@ export default function IncomingCallModal({
               <img src={callerImage} alt="" className="w-full h-full object-cover" />
             ) : (
               <span className="text-emerald-600 font-bold text-5xl">
-                {callerName[0]?.toUpperCase()}
+                {callerName?.[0]?.toUpperCase() ?? "?"}
               </span>
             )}
           </div>
 
           {/* Caller Info */}
-          <h2 className="text-white text-2xl font-bold mb-2">{callerName}</h2>
+          <h2 className="text-white text-2xl font-bold mb-2">{callerName ?? "Utilisateur"}</h2>
           <p className="text-white/80 text-lg mb-8">
             {callType === "audio" ? "Appel audio" : "Appel vidéo"}
           </p>

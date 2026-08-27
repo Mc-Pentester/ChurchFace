@@ -8,8 +8,6 @@ import { ArrowLeft, Phone, Video, Info, Plus } from "lucide-react";
 import type { Message, Chat } from "@/types/messaging";
 import { socket, useSocketPresence } from "@/lib/socket";
 import { useCall } from "@/contexts/CallContext";
-import { useSession } from "next-auth/react";
-import CallModal from "./CallModal";
 
 interface ChatWindowProps {
   chat: Chat | null;
@@ -22,13 +20,6 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   console.log("ChatWindow component mounted, chat:", chat, "currentUserId:", currentUserId);
   useSocketPresence();
 
-  // Force join chat room immediately when component mounts
-  if (chat) {
-    console.log("Force joining chat room:", chat.id);
-    socket.emit("chat:join", chat.id);
-  }
-
-  const { data: session } = useSession();
   const { startCall } = useCall();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,12 +27,9 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // État pour appel SORTANT uniquement (depuis ce ChatWindow)
-  const [callType, setCallType] = useState<"audio" | "video">("audio");
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
-
   const typingTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const callStartingRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,8 +57,11 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
           setIsLoading(false);
         });
 
-      socket.emit("chat:join", chat.id);
-      console.log("Joined chat room:", chat.id);
+      // Join chat room in useEffect, not during render
+      if (socket.connected) {
+        socket.emit("chat:join", chat.id);
+        console.log("[CHAT][CLIENT][JOIN]", { chatId: chat.id });
+      }
 
     const handleNewMessage = (msg: any) => {
       console.log("handleNewMessage called with:", msg);
@@ -104,6 +95,12 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
       console.log("Cleaning up socket listeners");
       socket.off("message:new", handleNewMessage);
       socket.off("typing:update", handleTyping);
+      
+      // Leave chat room on cleanup
+      if (chat && socket.connected) {
+        socket.emit("chat:leave", chat.id);
+        console.log("[CHAT][CLIENT][LEAVE]", { chatId: chat.id });
+      }
     };
     } catch (error) {
       console.error("Error in ChatWindow useEffect:", error);
@@ -172,23 +169,49 @@ export default function ChatWindow({ chat, currentUserId, onBack, onNewConversat
   const handleStartAudioCall = () => {
     const recipientId = getRecipientId();
     if (!recipientId) return;
-    startCall({
-      recipientId,
-      recipientName: getChatName(),
-      recipientImage: getChatAvatar(),
-      callType: "audio",
-    });
+    
+    // Protection contre double clic rapide
+    if (callStartingRef.current) {
+      console.warn("[CALL][UI][DOUBLE_CLICK_IGNORED]");
+      return;
+    }
+    
+    callStartingRef.current = true;
+    
+    try {
+      startCall({
+        recipientId,
+        recipientName: getChatName(),
+        recipientImage: getChatAvatar(),
+        callType: "audio",
+      });
+    } finally {
+      callStartingRef.current = false;
+    }
   };
 
   const handleStartVideoCall = () => {
     const recipientId = getRecipientId();
     if (!recipientId) return;
-    startCall({
-      recipientId,
-      recipientName: getChatName(),
-      recipientImage: getChatAvatar(),
-      callType: "video",
-    });
+    
+    // Protection contre double clic rapide
+    if (callStartingRef.current) {
+      console.warn("[CALL][UI][DOUBLE_CLICK_IGNORED]");
+      return;
+    }
+    
+    callStartingRef.current = true;
+    
+    try {
+      startCall({
+        recipientId,
+        recipientName: getChatName(),
+        recipientImage: getChatAvatar(),
+        callType: "video",
+      });
+    } finally {
+      callStartingRef.current = false;
+    }
   };
 
   if (!chat) {

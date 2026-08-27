@@ -102,7 +102,7 @@ export class MediaService {
       // Cleanup on error
       console.error("[MediaService] Upload failed, cleaning up");
       if (uploadedUrls.length > 0) {
-        await this.cleanupUploads(uploadedUrls);
+        await this.cleanupUploadedFiles(uploadedUrls);
       }
       throw error;
     }
@@ -148,7 +148,7 @@ export class MediaService {
       // Cleanup on error
       console.error("[MediaService] Upload failed, cleaning up");
       if (uploadedUrls.length > 0) {
-        await this.cleanupUploads(uploadedUrls);
+        await this.cleanupUploadedFiles(uploadedUrls);
       }
       throw error;
     }

@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 // Configuration centralisée Socket.IO
 const SOCKET_URL = 
@@ -26,15 +26,19 @@ export function getSocket(): Socket {
     socketInstance = io(SOCKET_URL, SOCKET_OPTIONS);
     
     socketInstance.on("connect", () => {
-      console.log("CONNECTÉ ID :", socketInstance?.id);
-    });
-
-    socketInstance.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
+      console.log("[CALL][SOCKET][CONNECT]", { socketId: socketInstance?.id });
     });
 
     socketInstance.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
+      console.log("[CALL][SOCKET][DISCONNECT]", { socketId: socketInstance?.id, reason });
+    });
+
+    socketInstance.on("connect_error", (error) => {
+      console.error("[CALL][SOCKET][CONNECT_ERROR]", { error });
+    });
+
+    socketInstance.on("reconnect", (attemptNumber) => {
+      console.log("[CALL][SOCKET][RECONNECT]", { socketId: socketInstance?.id, attemptNumber });
     });
   }
   
@@ -47,29 +51,45 @@ export const socket = getSocket();
 // Hook to emit register when session is available
 export function useSocketPresence() {
   const { data: session } = useSession();
+  const registeredUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
-    if (session?.user?.id && socket.connected) {
-      console.log("Emitting register for:", session.user.id);
-      socket.emit("register", session.user.id);
+    const userId = session?.user?.id;
+
+    // Éviter les register multiples pour le même utilisateur
+    if (userId && userId !== registeredUserIdRef.current && socket.connected) {
+      console.log("[SOCKET][REGISTER]", { userId, socketId: socket.id });
+      socket.emit("register", userId);
+      registeredUserIdRef.current = userId;
     }
   }, [session?.user?.id, socket.connected]);
 
   useEffect(() => {
     const socket = getSocket();
+    const userId = session?.user?.id;
+
     const handleConnect = () => {
-      console.log("Socket connected, checking session");
-      if (session?.user?.id) {
-        console.log("Emitting register on connect for:", session.user.id);
-        socket.emit("register", session.user.id);
+      console.log("[SOCKET][CONNECTED]", { socketId: socket.id });
+      if (userId && userId !== registeredUserIdRef.current) {
+        console.log("[SOCKET][REGISTER_ON_CONNECT]", { userId });
+        socket.emit("register", userId);
+        registeredUserIdRef.current = userId;
       }
     };
 
+    const handleDisconnect = () => {
+      console.log("[SOCKET][DISCONNECTED]", { socketId: socket.id });
+      // Réinitialiser pour permettre un nouveau register à la reconnexion
+      registeredUserIdRef.current = null;
+    };
+
     socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
 
     return () => {
       socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
     };
   }, [session?.user?.id]);
 }

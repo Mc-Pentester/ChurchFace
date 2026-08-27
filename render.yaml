@@ -10,7 +10,7 @@ services:
     plan: free
     region: oregon
     buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npx prisma generate && npm run build
-    startCommand: prisma migrate deploy && node .next/standalone/server.js
+    startCommand: prisma migrate deploy && tsx server.ts
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
