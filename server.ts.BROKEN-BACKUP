@@ -90,6 +90,174 @@ Map<string, RadioParticipant>
 const onlineUsers = new Map<string, Set<string>>();
 
 // ======================================================
+// PENDING SIGNALING QUEUE
+// ======================================================
+
+interface PendingSignal {
+  signalType: "offer" | "answer" | "ice" | "end";
+  callId: string;
+  senderUserId: string;
+  recipientUserId: string;
+  payload: any;
+  createdAt: number;
+  expiresAt: number;
+}
+
+const pendingSignals = new Map<string, PendingSignal[]>();
+const SIGNAL_EXPIRY_MS = 60000; // 60 seconds
+
+function addPendingSignal(
+  signalType: PendingSignal["signalType"],
+  callId: string,
+  senderUserId: string,
+  recipientUserId: string,
+  payload: any
+) {
+  const now = Date.now();
+  const signal: PendingSignal = {
+    signalType,
+    callId,
+    senderUserId,
+    recipientUserId,
+    payload,
+    createdAt: now,
+    expiresAt: now + SIGNAL_EXPIRY_MS,
+  };
+
+  if (!pendingSignals.has(recipientUserId)) {
+    pendingSignals.set(recipientUserId, []);
+  }
+
+  pendingSignals.get(recipientUserId)!.push(signal);
+
+  console.log("[SOCKET][PENDING_SIGNAL_QUEUED]", {
+    signalType,
+    callId,
+    recipientUserId,
+    queueSize: pendingSignals.get(recipientUserId)!.length,
+  });
+
+  // Clean up expired signals periodically
+  cleanupExpiredSignals(recipientUserId);
+}
+
+function cleanupExpiredSignals(userId: string) {
+  const signals = pendingSignals.get(userId);
+  if (!signals) return;
+
+  const now = Date.now();
+  const validSignals = signals.filter((s) => s.expiresAt > now);
+
+  if (validSignals.length !== signals.length) {
+    pendingSignals.set(userId, validSignals);
+    console.log("[SOCKET][PENDING_SIGNALS_CLEANED]", {
+      userId,
+      before: signals.length,
+      after: validSignals.length,
+    });
+  }
+
+  if (validSignals.length === 0) {
+    pendingSignals.delete(userId);
+  }
+}
+
+function deliverPendingSignals(userId: string, socketId: string) {
+  const signals = pendingSignals.get(userId);
+  if (!signals || signals.length === 0) return;
+
+  console.log("[SOCKET][DELIVERING_PENDING_SIGNALS]", {
+    userId,
+    socketId,
+    count: signals.length,
+  });
+
+  signals.forEach((signal) => {
+    const now = Date.now();
+    if (now > signal.expiresAt) {
+      console.log("[SOCKET][PENDING_SIGNAL_EXPIRED]", {
+        signalType: signal.signalType,
+        callId: signal.callId,
+      });
+      return;
+    }
+
+    console.log("[SOCKET][DELIVERING_PENDING_SIGNAL]", {
+      signalType: signal.signalType,
+      callId: signal.callId,
+      recipientUserId: signal.recipientUserId,
+    });
+
+    switch (signal.signalType) {
+      case "offer":
+        io.to(socketId).emit("call:incoming", signal.payload);
+        break;
+      case "answer":
+        io.to(socketId).emit("call:answer", signal.payload);
+        break;
+      case "ice":
+        io.to(socketId).emit("call:ice", signal.payload);
+        break;
+      case "end":
+        io.to(socketId).emit("call:end", signal.payload);
+        break;
+    }
+  });
+
+  // Clear delivered signals
+  pendingSignals.delete(userId);
+}
+
+// ======================================================
+// REGISTRY VALIDATION HELPERS
+// ======================================================
+
+function isValidUserId(userId: unknown): userId is string {
+  return typeof userId === "string" && userId.trim().length > 0 && userId.length <= 256;
+}
+
+function getRecipientSockets(userId: string): Set<string> | null {
+  if (!isValidUserId(userId)) {
+    console.warn("[SOCKET][REGISTRY][INVALID_USER_ID]", { userId });
+    return null;
+  }
+
+  const sockets = onlineUsers.get(userId);
+  
+  if (!sockets || sockets.size === 0) {
+    console.warn("[SOCKET][REGISTRY][USER_NOT_FOUND]", { userId });
+    return null;
+  }
+
+  // Filter out disconnected sockets
+  const validSockets = new Set<string>();
+  for (const socketId of sockets) {
+    const socket = io?.sockets.sockets.get(socketId);
+    if (socket && socket.connected) {
+      validSockets.add(socketId);
+    }
+  }
+
+  // Update registry with only valid sockets
+  if (validSockets.size === 0) {
+    onlineUsers.delete(userId);
+    console.warn("[SOCKET][REGISTRY][NO_VALID_SOCKETS]", { userId });
+    return null;
+  }
+
+  if (validSockets.size !== sockets.size) {
+    onlineUsers.set(userId, validSockets);
+    console.log("[SOCKET][REGISTRY][CLEANED_DISCONNECTED]", {
+      userId,
+      before: sockets.size,
+      after: validSockets.size,
+    });
+  }
+
+  return validSockets;
+}
+
+// ======================================================
 // RADIO HELPERS
 // ======================================================
 
@@ -668,6 +836,20 @@ io.on(
           userId,
           socketId: socket.id,
         });
+
+        // Send register acknowledgment to client
+        socket.emit("register:ack", {
+          userId,
+          socketId: socket.id,
+        });
+
+        console.log("[CALL][SERVER][REGISTER_ACK]", {
+          userId,
+          socketId: socket.id,
+        });
+
+        // Deliver any pending signals for this user
+        deliverPendingSignals(userId, socket.id);
       }
     );
 
@@ -874,14 +1056,7 @@ io.on(
         callId,
       });
 
-      const recipientSockets = onlineUsers.get(recipientId);
-
-      console.log("[SOCKET][REGISTRY][LOOKUP]", {
-        recipientId,
-        found: !!recipientSockets,
-        socketId: recipientSockets ? Array.from(recipientSockets) : [],
-        registrySize: onlineUsers.size,
-      });
+      const recipientSockets = getRecipientSockets(recipientId);
 
       if (recipientSockets && recipientSockets.size > 0) {
         recipientSockets.forEach((targetSocketId) => {
@@ -911,6 +1086,22 @@ io.on(
           recipientId,
           callId,
         });
+
+        // Queue the offer for when the recipient registers
+        addPendingSignal(
+          "offer",
+          callId,
+          socket.data.userId || callerId,
+          recipientId,
+          {
+            callId,
+            offer,
+            callerId: socket.data.userId || callerId,
+            callerName: callerName ?? "Inconnu",
+            callerImage: callerImage ?? null,
+            callType,
+          }
+        );
       }
     });
 
@@ -935,7 +1126,7 @@ io.on(
         callId,
       });
 
-      const recipientSockets = onlineUsers.get(recipientId);
+      const recipientSockets = getRecipientSockets(recipientId);
 
       if (recipientSockets && recipientSockets.size > 0) {
         recipientSockets.forEach((targetSocketId) => {
@@ -966,7 +1157,7 @@ io.on(
         return;
       }
 
-      const recipientSockets = onlineUsers.get(recipientId);
+      const recipientSockets = getRecipientSockets(recipientId);
 
       if (recipientSockets && recipientSockets.size > 0) {
         recipientSockets.forEach((targetSocketId) => {
@@ -1000,7 +1191,7 @@ io.on(
         callId,
       });
 
-      const recipientSockets = onlineUsers.get(recipientId);
+      const recipientSockets = getRecipientSockets(recipientId);
 
       if (recipientSockets && recipientSockets.size > 0) {
         recipientSockets.forEach((targetSocketId) => {
@@ -1042,7 +1233,7 @@ io.on(
             userId: postOwnerId,
             senderId: fromUserId,
             type: "LIKE",
-            message: "a aim├⌐ votre publication Γ¥ñ∩╕Å",
+            message: "a aimé votre publication ❤️",
             entityId: postId,
             entityType: "post",
           });
@@ -1077,7 +1268,7 @@ io.on(
             userId: postOwnerId,
             senderId: fromUserId,
             type: "COMMENT",
-            message: "a comment├⌐ votre publication ≡ƒÆ¼",
+            message: "a commenté votre publication 💬",
             entityId: postId,
             entityType: "post",
           });
@@ -1110,7 +1301,7 @@ io.on(
             userId: toUserId,
             senderId: fromUserId,
             type: "FOLLOW",
-            message: "a commenc├⌐ ├á vous suivre ≡ƒæñ",
+            message: "a commencé à vous suivre 👤",
           });
         } catch (err) {
           console.error(
@@ -1615,255 +1806,4 @@ io.on(
       }: {
         radioId: string;
         answer: RTCSessionDescriptionInit;
-        target: string;
-      }) => {
-        if (
-          !radioId ||
-          !answer ||
-          !target
-        ) {
-          return;
-        }
-
-        const delivered =
-          emitToRadioPeer({
-            radioId,
-
-            sourceSocketId:
-              socket.id,
-
-            targetSocketId:
-              target,
-
-            sourceRole:
-              "listener",
-
-            targetRole:
-              "broadcaster",
-
-            event:
-              "radio:answer",
-
-            payload: {
-              answer,
-
-              senderId:
-                socket.id,
-            },
-          });
-
-        if (!delivered) {
-          console.warn(
-            "Rejected stale radio answer",
-            {
-              radioId,
-              source:
-                socket.id,
-              target,
-            }
-          );
-        }
-      }
-    );
-
-    socket.on(
-      "radio:ice-candidate",
-      ({
-        radioId,
-        candidate,
-        target,
-      }: {
-        radioId: string;
-        candidate: RTCIceCandidateInit;
-        target: string;
-      }) => {
-        if (
-          !radioId ||
-          !candidate ||
-          !target
-        ) {
-          return;
-        }
-
-        const sourceParticipant =
-          getRadioParticipant(
-            radioId,
-            socket.id
-          );
-
-        const targetParticipant =
-          getRadioParticipant(
-            radioId,
-            target
-          );
-
-        if (
-          !sourceParticipant ||
-          !targetParticipant
-        ) {
-          return;
-        }
-
-        const validRoles =
-          (
-            sourceParticipant.role ===
-              "broadcaster" &&
-            targetParticipant.role ===
-              "listener"
-          ) ||
-          (
-            sourceParticipant.role ===
-              "listener" &&
-            targetParticipant.role ===
-              "broadcaster"
-          );
-
-        if (!validRoles) {
-          return;
-        }
-
-        const delivered =
-          emitToRadioPeer({
-            radioId,
-
-            sourceSocketId:
-              socket.id,
-
-            targetSocketId:
-              target,
-
-            sourceRole:
-              sourceParticipant.role,
-
-            targetRole:
-              targetParticipant.role,
-
-            event:
-              "radio:ice-candidate",
-
-            payload: {
-              candidate,
-
-              senderId:
-                socket.id,
-            },
-          });
-
-        if (!delivered) {
-          console.warn(
-            "Rejected stale ICE candidate",
-            {
-              radioId,
-              source:
-                socket.id,
-              target,
-            }
-          );
-        }
-      }
-    );
-
-    // ==================================================
-    // DISCONNECT
-    // ==================================================
-
-    socket.on(
-      "disconnect",
-      () => {
-        console.log(
-          "Socket disconnected:",
-          socket.id
-        );
-
-        // Remove socket from onlineUsers registry
-        const userId = socket.data.userId;
-        if (userId) {
-          const userSockets = onlineUsers.get(userId);
-          if (userSockets) {
-            userSockets.delete(socket.id);
-            if (userSockets.size === 0) {
-              onlineUsers.delete(userId);
-              console.log("[SOCKET][REGISTRY][DELETE]", {
-                userId,
-                socketId: socket.id,
-                deleted: true,
-                remainingSockets: 0,
-              });
-            } else {
-              console.log("[SOCKET][REGISTRY][DELETE]", {
-                userId,
-                socketId: socket.id,
-                deleted: true,
-                remainingSockets: userSockets.size,
-              });
-            }
-          }
-        }
-
-        const memberships =
-          removeSocketFromAllRadios(
-            socket.id
-          );
-
-        for (
-          const membership of
-          memberships
-        ) {
-          const {
-            radioId,
-            participant,
-          } =
-            membership;
-
-          io.to(
-            `radio:${radioId}`
-          ).emit(
-            "radio:peer-left",
-            {
-              socketId:
-                socket.id,
-            }
-          );
-
-          if (
-            participant.role ===
-            "broadcaster"
-          ) {
-            io.to(
-              `radio:${radioId}`
-            ).emit(
-              "radio:status",
-              {
-                isLive: false,
-              }
-            );
-          }
-
-          emitRadioStats(
-            radioId
-          );
-        }
-
-        clearSocketRadioState(
-          socket
-        );
-      }
-    );
-  }
-);
-
-httpServer.listen(
-  port,
-  hostname,
-  () => {
-    console.log(
-      `Server running on http://${hostname}:${port}`
-    );
-  }
-);
-
-await ensureGlobalChatId();
-
-
-}
-);
+        ta

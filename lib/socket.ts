@@ -52,6 +52,7 @@ export const socket = getSocket();
 export function useSocketPresence() {
   const { data: session } = useSession();
   const registeredUserIdRef = useRef<string | null>(null);
+  const callsReadyRef = useRef(false);
 
   useEffect(() => {
     const socket = getSocket();
@@ -71,6 +72,7 @@ export function useSocketPresence() {
 
     const handleConnect = () => {
       console.log("[SOCKET][CONNECTED]", { socketId: socket.id });
+      callsReadyRef.current = false;
       if (userId && userId !== registeredUserIdRef.current) {
         console.log("[SOCKET][REGISTER_ON_CONNECT]", { userId });
         socket.emit("register", userId);
@@ -82,16 +84,28 @@ export function useSocketPresence() {
       console.log("[SOCKET][DISCONNECTED]", { socketId: socket.id });
       // Réinitialiser pour permettre un nouveau register à la reconnexion
       registeredUserIdRef.current = null;
+      callsReadyRef.current = false;
+    };
+
+    const handleRegisterAck = (data: { userId: string; socketId: string }) => {
+      console.log("[SOCKET][REGISTER_ACK]", data);
+      if (data.userId === userId) {
+        callsReadyRef.current = true;
+      }
     };
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
+    socket.on("register:ack", handleRegisterAck);
 
     return () => {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
+      socket.off("register:ack", handleRegisterAck);
     };
   }, [session?.user?.id]);
+
+  return callsReadyRef.current;
 }
 
 // Fonction de cleanup pour déconnecter proprement
