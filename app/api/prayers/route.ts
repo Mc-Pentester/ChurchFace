@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { publishPrayerRequest } from "@/lib/feedPublisher";
@@ -22,6 +22,9 @@ export async function GET(req: Request) {
   }
 
   if (churchId) {
+    const session = await auth();
+    const authorization = await authorize({ actorId: session?.user?.id, action: "PRAYER_CREATE", churchId });
+    if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
     where.churchId = churchId;
   }
 
@@ -64,7 +67,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -76,6 +79,16 @@ export async function POST(req: Request) {
   const { title, content, category, isUrgent, churchId: churchIdFromBody, prayerChainId, prayerCampaignId, prayerRoomId } = body;
 
   const churchId = churchIdFromBody || churchIdFromQuery || null;
+
+  const authorization = await authorize({
+    actorId: session?.user?.id,
+    action: "PRAYER_CREATE",
+    churchId,
+    prayerChainId: prayerChainId || null,
+    prayerCampaignId: prayerCampaignId || null,
+    prayerRoomId: prayerRoomId || null,
+  });
+  if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
 
   if (!title?.trim() || !category) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
