@@ -43,7 +43,7 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            broadcastId,
+            broadcastId: context.broadcastId,
             isPublisher: context.permissions.canPublish,
           }),
         });
@@ -52,7 +52,7 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
           const tokenData = await tokenRes.json();
           setLivekitToken(tokenData.token);
           setLivekitUrl(tokenData.url);
-          setRoomName(context.livekitConfig.roomName);
+          setRoomName(tokenData.roomName || context.livekitConfig.roomName);
         }
       }
     } catch (error) {
