@@ -1,19 +1,24 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
+  const userId = session?.user?.id;
 
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authorization = await authorize({
+    actorId: userId,
+    action: "GLOBAL_ADMIN",
+  });
 
-  if (session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (authorization.status !== 200) {
+    return NextResponse.json(
+      { error: authorization.status === 401 ? "Unauthorized" : "Forbidden" },
+      { status: authorization.status }
+    );
   }
 
   try {
@@ -28,9 +33,7 @@ export async function GET() {
           },
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
       take: 50,
     });
 
