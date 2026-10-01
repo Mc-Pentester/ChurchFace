@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
+import { auth, } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 
 export const runtime = "nodejs";
 
@@ -9,15 +9,20 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
+  const userId = session?.user?.id;
   const { id } = await params;
 
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authorization = await authorize({
+    actorId: userId,
+    action: "GLOBAL_ADMIN",
+  });
 
-  if (session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (authorization.status !== 200) {
+    return NextResponse.json(
+      { error: authorization.status === 401 ? "Unauthorized" : "Forbidden" },
+      { status: authorization.status }
+    );
   }
 
   try {
@@ -50,7 +55,7 @@ export async function PATCH(
     // Log admin action
     await prisma.adminLog.create({
       data: {
-        adminId: session.user.id,
+        adminId: userId!,
         action: action || (status === "RESOLVED" ? "resolve_report" : "dismiss_report"),
         details: JSON.stringify({
           targetId: id,
