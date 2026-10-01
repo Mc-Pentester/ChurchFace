@@ -21,6 +21,7 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
   const [isLive, setIsLive] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [livekitToken, setLivekitToken] = useState<string | undefined>(undefined);
+  const [livekitRoomName, setLivekitRoomName] = useState<string | undefined>(undefined);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
       
       if (data.token) {
         setLivekitToken(data.token);
+        setLivekitRoomName(data.roomName);
       }
     } catch (error) {
       console.error("Error generating LiveKit token:", error);
@@ -175,7 +177,7 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
                 broadcastId={liveBroadcast?.id}
                 livekitToken={livekitToken}
                 livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
-                roomName={liveBroadcast?.id ? `studio-${liveBroadcast.id}` : undefined}
+                roomName={livekitRoomName}
                 userId={session?.user?.id}
                 userName={session?.user?.name || "Studio Host"}
               />
