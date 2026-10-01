@@ -23,7 +23,8 @@ export type AuthorizationAction =
   | "PRAYER_CAMPAIGN_CREATE"
   | "PRAYER_ROOM_VIEW"
   | "PRAYER_ROOM_JOIN"
-  | "PRAYER_DELETE";
+  | "PRAYER_DELETE"
+  | "PRAYER_VIEW";
 
 export type AuthorizationDecision =
   | "ALLOW"
