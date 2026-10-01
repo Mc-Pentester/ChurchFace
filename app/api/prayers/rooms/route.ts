@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { publishPrayerRoom } from "@/lib/feedPublisher";
@@ -8,7 +8,7 @@ import { publishPrayerRoom } from "@/lib/feedPublisher";
 // GET - Récupérer les salles de prière
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as { id?: string })?.id;
 
     if (!userId) {
@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
       id?: string;
     } = {};
 
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_ROOM_CREATE", churchId: churchId || null, prayerChainId: prayerChainId || null });
+    if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
+
     if (prayerChainId) {
       where.prayerChainId = prayerChainId;
     }
@@ -51,7 +54,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (churchId) {
+      const authorization = await authorize({ actorId: userId, action: "PRAYER_ROOM_CREATE", churchId });
+      if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
       where.churchId = churchId;
+    }
+
+    if (id) {
+      const authorization = await authorize({ actorId: userId, action: "PRAYER_ROOM_VIEW", resourceId: id });
+      if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
     }
 
     if (id) {
