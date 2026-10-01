@@ -86,16 +86,15 @@ export default function PrayerRoomDetailPage() {
   const handleJoin = async () => {
     setTokenLoading(true);
     try {
-      const res = await fetch("/api/livekit/token", {
+      const res = await fetch(`/api/prayers/rooms/${roomId}/livekit-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roomName: roomId,
-          participantName: userName,
-          isPublisher: true,
-        }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
+      if (!res.ok || !data.token || !data.url) {
+        throw new Error(data.error || "Impossible de générer le token LiveKit");
+      }
       setToken(data.token);
       setUrl(data.url);
       setJoined(true);
