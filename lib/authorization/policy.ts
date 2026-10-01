@@ -474,6 +474,58 @@ export async function authorize(params: {
         : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Church-scoped prayer access denied");
     }
 
+
+    case "PRAYER_LIVE_VIEW":
+      return allow(actor);
+
+    case "PRAYER_LIVE_CREATE":
+      return allow(actor);
+
+    case "PRAYER_REACT":
+    case "PRAYER_RESPOND":
+    case "PRAYER_VERSE_CREATE": {
+      if (!params.resourceId) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource is required");
+      }
+      const prayer = await prisma.prayerRequest.findUnique({
+        where: { id: params.resourceId },
+        select: { userId: true, churchId: true },
+      });
+      if (!prayer) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource not found");
+      }
+      if (!prayer.churchId || prayer.userId === actor.id || isGlobalAdminRole(actor.role)) {
+        return allow(actor);
+      }
+      const member = await prisma.churchMember.findUnique({
+        where: { churchId_userId: { churchId: prayer.churchId, userId: actor.id } },
+        select: { id: true },
+      });
+      const admin = await prisma.churchAdmin.findUnique({
+        where: { churchId_userId: { churchId: prayer.churchId, userId: actor.id } },
+        select: { id: true },
+      });
+      return member || admin
+        ? allow(actor)
+        : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer interaction access denied");
+    }
+
+    case "PRAYER_TESTIMONY_CREATE": {
+      if (!params.resourceId) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource is required");
+      }
+      const prayer = await prisma.prayerRequest.findUnique({
+        where: { id: params.resourceId },
+        select: { userId: true },
+      });
+      if (!prayer) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource not found");
+      }
+      return prayer.userId === actor.id || isGlobalAdminRole(actor.role)
+        ? allow(actor)
+        : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer testimony ownership required");
+    }
+
     case "STUDIO_BROADCAST_UPDATE":
       return isGlobalAdminRole(actor.role)
         ? allow(actor)
