@@ -9,6 +9,7 @@ import {
 import type {
   NextAuthOptions,
 } from "next-auth";
+import { authorize } from "@/lib/authorization/policy";
 
 
 
@@ -649,93 +650,28 @@ export async function canManageRadio(
  */
 export async function requireAdmin(){
 
+  const session = await auth();
+  const userId = session?.user?.id;
 
+  const authorization = await authorize({
+    actorId:userId,
+    action:"GLOBAL_ADMIN",
+  });
 
-  const session =
-    await auth();
-
-
-
-
-  const userId =
-    session?.user?.id;
-
-
-
-
-  if(!userId){
-
+  if(authorization.decision !== "ALLOW" || !userId){
     return null;
-
   }
 
-
-
-
-
-
-  const user =
-    await prisma.user.findUnique({
-
-      where:{
-        id:userId,
-      },
-
-
-      select:{
-
-
-        id:true,
-
-
-        email:true,
-
-
-        name:true,
-
-
-        image:true,
-
-
-        role:true,
-
-
-      },
-
-
-    });
-
-
-
-
-
-
-  if(
-
-    !user
-
-    ||
-
-    ![
-
-      "ADMIN",
-
-      "SUPER_ADMIN",
-
-    ].includes(user.role)
-
-  ){
-
-    return null;
-
-  }
-
-
-
-
-
+  const user = await prisma.user.findUnique({
+    where:{ id:userId },
+    select:{
+      id:true,
+      email:true,
+      name:true,
+      image:true,
+      role:true,
+    },
+  });
 
   return user;
-
-
 }
