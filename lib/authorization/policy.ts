@@ -382,6 +382,10 @@ export async function requireAuthorization(params: {
   actorId?: string | null;
   action: AuthorizationAction;
   resourceId?: string;
+  churchId?: string | null;
+  prayerChainId?: string | null;
+  prayerCampaignId?: string | null;
+  prayerRoomId?: string | null;
 }): Promise<AuthorizationResult> {
   return authorize(params);
 }
