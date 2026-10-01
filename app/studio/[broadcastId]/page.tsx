@@ -46,7 +46,7 @@ export default function StudioBroadcastPage({ params }: { params: Promise<{ broa
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            broadcastId: broadcastId,
+            broadcastId: broadcastId: context.broadcastId,
             isPublisher: context.permissions.canPublish,
           }),
         });
@@ -55,7 +55,7 @@ export default function StudioBroadcastPage({ params }: { params: Promise<{ broa
           const tokenData = await tokenRes.json();
           setLivekitToken(tokenData.token);
           setLivekitUrl(tokenData.url);
-          setRoomName(context.livekitConfig.roomName);
+          setRoomName(tokenData.roomName || context.livekitConfig.roomName);
         }
       } else {
         router.push("/studio");
