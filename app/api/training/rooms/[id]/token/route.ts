@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AccessToken } from "livekit-server-sdk";
 
@@ -8,7 +7,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -27,6 +26,18 @@ export async function POST(
 
     if (!room.isActive) {
       return NextResponse.json({ error: "Formation inactive" }, { status: 400 });
+    }
+
+    const isInstructor = room.instructorId === session.user.id;
+    const isMember = await prisma.trainingRoomMember.findUnique({
+      where: { trainingRoomId_userId: { trainingRoomId: room.id, userId: session.user.id } },
+      select: { id: true },
+    });
+    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+    const isGlobalAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+
+    if (!room.isPublic && !isInstructor && !isMember && !isGlobalAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Créer le token LiveKit
