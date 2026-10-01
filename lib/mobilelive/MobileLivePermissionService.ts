@@ -50,8 +50,12 @@ export class MobileLivePermissionService {
     const userPermissions = (user.permissions as any) || {};
     const hasLiveCreatePermission = userPermissions.LIVE_CREATE === true;
 
-    // Contexte personnel
+    // Contexte personnel : l'acteur est toujours le propriétaire.
     if (context === "PERSONAL") {
+      if (ownerType !== "USER" || ownerId !== userId) {
+        permissions.reason = "Personal live owner mismatch";
+        return permissions;
+      }
       permissions.canStartLive = true;
       permissions.canMultiStream = user.role === "ADMIN" || user.role === "MODERATOR" || hasLiveCreatePermission;
       return permissions;
