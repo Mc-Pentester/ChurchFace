@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/authorization/policy";
 
 const getUserId = (session: any): string | null => {
   return session?.user?.id ?? null;
@@ -41,6 +42,12 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_CHAIN_VIEW", resourceId: prayerChainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_CHAIN_JOIN", resourceId: prayerChainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     // Vérifier que la chaîne existe
     const chain = await prisma.prayerChain.findUnique({
@@ -302,6 +309,13 @@ export async function DELETE(req: NextRequest) {
       searchParams.get("prayerChainId");
 
     // Priorité à l'identifiant du participant.
+    if (participantId) {
+      const target = await prisma.prayerParticipant.findUnique({ where: { id: participantId }, select: { prayerChainId: true, userId: true } });
+      if (target?.userId === userId) {
+        const authorization = await authorize({ actorId: userId, action: "PRAYER_CHAIN_LEAVE", resourceId: target.prayerChainId });
+        if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
+      }
+    }
     // Sinon permettre à l'utilisateur connecté
     // de quitter directement une chaîne.
     if (participantId) {
@@ -367,6 +381,9 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_CHAIN_LEAVE", resourceId: prayerChainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     const participant =
       await prisma.prayerParticipant.findFirst({
