@@ -136,6 +136,17 @@ export async function authorize(params: {
             "Studio authority required"
           );
 
+    case "STUDIO_BROADCAST_UPDATE":
+      return isGlobalAdminRole(actor.role)
+        ? allow(actor)
+        : deny(
+            actor.id,
+            "DENY_FORBIDDEN",
+            403,
+            actor.role,
+            "Global administrator role required for Studio broadcast update"
+          );
+
     default:
       return deny(
         actor.id,
