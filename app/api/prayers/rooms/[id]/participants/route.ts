@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 import { createNotification } from "@/lib/notifications";
 
 export async function GET(
@@ -11,6 +11,10 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const roomId = resolvedParams.id;
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authorization = await authorize({ actorId: session.user.id, action: "PRAYER_ROOM_VIEW", resourceId: roomId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
 
     // Utiliser PrayerRoomParticipant comme source principale
     const participants = await prisma.prayerRoomParticipant.findMany({
@@ -38,7 +42,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -46,6 +50,9 @@ export async function POST(
   try {
     const resolvedParams = await params;
     const roomId = resolvedParams.id;
+
+    const authorization = await authorize({ actorId: session.user.id, action: "PRAYER_ROOM_JOIN", resourceId: roomId });
+    if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
 
     // Check if already joined
     const existing = await prisma.prayerRoomParticipant.findUnique({
