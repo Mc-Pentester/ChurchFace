@@ -345,8 +345,7 @@ export class BroadcastContextService {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomName: context.livekitConfig.roomName,
-        participantName: context.ownerName,
+        broadcastId: context.broadcastId,
         isPublisher: context.permissions.canPublish,
       }),
     });
