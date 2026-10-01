@@ -22,6 +22,7 @@ export default function PrayerRoomDetailPage() {
   const [joined, setJoined] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [livekitRoomName, setLivekitRoomName] = useState<string | null>(null);
   const [tokenLoading, setTokenLoading] = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
   const [participants, setParticipants] = useState<any[]>([]);
@@ -97,6 +98,7 @@ export default function PrayerRoomDetailPage() {
       }
       setToken(data.token);
       setUrl(data.url);
+      setLivekitRoomName(data.roomName);
       setJoined(true);
       setParticipantCount(prev => prev + 1);
     } catch (error) {
@@ -110,6 +112,7 @@ export default function PrayerRoomDetailPage() {
     setJoined(false);
     setToken(null);
     setUrl(null);
+    setLivekitRoomName(null);
     setParticipantCount(prev => Math.max(0, prev - 1));
   };
 
@@ -245,12 +248,13 @@ export default function PrayerRoomDetailPage() {
             <LiveKitRoom
               token={token}
               serverUrl={url}
-              roomName={roomId}
+              roomName={livekitRoomName || ""}
               onConnected={() => console.log("LiveKit connected")}
               onDisconnected={() => {
                 setJoined(false);
                 setToken(null);
                 setUrl(null);
+                setLivekitRoomName(null);
                 setParticipantCount(prev => Math.max(0, prev - 1));
               }}
             />
