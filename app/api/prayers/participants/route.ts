@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/lib/authorization/policy";
 
@@ -11,7 +10,7 @@ const getUserId = (session: any): string | null => {
 // GET - Récupérer les participants d'une chaîne de prière
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = getUserId(session);
 
     if (!userId) {
@@ -138,7 +137,7 @@ export async function GET(req: NextRequest) {
 // POST - Rejoindre une chaîne de prière
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = getUserId(session);
 
     if (!userId) {
@@ -175,6 +174,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_CHAIN_JOIN", resourceId: prayerChainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     // Vérifier que la chaîne existe
     const chain = await prisma.prayerChain.findUnique({
@@ -291,7 +293,7 @@ export async function POST(req: NextRequest) {
 // DELETE - Quitter une chaîne / supprimer un participant
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = getUserId(session);
 
     if (!userId) {
