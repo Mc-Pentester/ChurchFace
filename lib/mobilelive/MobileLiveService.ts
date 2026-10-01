@@ -5,7 +5,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { MobileLiveContext, MobileLiveConfig, MobileLiveSession, MobileLiveStatus } from "./MobileLiveTypes";
+import { MobileLiveContext, MobileLiveConfig, MobileLiveSession } from "./MobileLiveTypes";
 import { MobileLivePermissionService } from "./MobileLivePermissionService";
 import { MobileLiveRateLimiter } from "./MobileLiveRateLimiter";
 import { authorize } from "@/lib/authorization/policy";
@@ -96,7 +96,7 @@ export class MobileLiveService {
       action: "MOBILELIVE_START",
       resourceId: sessionId,
     });
-    if (!authorization) {
+    if (authorization.decision !== "ALLOW") {
       throw new Error("Permission denied");
     }
     // Mettre à jour le broadcast
@@ -257,7 +257,7 @@ export class MobileLiveService {
         action: "MOBILELIVE_STOP",
         resourceId: sessionId,
       });
-      if (!authorization) {
+      if (authorization.decision !== "ALLOW") {
         throw new Error("Permission denied");
       }
     }
