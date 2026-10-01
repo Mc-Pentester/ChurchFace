@@ -11,7 +11,8 @@ export type GlobalRole =
 
 export type AuthorizationAction =
   | "GLOBAL_ADMIN"
-  | "STUDIO_ACCESS";
+  | "STUDIO_ACCESS"
+  | "STUDIO_BROADCAST_UPDATE";
 
 export type AuthorizationDecision =
   | "ALLOW"
