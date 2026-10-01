@@ -40,8 +40,7 @@ export default function LiveVideoPlayer({
       
       if (broadcast?.id) {
         // Use the same room name as the Studio: studio-${broadcastId}
-        const roomName = broadcast?.livekitRoom || `studio-${broadcast.id}`;
-        console.log("LiveVideoPlayer: Generating token for room", roomName);
+        console.log("LiveVideoPlayer: Generating token for broadcast", broadcast.id);
         
         try {
           setTokenError(null);
@@ -51,8 +50,7 @@ export default function LiveVideoPlayer({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              roomName: roomName,
-              participantName: `viewer-${broadcast.id}`,
+              broadcastId: broadcast.id,
               isPublisher: false,
             }),
           });
