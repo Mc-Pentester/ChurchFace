@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { publishPrayerChain } from "@/lib/feedPublisher";
+import { authorize } from "@/lib/authorization/policy";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -68,6 +69,9 @@ export async function POST(req: Request) {
   const { action, chainId, prayerRequestId, prayerCampaignId, title, description, message } = body;
 
   if (action === "create") {
+    const authorization = await authorize({ actorId: session.user.id, action: "PRAYER_CHAIN_CREATE", churchId: body.churchId || null, prayerCampaignId: prayerCampaignId || null });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
+
     if (!title?.trim()) {
       return NextResponse.json({ error: "Missing title" }, { status: 400 });
     }
@@ -155,6 +159,8 @@ export async function POST(req: Request) {
 
   if (action === "join") {
     if (!chainId) return NextResponse.json({ error: "Missing chainId" }, { status: 400 });
+    const authorization = await authorize({ actorId: session.user.id, action: "PRAYER_CHAIN_JOIN", resourceId: chainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
 
     // Utiliser PrayerParticipant comme modèle principal
     const existing = await prisma.prayerParticipant.findUnique({
