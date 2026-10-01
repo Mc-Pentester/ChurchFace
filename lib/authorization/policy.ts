@@ -119,6 +119,38 @@ export async function authorize(params: {
   }
 
   switch (params.action) {
+    case "LIVEKIT_VIEW":
+    case "LIVEKIT_PUBLISH": {
+      if (!params.resourceId) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "LiveKit broadcast resource is required");
+      }
+      const broadcast = await prisma.liveBroadcast.findUnique({
+        where: { id: params.resourceId },
+        select: { id: true, authorId: true, ownerId: true, ownerType: true, status: true, livekitRoom: true },
+      });
+      if (!broadcast) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "LiveKit broadcast not found");
+      }
+      if (params.churchId && broadcast.ownerType === "CHURCH" && broadcast.ownerId !== params.churchId) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "LiveKit church scope mismatch");
+      }
+      const globalAdmin = isGlobalAdminRole(actor.role);
+      const owner = broadcast.authorId === actor.id || broadcast.ownerId === actor.id;
+      if (params.action === "LIVEKIT_PUBLISH") {
+        return globalAdmin || owner
+          ? allow(actor)
+          : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "LiveKit publishing authority required");
+      }
+      if (globalAdmin || owner) return allow(actor);
+      if (broadcast.ownerType === "CHURCH" && broadcast.ownerId) {
+        const member = await prisma.churchMember.findUnique({ where: { churchId_userId: { churchId: broadcast.ownerId, userId: actor.id } }, select: { id: true, isActive: true } });
+        const admin = await prisma.churchAdmin.findUnique({ where: { churchId_userId: { churchId: broadcast.ownerId, userId: actor.id } }, select: { id: true } });
+        if (admin || member?.isActive) return allow(actor);
+      }
+      if (broadcast.status === "LIVE") return allow(actor);
+      return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "LiveKit broadcast is not publicly viewable");
+    }
+
     case "GLOBAL_ADMIN":
       return isGlobalAdminRole(actor.role)
         ? allow(actor)
