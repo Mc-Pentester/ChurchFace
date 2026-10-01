@@ -43,8 +43,7 @@ export default function ChurchStudioLivePage({ params }: { params: Promise<{ slu
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            roomName: context.livekitConfig.roomName,
-            participantName: context.ownerName,
+            broadcastId,
             isPublisher: context.permissions.canPublish,
           }),
         });
