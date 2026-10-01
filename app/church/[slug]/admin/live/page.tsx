@@ -37,8 +37,7 @@ export default function ChurchAdminLivePage({ params }: { params: Promise<{ slug
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          roomName: `studio-${liveBroadcast.id}`,
-          participantName: session.user.id,
+          broadcastId: liveBroadcast.id,
           isPublisher: true,
         }),
       });
