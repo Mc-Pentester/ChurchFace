@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import { authorize } from "@/lib/authorization/policy";
 
 // GET - List all campaign-chain associations
 export async function GET(req: Request) {
@@ -70,6 +71,9 @@ export async function POST(req: Request) {
     if (!campaignId || !chainId) {
       return NextResponse.json({ error: "Missing campaignId or chainId" }, { status: 400 });
     }
+
+    const authorization = await authorize({ actorId: session.user.id, action: "PRAYER_CAMPAIGN_CHAIN_MANAGE", prayerCampaignId: campaignId, prayerChainId: chainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
 
     // Check if association already exists
     const existing = await prisma.prayerCampaignChain.findUnique({
@@ -208,6 +212,9 @@ export async function DELETE(req: Request) {
     if (!association) {
       return NextResponse.json({ error: "Association not found" }, { status: 404 });
     }
+
+    const authorization = await authorize({ actorId: session.user.id, action: "PRAYER_CAMPAIGN_CHAIN_MANAGE", prayerCampaignId: campaignId, prayerChainId: chainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
 
     // Check permission
     const isCreator = association.campaign.createdBy === session.user.id;
