@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { auth } from "@/lib/auth";
 import { MobileLiveService } from "@/lib/mobilelive/MobileLiveService";
 
 export async function POST(
@@ -12,14 +12,14 @@ export async function POST(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { sessionId } = await params;
 
-    const sessionData = await MobileLiveService.startLive(sessionId);
+    const sessionData = await MobileLiveService.startLive(sessionId, session.user.id);
 
     return NextResponse.json(sessionData);
   } catch (error) {
