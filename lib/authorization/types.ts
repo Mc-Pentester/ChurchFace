@@ -12,7 +12,12 @@ export type GlobalRole =
 export type AuthorizationAction =
   | "GLOBAL_ADMIN"
   | "STUDIO_ACCESS"
-  | "STUDIO_BROADCAST_UPDATE";
+  | "STUDIO_BROADCAST_UPDATE"
+  | "MOBILELIVE_START"
+  | "MOBILELIVE_STOP"
+  | "MOBILELIVE_MODERATE"
+  | "MOBILELIVE_VIEW"
+  | "MOBILELIVE_STATS_UPDATE";
 
 export type AuthorizationDecision =
   | "ALLOW"
