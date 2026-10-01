@@ -170,21 +170,18 @@ export async function DELETE(
     }
 
 
-    const userRole = (session.user as any).role;
+    const authorization = await authorize({
+      actorId: session.user.id,
+      action: "PRAYER_DELETE",
+      resourceId: id,
+    });
 
-    const canDelete =
-      existing.userId === session.user.id ||
-      userRole === "ADMIN" ||
-      userRole === "SUPER_ADMIN";
-
-
-    if (!canDelete) {
+    if (authorization.status !== 200) {
       return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
+        { error: authorization.status === 401 ? "Unauthorized" : "Forbidden" },
+        { status: authorization.status }
       );
     }
-
 
     await prisma.prayerRequest.delete({
       where: {
