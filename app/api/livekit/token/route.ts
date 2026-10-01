@@ -11,6 +11,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { broadcastId, isPublisher = false } = body;
 
+    if (typeof isPublisher !== "boolean") {
+      return NextResponse.json({ error: "isPublisher must be a boolean" }, { status: 400 });
+    }
+
     if (!broadcastId || typeof broadcastId !== "string") {
       return NextResponse.json({ error: "broadcastId is required" }, { status: 400 });
     }
