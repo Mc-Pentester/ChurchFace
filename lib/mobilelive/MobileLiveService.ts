@@ -91,9 +91,10 @@ export class MobileLiveService {
    * Démarre un live mobile
    */
   static async startLive(sessionId: string, actorId: string): Promise<MobileLiveSession> {
-    const authorization = await MobileLivePermissionService.canStopLive({
-      userId: actorId,
-      broadcastId: sessionId,
+    const authorization = await authorize({
+      actorId,
+      action: "MOBILELIVE_START",
+      resourceId: sessionId,
     });
     if (!authorization) {
       throw new Error("Permission denied");
@@ -251,9 +252,10 @@ export class MobileLiveService {
    */
   static async stopLive(sessionId: string, actorId?: string): Promise<MobileLiveSession> {
     if (actorId) {
-      const authorization = await MobileLivePermissionService.canStopLive({
-        userId: actorId,
-        broadcastId: sessionId,
+      const authorization = await authorize({
+        actorId,
+        action: "MOBILELIVE_STOP",
+        resourceId: sessionId,
       });
       if (!authorization) {
         throw new Error("Permission denied");
@@ -430,6 +432,6 @@ export class MobileLiveService {
       throw new Error("Permission denied");
     }
 
-    await this.stopLive(sessionId);
+    await this.stopLive(sessionId, adminUserId);
   }
 }
