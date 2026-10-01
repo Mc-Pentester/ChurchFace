@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/lib/authorization/policy";
 
 // GET - Récupérer les horaires d'intercession d'une chaîne
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as any)?.id;
 
     if (!userId) {
@@ -23,6 +22,9 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_SCHEDULE_VIEW", resourceId: prayerChainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     // Vérifier que l'utilisateur a accès à cette chaîne
     const chain = await prisma.prayerChain.findUnique({
@@ -72,7 +74,7 @@ export async function GET(req: NextRequest) {
 // POST - Créer un horaire d'intercession
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as any)?.id;
 
     if (!userId) {
@@ -104,9 +106,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    const authorization = await authorize({ actorId: userId, action: "PRAYER_SCHEDULE_VIEW", resourceId: prayerChainId });
-    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     const authorization = await authorize({ actorId: userId, action: "PRAYER_SCHEDULE_CREATE", resourceId: prayerChainId });
     if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
@@ -161,7 +160,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as any)?.id;
 
     if (!userId) {
