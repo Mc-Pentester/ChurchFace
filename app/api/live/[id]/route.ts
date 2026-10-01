@@ -50,6 +50,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Broadcast not found" }, { status: 404 });
     }
 
+    if (broadcast.authorId !== session.user.id && session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { status, viewerCount } = await req.json();
 
     const updated = await prisma.liveBroadcast.update({
@@ -92,6 +96,10 @@ export async function DELETE(
 
     if (!broadcast) {
       return NextResponse.json({ error: "Broadcast not found" }, { status: 404 });
+    }
+
+    if (broadcast.authorId !== session.user.id && session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await prisma.liveBroadcast.delete({
