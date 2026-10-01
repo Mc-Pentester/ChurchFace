@@ -175,16 +175,7 @@ export async function authorize(params: {
       const isGlobalAdmin = isGlobalAdminRole(actor.role);
       const isOwner = broadcast.authorId === actor.id;
 
-      if (params.action === "MOBILELIVE_VIEW") {
-        return isOwner || isGlobalAdmin
-          ? allow(actor)
-          : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "MobileLive access denied");
-      }
-
-      if (isGlobalAdmin || isOwner) {
-        return allow(actor);
-      }
-
+      let isChurchAdmin = false;
       if (broadcast.ownerType === "CHURCH" && broadcast.ownerId) {
         const churchAdmin = await prisma.churchAdmin.findUnique({
           where: {
@@ -195,10 +186,17 @@ export async function authorize(params: {
           },
           select: { role: true },
         });
+        isChurchAdmin = !!churchAdmin;
+      }
 
-        if (churchAdmin) {
-          return allow(actor);
-        }
+      if (params.action === "MOBILELIVE_VIEW") {
+        return isOwner || isGlobalAdmin || isChurchAdmin
+          ? allow(actor)
+          : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "MobileLive access denied");
+      }
+
+      if (isGlobalAdmin || isOwner || isChurchAdmin) {
+        return allow(actor);
       }
 
       return deny(
