@@ -8,7 +8,7 @@ export function useLiveKitToken() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchToken = async (roomName: string, participantName: string, isPublisher = true) => {
+  const fetchToken = async (broadcastId: string, isPublisher = true) => {
     setLoading(true);
     setError(null);
 
@@ -16,7 +16,7 @@ export function useLiveKitToken() {
       const response = await fetch("/api/livekit/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ broadcastId: roomName, isPublisher }),
+        body: JSON.stringify({ broadcastId, isPublisher }),
       });
 
       if (!response.ok) {
