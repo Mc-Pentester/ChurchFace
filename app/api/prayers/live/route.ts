@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 
 export async function GET() {
+  const session = await auth();
+  const decision = await authorize({ actorId: session?.user?.id, action: "PRAYER_LIVE_VIEW" });
+  if (decision.decision !== "ALLOW") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: decision.status });
+  }
+
   const rooms = await prisma.prayerLiveRoom.findMany({
     where: { isActive: true },
     orderBy: { createdAt: "desc" },
@@ -17,9 +23,14 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const decision = await authorize({ actorId: session.user.id, action: "PRAYER_LIVE_CREATE" });
+  if (decision.decision !== "ALLOW") {
+    return NextResponse.json({ error: "Forbidden" }, { status: decision.status });
   }
 
   const body = await req.json();
