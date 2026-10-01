@@ -17,7 +17,13 @@ export type AuthorizationAction =
   | "MOBILELIVE_STOP"
   | "MOBILELIVE_MODERATE"
   | "MOBILELIVE_VIEW"
-  | "MOBILELIVE_STATS_UPDATE";
+  | "MOBILELIVE_STATS_UPDATE"
+  | "PRAYER_CREATE"
+  | "PRAYER_ROOM_CREATE"
+  | "PRAYER_CAMPAIGN_CREATE"
+  | "PRAYER_ROOM_VIEW"
+  | "PRAYER_ROOM_JOIN"
+  | "PRAYER_DELETE";
 
 export type AuthorizationDecision =
   | "ALLOW"
