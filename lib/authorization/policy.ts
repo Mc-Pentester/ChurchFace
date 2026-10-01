@@ -335,6 +335,124 @@ export async function authorize(params: {
       );
     }
 
+    case "PRAYER_CHAIN_CREATE":
+    case "PRAYER_CHAIN_VIEW":
+    case "PRAYER_CHAIN_JOIN":
+    case "PRAYER_CHAIN_LEAVE":
+    case "PRAYER_SCHEDULE_VIEW":
+    case "PRAYER_SCHEDULE_CREATE": {
+      if (!params.resourceId && params.action !== "PRAYER_CHAIN_CREATE") {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer chain resource is required");
+      }
+      const chain = params.resourceId
+        ? await prisma.prayerChain.findUnique({
+            where: { id: params.resourceId },
+            select: { id: true, churchId: true, visibility: true },
+          })
+        : null;
+      if (params.action !== "PRAYER_CHAIN_CREATE" && !chain) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer chain not found");
+      }
+      const targetChurchId = params.churchId ?? chain?.churchId ?? null;
+      if (params.action === "PRAYER_CHAIN_CREATE" && params.prayerCampaignId) {
+        const campaign = await prisma.prayerCampaign.findUnique({
+          where: { id: params.prayerCampaignId },
+          select: { churchId: true },
+        });
+        if (!campaign || (targetChurchId ?? null) !== (campaign.churchId ?? null)) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer campaign church scope mismatch");
+        }
+      }
+      if (isGlobalAdminRole(actor.role)) return allow(actor);
+      if (!targetChurchId) {
+        if (params.action === "PRAYER_CHAIN_VIEW") return allow(actor);
+        return allow(actor);
+      }
+      const member = await prisma.churchMember.findUnique({
+        where: { churchId_userId: { churchId: targetChurchId, userId: actor.id } },
+        select: { id: true },
+      });
+      const admin = await prisma.churchAdmin.findUnique({
+        where: { churchId_userId: { churchId: targetChurchId, userId: actor.id } },
+        select: { id: true },
+      });
+      if (member || admin) return allow(actor);
+      return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Church-scoped prayer chain authorization required");
+    }
+
+    case "PRAYER_CHAIN_LEAVE":
+      if (!params.resourceId) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer chain resource is required");
+      return allow(actor);
+
+    case "PRAYER_CAMPAIGN_CHAIN_MANAGE": {
+      if (!params.prayerCampaignId || !params.prayerChainId) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Campaign and chain are required");
+      }
+      const campaign = await prisma.prayerCampaign.findUnique({
+        where: { id: params.prayerCampaignId },
+        select: { churchId: true, createdBy: true },
+      });
+      const chain = await prisma.prayerChain.findUnique({
+        where: { id: params.prayerChainId },
+        select: { churchId: true },
+      });
+      if (!campaign || !chain || (campaign.churchId ?? null) !== (chain.churchId ?? null)) {
+        return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Campaign and chain scope mismatch");
+      }
+      if (isGlobalAdminRole(actor.role) || campaign.createdBy === actor.id) return allow(actor);
+      if (campaign.churchId) {
+        const admin = await prisma.churchAdmin.findUnique({
+          where: { churchId_userId: { churchId: campaign.churchId, userId: actor.id } },
+          select: { id: true },
+        });
+        if (admin) return allow(actor);
+      }
+      return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Campaign-chain management authority required");
+    }
+
+    case "PRAYER_ENGAGEMENT_CREATE":
+    case "PRAYER_ENGAGEMENT_VIEW": {
+      if (!params.resourceId) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource is required");
+      const prayer = await prisma.prayerRequest.findUnique({
+        where: { id: params.resourceId },
+        select: { userId: true, churchId: true },
+      });
+      if (!prayer) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource not found");
+      if (!prayer.churchId || prayer.userId === actor.id || isGlobalAdminRole(actor.role)) return allow(actor);
+      const member = await prisma.churchMember.findUnique({
+        where: { churchId_userId: { churchId: prayer.churchId, userId: actor.id } },
+        select: { id: true },
+      });
+      const admin = await prisma.churchAdmin.findUnique({
+        where: { churchId_userId: { churchId: prayer.churchId, userId: actor.id } },
+        select: { id: true },
+      });
+      return member || admin
+        ? allow(actor)
+        : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer engagement access denied");
+    }
+
+    case "PRAYER_ENGAGEMENT_DELETE":
+      if (!params.resourceId) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Engagement resource is required");
+      const engagement = await prisma.prayerEngagement.findUnique({
+        where: { id: params.resourceId },
+        select: { userId: true },
+      });
+      if (!engagement) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Engagement not found");
+      return engagement.userId === actor.id || isGlobalAdminRole(actor.role)
+        ? allow(actor)
+        : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Engagement ownership required");
+
+    case "PRAYER_SCHEDULE_DELETE":
+      if (!params.resourceId) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Schedule resource is required");
+      const schedule = await prisma.prayerSchedule.findUnique({
+        where: { id: params.resourceId },
+        select: { userId: true, prayerChainId: true },
+      });
+      if (!schedule) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Schedule not found");
+      if (schedule.userId === actor.id || isGlobalAdminRole(actor.role)) return allow(actor);
+      return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Schedule ownership required");
+
     case "PRAYER_VIEW": {
       if (!params.resourceId) return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource is required");
       const prayer = await prisma.prayerRequest.findUnique({
