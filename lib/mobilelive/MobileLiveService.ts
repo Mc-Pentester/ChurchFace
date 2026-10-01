@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { MobileLiveContext, MobileLiveConfig, MobileLiveSession, MobileLiveStatus } from "./MobileLiveTypes";
 import { MobileLivePermissionService } from "./MobileLivePermissionService";
 import { MobileLiveRateLimiter } from "./MobileLiveRateLimiter";
+import { authorize } from "@/lib/authorization/policy";
 import { BroadcastOutputService } from "@/lib/broadcast/BroadcastOutputService";
 import { createNotification } from "@/lib/notifications";
 
@@ -89,7 +90,14 @@ export class MobileLiveService {
   /**
    * Démarre un live mobile
    */
-  static async startLive(sessionId: string): Promise<MobileLiveSession> {
+  static async startLive(sessionId: string, actorId: string): Promise<MobileLiveSession> {
+    const authorization = await MobileLivePermissionService.canStopLive({
+      userId: actorId,
+      broadcastId: sessionId,
+    });
+    if (!authorization) {
+      throw new Error("Permission denied");
+    }
     // Mettre à jour le broadcast
     const broadcast = await prisma.liveBroadcast.update({
       where: { id: sessionId },
@@ -241,7 +249,16 @@ export class MobileLiveService {
   /**
    * Arrête un live mobile
    */
-  static async stopLive(sessionId: string): Promise<MobileLiveSession> {
+  static async stopLive(sessionId: string, actorId?: string): Promise<MobileLiveSession> {
+    if (actorId) {
+      const authorization = await MobileLivePermissionService.canStopLive({
+        userId: actorId,
+        broadcastId: sessionId,
+      });
+      if (!authorization) {
+        throw new Error("Permission denied");
+      }
+    }
     const broadcast = await prisma.liveBroadcast.update({
       where: { id: sessionId },
       data: {
@@ -294,8 +311,18 @@ export class MobileLiveService {
     viewerCount: number;
     bitrate?: number;
     fps?: number;
+    actorId: string;
   }): Promise<void> {
-    const { sessionId, viewerCount, bitrate, fps } = params;
+    const { sessionId, viewerCount, bitrate, fps, actorId } = params;
+
+    const authorization = await authorize({
+      actorId,
+      action: "MOBILELIVE_STATS_UPDATE",
+      resourceId: sessionId,
+    });
+    if (authorization.decision !== "ALLOW") {
+      throw new Error("Permission denied");
+    }
 
     await prisma.liveBroadcast.update({
       where: { id: sessionId },
