@@ -16,7 +16,7 @@ export function useLiveKitToken() {
       const response = await fetch("/api/livekit/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomName, participantName, isPublisher }),
+        body: JSON.stringify({ broadcastId: roomName, isPublisher }),
       });
 
       if (!response.ok) {
