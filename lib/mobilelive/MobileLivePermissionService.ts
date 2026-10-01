@@ -6,6 +6,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { MobileLiveContext, MobileLivePermissions } from "./MobileLiveTypes";
+import { authorize } from "@/lib/authorization/policy";
 
 export class MobileLivePermissionService {
   /**
@@ -92,7 +93,7 @@ export class MobileLivePermissionService {
       }
 
       // Vérifier si l'utilisateur est admin principal (super admin)
-      if (user.role === "ADMIN") {
+      if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
         permissions.canStartLive = true;
         permissions.canStreamToChurch = true;
         permissions.canMultiStream = true;
@@ -114,99 +115,30 @@ export class MobileLivePermissionService {
     userId: string;
     broadcastId: string;
   }): Promise<boolean> {
-    const { userId, broadcastId } = params;
-
-    const broadcast = await prisma.liveBroadcast.findUnique({
-      where: { id: broadcastId },
+    const authorization = await authorize({
+      actorId: params.userId,
+      action: "MOBILELIVE_STOP",
+      resourceId: params.broadcastId,
     });
 
-    if (!broadcast) {
-      return false;
-    }
-
-    // Le propriétaire du live peut toujours l'arrêter
-    if (broadcast.authorId === userId) {
-      return true;
-    }
-
-    // Les admins de plateforme peuvent arrêter n'importe quel live
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (user && user.role === "ADMIN") {
-      return true;
-    }
-
-    // Pour les lives d'église, les admins de l'église peuvent arrêter
-    if (broadcast.ownerType === "CHURCH") {
-      if (!broadcast.ownerId) {
-        return false;
-      }
-      const churchAdmin = await prisma.churchAdmin.findFirst({
-        where: {
-          userId,
-          churchId: broadcast.ownerId ?? undefined,
-        },
-      });
-
-      if (churchAdmin) {
-        return true;
-      }
-    }
-
-    return false;
+    return authorization.decision === "ALLOW";
   }
 
   /**
-   * Vérifie si un utilisateur peut modérer un live
+   * Vérifie si un utilisateur peut modérer un live.
+   * La décision est désormais centralisée dans la policy d'autorisation.
    */
   static async canModerateLive(params: {
     userId: string;
     broadcastId: string;
   }): Promise<boolean> {
-    const { userId, broadcastId } = params;
-
-    const broadcast = await prisma.liveBroadcast.findUnique({
-      where: { id: broadcastId },
+    const authorization = await authorize({
+      actorId: params.userId,
+      action: "MOBILELIVE_MODERATE",
+      resourceId: params.broadcastId,
     });
 
-    if (!broadcast) {
-      return false;
-    }
-
-    // Le propriétaire du live peut modérer
-    if (broadcast.authorId === userId) {
-      return true;
-    }
-
-    // Les admins de plateforme peuvent modérer
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (user && (user.role === "ADMIN" || user.role === "MODERATOR")) {
-      return true;
-    }
-
-    // Pour les lives d'église, les admins de l'église peuvent modérer
-    if (broadcast.ownerType === "CHURCH") {
-      if (!broadcast.ownerId) {
-        return false;
-      }
-      const churchAdmin = await prisma.churchAdmin.findFirst({
-        where: {
-          userId,
-          churchId: broadcast.ownerId ?? undefined,
-        },
-      });
-
-      if (churchAdmin) {
-        return true;
-      }
-    }
-
-    return false;
+    return authorization.decision === "ALLOW";
   }
 
   /**
