@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/lib/authorization/policy";
 
 // POST - Ajouter un engagement de prière
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as any)?.id;
 
     if (!userId) {
@@ -93,7 +92,7 @@ export async function POST(req: NextRequest) {
 // GET - Récupérer les engagements d'une demande de prière
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as any)?.id;
 
     if (!userId) {
@@ -167,7 +166,7 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as any)?.id;
 
     if (!userId) {
