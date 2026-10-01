@@ -11,6 +11,8 @@ export type GlobalRole =
 
 export type AuthorizationAction =
   | "GLOBAL_ADMIN"
+  | "LIVEKIT_VIEW"
+  | "LIVEKIT_PUBLISH"
   | "STUDIO_ACCESS"
   | "STUDIO_BROADCAST_UPDATE"
   | "MOBILELIVE_START"
