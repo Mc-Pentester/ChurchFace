@@ -34,6 +34,7 @@ export default function ChurchStudioLive({
   const [thumbnail, setThumbnail] = useState(live?.thumbnail || "");
   const [showSettings, setShowSettings] = useState(false);
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
+  const [livekitRoomName, setLivekitRoomName] = useState<string | null>(live?.livekitRoom || null);
   const [isLiveKitConnected, setIsLiveKitConnected] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
@@ -50,6 +51,7 @@ export default function ChurchStudioLive({
     setTitle(live?.title || "");
     setDescription(live?.description || "");
     setThumbnail(live?.thumbnail || "");
+    setLivekitRoomName(live?.livekitRoom || null);
   }, [live]);
 
   // Accès à la caméra
@@ -159,27 +161,30 @@ export default function ChurchStudioLive({
   }, [updateLive, title, description, thumbnail, streamUrl, playUrl, streamMode]);
 
   const generateLiveKitToken = useCallback(async () => {
-    if (!live?.id) return;
-    
+    const broadcastId = live?.liveBroadcastId;
+    if (!broadcastId) return;
+
     try {
       const response = await fetch("/api/livekit/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          roomName: `church-${live.id}`,
-          participantName: `host-${live.id}`,
+          broadcastId,
           isPublisher: true,
         }),
       });
-      
+
       const data = await response.json();
-      if (data.token) {
-        setLivekitToken(data.token);
+      if (!response.ok || !data.token || !data.roomName) {
+        throw new Error(data.error || "Impossible de générer le token LiveKit");
       }
+
+      setLivekitToken(data.token);
+      setLivekitRoomName(data.roomName);
     } catch (error) {
       console.error("Error generating LiveKit token:", error);
     }
-  }, [live?.id]);
+  }, [live?.liveBroadcastId]);
 
   useEffect(() => {
     if (streamMode === "WEBRTC" && isLive) {
@@ -211,7 +216,7 @@ export default function ChurchStudioLive({
                 <LiveKitRoom
                   token={livekitToken}
                   serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || ""}
-                  roomName={`church-${live?.id}`}
+                  roomName={livekitRoomName || ""}
                   onConnected={() => setIsLiveKitConnected(true)}
                   onDisconnected={() => setIsLiveKitConnected(false)}
                 />
