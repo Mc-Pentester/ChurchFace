@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -9,6 +9,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const session = await auth();
+    const authorization = await authorize({ actorId: session?.user?.id, action: "PRAYER_VIEW", resourceId: id });
+    if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
 
     const prayer = await prisma.prayerRequest.findUnique({
       where: { id },
@@ -138,7 +141,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
 
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user?.id) {
     return NextResponse.json(
