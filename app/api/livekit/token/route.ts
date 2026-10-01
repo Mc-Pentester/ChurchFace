@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     const accessToken = await token.toJwt();
 
-    return NextResponse.json({ token: accessToken, url: livekitUrl });
+    return NextResponse.json({ token: accessToken, url: livekitUrl, roomName: broadcast.livekitRoom });
   } catch (error) {
     console.error("Error generating LiveKit token:", error);
     return NextResponse.json({ error: "Failed to generate token" }, { status: 500 });
