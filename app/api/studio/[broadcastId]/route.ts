@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 
 export const runtime = "nodejs";
 
@@ -12,9 +12,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ broadcastId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
+  const userId = session?.user?.id;
 
-  if (!session?.user) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,12 +34,26 @@ export async function PATCH(
     }
 
     // Vérifier les permissions
-    const isAdmin = session.user.role === "ADMIN";
-    const isOwner = broadcast.ownerId === session.user.id;
-    const isAuthor = broadcast.authorId === session.user.id;
+    const isOwner = broadcast.ownerId === userId;
+    const isAuthor = broadcast.authorId === userId;
 
-    if (!isAdmin && !isOwner && !isAuthor) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isOwner && !isAuthor) {
+      const authorization = await authorize({
+        actorId: userId,
+        action: "STUDIO_BROADCAST_UPDATE",
+      });
+
+      if (authorization.status !== 200) {
+        return NextResponse.json(
+          {
+            error:
+              authorization.status === 401
+                ? "Unauthorized"
+                : "Forbidden",
+          },
+          { status: authorization.status }
+        );
+      }
     }
 
     // Mettre à jour le broadcast
