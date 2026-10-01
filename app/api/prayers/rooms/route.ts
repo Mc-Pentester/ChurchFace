@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
 // POST - Créer une salle de prière
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as { id?: string })?.id;
 
     if (!userId) {
