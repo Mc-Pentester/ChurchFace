@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/authorization/policy";
 
 // GET - Récupérer les horaires d'intercession d'une chaîne
 export async function GET(req: NextRequest) {
@@ -104,6 +105,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_SCHEDULE_VIEW", resourceId: prayerChainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_SCHEDULE_CREATE", resourceId: prayerChainId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
+
     // Vérifier que la chaîne existe
     const chain = await prisma.prayerChain.findUnique({
       where: { id: prayerChainId },
@@ -171,7 +178,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Verify ownership
+    // Verify ownership through the central authorization policy
     const schedule = await prisma.prayerSchedule.findUnique({
       where: { id },
     });
@@ -182,6 +189,9 @@ export async function DELETE(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_SCHEDULE_DELETE", resourceId: id });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     if (schedule.userId !== userId) {
       return NextResponse.json(
