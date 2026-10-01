@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+import { authorize } from "@/lib/authorization/policy";
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { publishPrayerCampaign } from "@/lib/feedPublisher";
@@ -8,7 +8,7 @@ import { publishPrayerCampaign } from "@/lib/feedPublisher";
 // GET - Récupérer les campagnes de prière
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = (session?.user as { id?: string } | undefined)?.id;
 
     if (!userId) {
@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = {};
 
     if (churchId) {
+      const authorization = await authorize({ actorId: userId, action: "PRAYER_CAMPAIGN_CREATE", churchId });
+      if (authorization.status !== 200) return NextResponse.json({ error: "Forbidden" }, { status: authorization.status });
       where.churchId = churchId;
     }
 
@@ -156,6 +158,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_CAMPAIGN_CREATE", churchId: churchId || null });
+    if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
 
     if (churchId) {
       const church = await prisma.church.findUnique({
