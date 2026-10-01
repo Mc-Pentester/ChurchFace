@@ -74,6 +74,10 @@ export async function authorize(params: {
   actorId?: string | null;
   action: AuthorizationAction;
   resourceId?: string;
+  churchId?: string | null;
+  prayerChainId?: string | null;
+  prayerCampaignId?: string | null;
+  prayerRoomId?: string | null;
 }): Promise<AuthorizationResult> {
   const actorId = params.actorId ?? null;
 
@@ -208,6 +212,129 @@ export async function authorize(params: {
       );
     }
 
+    case "PRAYER_CREATE":
+    case "PRAYER_ROOM_CREATE":
+    case "PRAYER_CAMPAIGN_CREATE":
+    case "PRAYER_ROOM_VIEW":
+    case "PRAYER_ROOM_JOIN":
+    case "PRAYER_DELETE": {
+      const isGlobalAdmin = isGlobalAdminRole(actor.role);
+
+      if (params.action === "PRAYER_DELETE") {
+        if (!params.resourceId) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource is required");
+        }
+        const prayer = await prisma.prayerRequest.findUnique({
+          where: { id: params.resourceId },
+          select: { userId: true },
+        });
+        if (!prayer) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer resource not found");
+        }
+        return prayer.userId === actor.id || isGlobalAdmin
+          ? allow(actor)
+          : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer ownership required");
+      }
+
+      if (params.action === "PRAYER_ROOM_VIEW" || params.action === "PRAYER_ROOM_JOIN") {
+        if (!params.resourceId) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer room is required");
+        }
+        const room = await prisma.prayerRoom.findUnique({
+          where: { id: params.resourceId },
+          select: {
+            id: true,
+            churchId: true,
+            isPublic: true,
+            moderatorId: true,
+          },
+        });
+        if (!room) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer room not found");
+        }
+        if (isGlobalAdmin || room.moderatorId === actor.id) return allow(actor);
+        if (!room.churchId) {
+          return room.isPublic
+            ? allow(actor)
+            : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Private prayer room access denied");
+        }
+        const membership = await prisma.churchMember.findUnique({
+          where: { churchId_userId: { churchId: room.churchId, userId: actor.id } },
+          select: { id: true },
+        });
+        const churchAdmin = await prisma.churchAdmin.findUnique({
+          where: { churchId_userId: { churchId: room.churchId, userId: actor.id } },
+          select: { id: true },
+        });
+        return membership || churchAdmin
+          ? allow(actor)
+          : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Church-scoped prayer room access denied");
+      }
+
+      const targetChurchId = params.churchId ?? null;
+
+      if (params.prayerChainId) {
+        const chain = await prisma.prayerChain.findUnique({
+          where: { id: params.prayerChainId },
+          select: { churchId: true },
+        });
+        if (!chain) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer chain not found");
+        }
+        if (targetChurchId !== (chain.churchId ?? null)) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer chain church scope mismatch");
+        }
+      }
+
+      if (params.prayerCampaignId) {
+        const campaign = await prisma.prayerCampaign.findUnique({
+          where: { id: params.prayerCampaignId },
+          select: { churchId: true },
+        });
+        if (!campaign) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer campaign not found");
+        }
+        if (targetChurchId !== (campaign.churchId ?? null)) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer campaign church scope mismatch");
+        }
+      }
+
+      if (params.prayerRoomId) {
+        const room = await prisma.prayerRoom.findUnique({
+          where: { id: params.prayerRoomId },
+          select: { churchId: true },
+        });
+        if (!room) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer room not found");
+        }
+        if (targetChurchId !== (room.churchId ?? null)) {
+          return deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "Prayer room church scope mismatch");
+        }
+      }
+
+      if (!targetChurchId) return allow(actor);
+      if (isGlobalAdmin) return allow(actor);
+
+      const member = await prisma.churchMember.findUnique({
+        where: { churchId_userId: { churchId: targetChurchId, userId: actor.id } },
+        select: { id: true },
+      });
+      const churchAdmin = await prisma.churchAdmin.findUnique({
+        where: { churchId_userId: { churchId: targetChurchId, userId: actor.id } },
+        select: { id: true },
+      });
+
+      if (member || churchAdmin) return allow(actor);
+
+      return deny(
+        actor.id,
+        "DENY_FORBIDDEN",
+        403,
+        actor.role,
+        "Church-scoped prayer authorization required"
+      );
+    }
+
     case "STUDIO_BROADCAST_UPDATE":
       return isGlobalAdminRole(actor.role)
         ? allow(actor)
@@ -242,6 +369,10 @@ export async function isAuthorized(params: {
   actorId?: string | null;
   action: AuthorizationAction;
   resourceId?: string;
+  churchId?: string | null;
+  prayerChainId?: string | null;
+  prayerCampaignId?: string | null;
+  prayerRoomId?: string | null;
 }): Promise<boolean> {
   const result = await authorize(params);
   return result.decision === "ALLOW";
