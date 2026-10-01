@@ -4,20 +4,24 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { auth } from "@/lib/auth"
 import { MobileLiveService } from "@/lib/mobilelive/MobileLiveService";
+import { authorize } from "@/lib/authorization/policy";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { sessionId } = await params;
+
+    const authorization = await authorize({ actorId: session.user.id, action: "MOBILELIVE_VIEW", resourceId: sessionId });
+    if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
 
     const sessionData = await MobileLiveService.getSession(sessionId);
 
@@ -40,13 +44,16 @@ export async function PATCH(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { sessionId } = await params;
     const body = await request.json();
+
+    const authorization = await authorize({ actorId: session.user.id, action: "MOBILELIVE_STATS_UPDATE", resourceId: sessionId });
+    if (authorization.status !== 200) return NextResponse.json({ error: authorization.status === 401 ? "Unauthorized" : "Forbidden" }, { status: authorization.status });
 
     // Mettre à jour les statistiques
     if (body.viewerCount !== undefined) {
@@ -55,6 +62,7 @@ export async function PATCH(
         viewerCount: body.viewerCount,
         bitrate: body.bitrate,
         fps: body.fps,
+        actorId: session.user.id,
       });
     }
 
