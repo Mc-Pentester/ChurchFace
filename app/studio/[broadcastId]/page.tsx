@@ -46,8 +46,7 @@ export default function StudioBroadcastPage({ params }: { params: Promise<{ broa
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            roomName: context.livekitConfig.roomName,
-            participantName: context.ownerName,
+            broadcastId: broadcastId,
             isPublisher: context.permissions.canPublish,
           }),
         });
