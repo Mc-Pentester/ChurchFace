@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { authorize } from "@/lib/authorization/policy";
 
 // POST - Ajouter un engagement de prière
 export async function POST(req: NextRequest) {
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_ENGAGEMENT_CREATE", resourceId: prayerRequestId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     // Vérifier que la demande de prière existe
     const prayerRequest = await prisma.prayerRequest.findUnique({
@@ -110,6 +114,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_ENGAGEMENT_VIEW", resourceId: prayerRequestId });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
+
     const where: any = { prayerRequestId };
     if (type) where.type = type;
 
@@ -176,6 +183,9 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authorization = await authorize({ actorId: userId, action: "PRAYER_ENGAGEMENT_DELETE", resourceId: id });
+    if (authorization.status !== 200) return NextResponse.json({ error: "Accès non autorisé" }, { status: authorization.status });
 
     // Verify ownership
     const engagement = await prisma.prayerEngagement.findUnique({
