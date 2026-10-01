@@ -73,6 +73,7 @@ export async function getAuthorizationActor(
 export async function authorize(params: {
   actorId?: string | null;
   action: AuthorizationAction;
+  resourceId?: string;
 }): Promise<AuthorizationResult> {
   const actorId = params.actorId ?? null;
 
@@ -136,6 +137,79 @@ export async function authorize(params: {
             "Studio authority required"
           );
 
+    case "MOBILELIVE_START":
+    case "MOBILELIVE_STOP":
+    case "MOBILELIVE_MODERATE":
+    case "MOBILELIVE_VIEW":
+    case "MOBILELIVE_STATS_UPDATE": {
+      if (!params.resourceId) {
+        return deny(
+          actor.id,
+          "DENY_FORBIDDEN",
+          403,
+          actor.role,
+          "MobileLive resource is required"
+        );
+      }
+
+      const broadcast = await prisma.liveBroadcast.findUnique({
+        where: { id: params.resourceId },
+        select: {
+          id: true,
+          authorId: true,
+          ownerId: true,
+          ownerType: true,
+        },
+      });
+
+      if (!broadcast) {
+        return deny(
+          actor.id,
+          "DENY_FORBIDDEN",
+          403,
+          actor.role,
+          "MobileLive resource not found"
+        );
+      }
+
+      const isGlobalAdmin = isGlobalAdminRole(actor.role);
+      const isOwner = broadcast.authorId === actor.id;
+
+      if (params.action === "MOBILELIVE_VIEW") {
+        return isOwner || isGlobalAdmin
+          ? allow(actor)
+          : deny(actor.id, "DENY_FORBIDDEN", 403, actor.role, "MobileLive access denied");
+      }
+
+      if (isGlobalAdmin || isOwner) {
+        return allow(actor);
+      }
+
+      if (broadcast.ownerType === "CHURCH" && broadcast.ownerId) {
+        const churchAdmin = await prisma.churchAdmin.findUnique({
+          where: {
+            churchId_userId: {
+              churchId: broadcast.ownerId,
+              userId: actor.id,
+            },
+          },
+          select: { role: true },
+        });
+
+        if (churchAdmin) {
+          return allow(actor);
+        }
+      }
+
+      return deny(
+        actor.id,
+        "DENY_FORBIDDEN",
+        403,
+        actor.role,
+        "MobileLive contextual authority required"
+      );
+    }
+
     case "STUDIO_BROADCAST_UPDATE":
       return isGlobalAdminRole(actor.role)
         ? allow(actor)
@@ -161,6 +235,7 @@ export async function authorize(params: {
 export async function requireAuthorization(params: {
   actorId?: string | null;
   action: AuthorizationAction;
+  resourceId?: string;
 }): Promise<AuthorizationResult> {
   return authorize(params);
 }
@@ -168,6 +243,7 @@ export async function requireAuthorization(params: {
 export async function isAuthorized(params: {
   actorId?: string | null;
   action: AuthorizationAction;
+  resourceId?: string;
 }): Promise<boolean> {
   const result = await authorize(params);
   return result.decision === "ALLOW";
